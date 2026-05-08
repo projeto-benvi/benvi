@@ -5,7 +5,7 @@ import "./globals.css";
 const fontBenvi = Inter({subsets: ['latin']})
 
 export const metadata: Metadata = {
-  title: "oikkkkkkkkkk",
+  title: "Benvi",
   description: "Plataforma que conecta pessoas a profissionais confiáveis de forma rápida, simples e segura.",
 };
 
