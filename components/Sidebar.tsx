@@ -1,4 +1,6 @@
 import Image from "next/image";
+import logoBenvi from "@/assets/logoBenvi.png";
+
 import {
   Home,
   Search,
@@ -43,12 +45,12 @@ export default function Sidebar() {
       <div>
         <div className="mb-10">
           <Image
-            src="/logo-benvi.png"
-            alt="Logo Benvi"
-            width={135}
-            height={45}
-            priority
-          />
+            src={logoBenvi}
+          alt="Logo Benvi"
+          width={135}
+          height={45}
+          priority
+            />
         </div>
 
         <nav className="flex flex-col gap-2">
