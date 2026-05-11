@@ -1,9 +1,11 @@
 import Image from "next/image";
+import ProfissionaisRecomendados from "@/components/home/profissionaisRecomendados";
 
 export default function Home() {
   return (
-    <div>
-      <h1>testeeeeeeeeeeeeeeeeeeeeee</h1>
-    </div>
+    <main>
+      <h1> Testeeee Benvi</h1>
+      <ProfissionaisRecomendados />
+    </main>
   );
 }
