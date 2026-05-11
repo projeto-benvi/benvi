@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Logo from "@/assets/benvi colorido 2.svg";
 import Link from "next/link";
-import carta from "@/assets/carta.svg";
-import cadeado from "@/assets/cadeado.svg";
-import googleicon from "@/assets/googleicon.svg";
+import carta from "@/assets/icons/carta.svg";
+import cadeado from "@/assets/icons/cadeado.svg";
+import googleicon from "@/assets/icons/googleicon.svg";
 
 
 export default function Login() {
