@@ -29,8 +29,7 @@ export default function Home() {
            
           </p>
 
-            {/* Inputs: */}
-            {/* Nome id =  nome*/}
+          
           <div className="relative w-full">
             
             <Image src={iconPessoa} alt="icone pessoa" width={18} height={18} className="absolute left-3 top-1/2 -translate-y-1/2"/>
@@ -38,7 +37,6 @@ export default function Home() {
             <input id="nome" type="text" placeholder="Seu nome completo" className="border border-gray-300 rounded-md px-4 py-2 w-full pl-10"/>
           </div>
 
-          {/* email id = email */}
           <div className="relative w-full">
             
             <Image src={iconCarta} alt="icone pessoa" width={18} height={18} className="absolute left-3 top-1/2 -translate-y-1/2"/>
@@ -46,7 +44,7 @@ export default function Home() {
             <input id="email" type="text" placeholder="seuemail@gmail.com" className="border border-gray-300 rounded-md px-4 py-2 w-full pl-10"/>
           </div>
 
-          {/* CPF id= cpf*/}
+ 
           <div className="relative w-full">
             
             <Image src={iconCpf} alt="icone pessoa" width={18} height={18} className="absolute left-3 top-1/2 -translate-y-1/2"/>
@@ -54,7 +52,6 @@ export default function Home() {
             <input id="cpf" type="text" placeholder="CPF: 000.000.000-00" className="border border-gray-300 rounded-md px-4 py-2 w-full pl-10"/>
           </div>
 
-          {/* Celular id= celular */}
           <div className="relative w-full">
             
             <Image src={iconTelefone} alt="icone pessoa" width={18} height={18} className="absolute left-3 top-1/2 -translate-y-1/2"/>
@@ -62,7 +59,7 @@ export default function Home() {
             <input id="celular" type="text" placeholder="(00)0000-0000" className="border border-gray-300 rounded-md px-4 py-2 w-full pl-10"/>
           </div>
 
-          {/* Senha id= senha */}
+        
           <div className="relative w-full">
             
             <Image src={iconCadeado} alt="icone pessoa" width={18} height={18} className="absolute left-3 top-1/2 -translate-y-1/2"/>
@@ -70,7 +67,7 @@ export default function Home() {
             <input id="senha" type="text" placeholder="Senha segura" className="border border-gray-300 rounded-md px-4 py-2 w-full pl-10"/>
           </div>
 
-          {/* Botão cadastrar. id = btnCadastrar */}
+      
           <button id= "btnCadastrar" className="rounded-md px-4 py-2 w-full pl-10 bg-orange-400 text-white hover:bg-orange-500 transition text-xl">  Cadastrar </button>
 
 
