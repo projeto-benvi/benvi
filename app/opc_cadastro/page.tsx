@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Logo from "@/assets/benvi colorido 2.svg";
-import user from "@/assets/usuario.svg"
-import ferr from "@/assets/ferramenta.svg"
+import user from "@/assets/icons/usuario.svg"
+import ferr from "@/assets/icons/ferramenta.svg"
 
 //<button className="text-3xl justify-start items-start">&lt;</button>
 export default function opcoesCadastro() {
