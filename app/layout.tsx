@@ -1,13 +1,12 @@
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { metadata } from "./metadata"; // Importando do arquivo que você criou
+import ClientLayout from "./ClientLayout"; 
 
-const fontBenvi = Inter({subsets: ['latin']})
+const fontBenvi = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Benvi",
-  description: "Plataforma que conecta pessoas a profissionais confiáveis de forma rápida, simples e segura.",
-};
+// Exportamos os metadados para o Next.js (SEO)
+export { metadata };
 
 export default function RootLayout({
   children,
@@ -15,13 +14,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="pt-br"
-      className={`${fontBenvi} h-full antialiased`}
-    >
-      <body>
+    <html lang="pt-br" className="h-full antialiased">
+    
+      <body className={`${fontBenvi.className} h-full`}>
         
-        {children}
+        
+        <ClientLayout>
+          {children}
+        </ClientLayout>
+
       </body>
     </html>
   );

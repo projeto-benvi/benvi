@@ -1,6 +1,7 @@
 import Image from "next/image";
 import ProfissionaisRecomendados from "@/components/home/profissionaisRecomendados";
 
+
 export default function Home() {
   return (
     <main>
