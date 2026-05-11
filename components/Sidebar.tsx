@@ -1,4 +1,5 @@
 import Image from "next/image";
+import logo from "@/assets/benvi colorido 2.svg"
 import {
   Home,
   Search,
@@ -43,7 +44,7 @@ export default function Sidebar() {
       <div>
         <div className="mb-10">
           <Image
-            src="/logo-benvi.png"
+            src={logo}
             alt="Logo Benvi"
             width={135}
             height={45}
