@@ -1,12 +1,10 @@
-import Image from "next/image";
+import CardFundoAzul from "../components/CardFundoAzul";
 import ProfissionaisRecomendados from "@/components/home/profissionaisRecomendados";
-
 
 export default function Home() {
   return (
-    <main>
-      <h1> Testeeee Benvi</h1>
+    <main className="min-h-screen bg-[#F8FAFC] p-8">
+      <CardFundoAzul />
       <ProfissionaisRecomendados />
-    </main>
   );
 }
