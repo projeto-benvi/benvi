@@ -1,4 +1,4 @@
-import Login from "@/app/view/login";
+import Login from "@/view/login";
 
 
 

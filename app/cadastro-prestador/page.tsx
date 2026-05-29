@@ -1,4 +1,4 @@
-import CadastroPrestador from "@/app/view/cadastroprestador";
+import CadastroPrestador from "@/view/cadastroprestador";
 
 
 

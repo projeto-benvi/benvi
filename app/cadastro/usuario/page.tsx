@@ -1,4 +1,4 @@
-import Home from "@/app/view/cadastrousuario";
+import Home from "@/view/cadastrousuario";
 
 
 
