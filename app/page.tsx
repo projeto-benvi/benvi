@@ -1,4 +1,4 @@
-import Home from "@/app/view/home";
+import Home from "@/view/home";
 
 
 
