@@ -1,10 +1,12 @@
-import CardFundoAzul from "../components/CardFundoAzul";
-import ProfissionaisRecomendados from "@/components/home/profissionaisRecomendados";
+import Home from "@/app/view/home";
 
-export default function Home() {
-  return (
-    <main className="min-h-screen bg-[#F8FAFC] p-8">
-      <CardFundoAzul />
-      <ProfissionaisRecomendados />
-  );
+
+
+export default function viewHome(){
+    return(
+        <main className="min-h-screen">
+            <Home/>
+      
+        </main>
+    )
 }
