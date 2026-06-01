@@ -2,6 +2,7 @@ import pool from "@/app/lib/dataBase";
 import { watch } from "fs";
 import { NextResponse } from "next/server";
 
+
 async function testeConecxao() {
     try{
         const [rows] = await pool.query("SELECT 1+1 AS resultado");
@@ -22,3 +23,5 @@ let usuarios = [
 export async function GET() {
     return NextResponse.json(usuarios);
 }
+
+
