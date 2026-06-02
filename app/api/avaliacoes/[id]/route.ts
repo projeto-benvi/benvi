@@ -10,10 +10,15 @@ export async function GET(
 
     const { id } = await params;
 
-    const avaliacao =
-      await AvaliacaoController.buscarPorId(
-        Number(id)
+    const avaliacoes = await AvaliacaoController.listar();
+    const avaliacao = avaliacoes.find((a: any) => a.id === Number(id));
+
+    if (!avaliacao) {
+      return NextResponse.json(
+        { error: 'Avaliação não encontrada' },
+        { status: 404 }
       );
+    }
 
     return NextResponse.json(
       avaliacao,
@@ -45,8 +50,7 @@ export async function PUT(
 
     const body = await request.json();
 
-    await AvaliacaoController.atualizar(
-      Number(id),
+    await AvaliacaoController.criar(
       body.nota,
       body.comentario
     );

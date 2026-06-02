@@ -1,72 +1,137 @@
-import { AvaliacaoModel } from '@/model/avaliacaoModel';
+import pool from '@/app/lib/dataBase';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { Avaliacao } from '@/model/avaliacaoModel';
 
 export const AvaliacaoService = {
 
-  async listar() {
-    return await AvaliacaoModel.getAll();
-  },
+    async listar(): Promise<Avaliacao[]> {
 
-  async buscarPorId(id: number) {
+        const [rows] = await pool.query<(RowDataPacket & any)[]>(
+            `
+      SELECT
+        id_avaliacao,
+        nota,
+        comentario,
+        data_avaliacao
+      FROM avaliacao
+      `
+        );
 
-    const avaliacoes = await AvaliacaoModel.getAll();
-    const avaliacao = avaliacoes.find(
-      (item) => item.id_avaliacao === id
-    );
+        return rows.map(
+            row => new Avaliacao(
+                row.nota,
+                row.comentario,
+                row.data_avaliacao,
+                row.id_avaliacao
+            )
+        );
+    },
 
-    if (!avaliacao) {
-      throw new Error('Avaliação não encontrada');
+    async buscarPorId(id: number) {
+
+        const avaliacoes =
+            await this.listar();
+
+        const avaliacao =
+            avaliacoes.find(
+                item => item.id_avaliacao === id
+            );
+
+        if (!avaliacao) {
+            throw new Error(
+                'Avaliação não encontrada'
+            );
+        }
+
+        return avaliacao;
+    },
+
+    async criar(
+        nota: number,
+        comentario: string
+    ): Promise<number> {
+
+        const avaliacao = new Avaliacao(
+            nota,
+            comentario
+        );
+
+        if (!avaliacao.validarNota()) {
+            throw new Error(
+                'A nota deve estar entre 0 e 5'
+            );
+        }
+
+        const [result] = await pool.query<ResultSetHeader>(
+            `
+      INSERT INTO avaliacao
+      (
+        nota,
+        comentario,
+        data_avaliacao
+      )
+      VALUES (?, ?, ?)
+      `,
+            [
+                avaliacao.nota,
+                avaliacao.comentario,
+                avaliacao.data_avaliacao
+            ]
+        );
+
+        return result.insertId;
+    },
+
+    async atualizar(
+        id: number,
+        nota: number,
+        comentario: string
+    ) {
+
+        if (nota < 0 || nota > 5) {
+            throw new Error(
+                'A nota deve estar entre 0 e 5'
+            );
+        }
+
+        const [result] =
+            await pool.query<ResultSetHeader>(
+                `
+      UPDATE avaliacao
+      SET
+        nota = ?,
+        comentario = ?
+      WHERE id_avaliacao = ?
+      `,
+                [
+                    nota,
+                    comentario,
+                    id
+                ]
+            );
+
+        if (result.affectedRows === 0) {
+            throw new Error(
+                'Avaliação não encontrada'
+            );
+        }
+
+        return true;
+    },
+
+    async remover(
+        id: number
+    ): Promise<boolean> {
+
+        const [result] = await pool.query<ResultSetHeader>(
+            `
+      DELETE FROM avaliacao
+      WHERE id_avaliacao = ?
+      `,
+            [id]
+        );
+
+        return result.affectedRows > 0;
     }
 
-    return avaliacao;
-  },
-
-  async criar(
-    nota: number,
-    comentario: string
-  ) {
-
-    if (nota < 0 || nota > 5) {
-      throw new Error('A nota deve estar entre 0 e 5');
-    }
-
-    return await AvaliacaoModel.create(
-      nota,
-      comentario,
-      new Date()
-    );
-  },
-
-  async atualizar(
-    id: number,
-    nota: number,
-    comentario: string
-  ) {
-
-    if (nota < 0 || nota > 5) {
-      throw new Error('A nota deve estar entre 0 e 5');
-    }
-
-    const atualizado = await (AvaliacaoModel as any).update(
-      id,
-      nota,
-      comentario
-    );
-
-    if (!atualizado) {
-      throw new Error('Avaliação não encontrada');
-    }
-
-    return atualizado;
-  },
-
-  async remover(id: number) {
-
-    const removido = await AvaliacaoModel.delete(id);
-
-    if (!removido) {
-      throw new Error('Avaliação não encontrada');
-    }
-
-    return removido;
-  }
 };
