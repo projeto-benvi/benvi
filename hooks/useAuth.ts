@@ -25,11 +25,12 @@ export function useAuth() {
       setLoading(false);
     } else {
       // Simulação de carregamento e fallback com um usuário de teste no ambiente de desenvolvimento
+      const isPrestadorRoute = typeof window !== "undefined" && window.location.pathname.includes("/prestador");
       const timer = setTimeout(() => {
         setUser({
-          nome: "Pedro Silva",
-          email: "pedro.silva@exemplo.com",
-          nivel_acesso: 1, // 1 - Cliente, 2 - Prestador, etc.
+          nome: isPrestadorRoute ? "Carlos Silva" : "Pedro Silva",
+          email: isPrestadorRoute ? "carlos.silva@exemplo.com" : "pedro.silva@exemplo.com",
+          nivel_acesso: isPrestadorRoute ? 2 : 1, // 1 - Cliente, 2 - Prestador, etc.
           cidade: "São Paulo",
         });
         setLoading(false);
