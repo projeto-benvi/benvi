@@ -1,36 +1,70 @@
 import { NextResponse } from 'next/server';
-import { AvaliacaoModel, Avaliacao } from '@/model/avaliacaoModel';
+import { AvaliacaoController } from '@/controller/avaliacaoController';
 
-// GET: Listar avaliações
 export async function GET() {
+
   try {
-    const avaliacoes: Avaliacao[] = await AvaliacaoModel.getAll();
-    return NextResponse.json(avaliacoes, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Erro ao buscar avaliações' }, { status: 500 });
+
+    const avaliacoes =
+      await AvaliacaoController.listar();
+
+    return NextResponse.json(
+      avaliacoes,
+      { status: 200 }
+    );
+
+  } catch {
+
+    return NextResponse.json(
+      { error: 'Erro ao buscar avaliações' },
+      { status: 500 }
+    );
   }
 }
 
-// POST: Inserir avaliação
 export async function POST(request: Request) {
+
   try {
-    // Mapeia o corpo da requisição diretamente para a sua interface
-    const corpo: Avaliacao = await request.json();
 
-    // Validação estrita dos campos obrigatórios da interface
-    if (corpo.nota === undefined || corpo.nota === null) {
-      return NextResponse.json({ error: 'A nota é obrigatória' }, { status: 400 });
-    }
+    const body = await request.json();
 
-    // Passa os dados tipados para o model
-    const newId = await AvaliacaoModel.create(corpo.nota, corpo.comentario);
-    
+    /*erro
+    console.log(body);
+    console.log(typeof body);
+
+    const nota = body.nota;
+    const comentario = body.comentario;
+
+    console.log(nota);
+    console.log(comentario);
+
+    console.log('BODY RECEBIDO:', body);
+    */ 
+
+    const id =
+      await AvaliacaoController.criar(
+        body.nota,
+        body.comentario || ''
+      );
+
     return NextResponse.json(
-      { id_avaliacao: newId, message: 'Avaliação enviada com sucesso!' }, 
+      {
+        id_avaliacao: id,
+        message: 'Avaliação criada com sucesso'
+      },
       { status: 201 }
     );
+
   } catch (error) {
-    return NextResponse.json({ error: 'Erro ao salvar avaliação' }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Erro interno'
+      },
+      { status: 400 }
+    );
   }
 }
-
