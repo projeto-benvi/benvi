@@ -30,6 +30,7 @@ export async function POST(request: Request) {
 
     const id =
       await AvaliacaoController.criar(
+        body.id_usuario,
         body.nota,
         body.comentario || ''
       );

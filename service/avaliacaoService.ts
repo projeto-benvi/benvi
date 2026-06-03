@@ -2,8 +2,9 @@ import pool from '@/app/lib/dataBase';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { Avaliacao } from '@/model/avaliacaoModel';
 
+
 export const AvaliacaoService = {
-    
+
     async listar(): Promise<Avaliacao[]> {
 
         const [rows] = await pool.query<(RowDataPacket & any)[]>(
@@ -47,11 +48,13 @@ export const AvaliacaoService = {
     },
 
     async criar(
+        id_usuario: number,
         nota: number,
         comentario: string
     ): Promise<number> {
 
         const avaliacao = new Avaliacao(
+            id_usuario,
             nota,
             comentario
         );
@@ -66,13 +69,15 @@ export const AvaliacaoService = {
             `
       INSERT INTO avaliacao
       (
+        id_usuario,
         nota,
         comentario,
         data_avaliacao
       )
-      VALUES (?, ?, ?)
+      VALUES (?, ?, ?, ?)
       `,
             [
+                avaliacao.id_usuario,
                 avaliacao.nota,
                 avaliacao.comentario,
                 avaliacao.data_avaliacao
