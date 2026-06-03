@@ -3,7 +3,6 @@ import { Prestador } from '@/model/prestador';
 
 export const prestadorService = {
 
-  // Busca todos os prestadores com dados do usuário
   async listarTodos() {
     const [rows] = await pool.query(
       `SELECT p.*, u.nome, u.email, u.telefone, u.foto_perfil, u.cidade, u.status_conta
@@ -13,18 +12,16 @@ export const prestadorService = {
     return rows;
   },
 
-  // Busca um prestador pelo id
   async buscarPorId(id: number) {
     const [rows]: any = await pool.query(
       `SELECT p.*, u.nome, u.email, u.telefone, u.foto_perfil, u.cidade, u.status_conta
        FROM prestador p
        INNER JOIN usuario u ON p.id_usuario = u.id_usuario
-       WHERE p.id_prestador = ?`, [id]
+       WHERE p.id_usuario = ?`, [id]
     );
     return rows[0] ?? null;
   },
 
-  // Busca prestador pelo id do usuário
   async buscarPorIdUsuario(id_usuario: number) {
     const [rows]: any = await pool.query(
       `SELECT p.*, u.nome, u.email, u.telefone, u.foto_perfil, u.cidade, u.status_conta
@@ -35,9 +32,8 @@ export const prestadorService = {
     return rows[0] ?? null;
   },
 
-  // Cria um novo prestador
   async criar(dados: Prestador): Promise<number> {
-    const [result]: any = await pool.query(
+    await pool.query(
       `INSERT INTO prestador 
         (id_usuario, descricao_profissional, status_verificado, status_social, impulsiona_perfil, categoria_principal)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -50,22 +46,20 @@ export const prestadorService = {
         dados.categoria_principal
       ]
     );
-    return result.insertId;
+    return dados.id_usuario;
   },
 
-  // Atualiza dados do prestador
   async atualizar(id: number, dados: Partial<Prestador>): Promise<void> {
     const campos = Object.keys(dados).map(k => `${k} = ?`).join(', ');
     const valores = [...Object.values(dados), id];
     await pool.query(
-      `UPDATE prestador SET ${campos} WHERE id_prestador = ?`, valores
+      `UPDATE prestador SET ${campos} WHERE id_usuario = ?`, valores
     );
   },
 
-  // Deleta um prestador
   async deletar(id: number): Promise<void> {
     await pool.query(
-      'DELETE FROM prestador WHERE id_prestador = ?', [id]
+      'DELETE FROM prestador WHERE id_usuario = ?', [id]
     );
   }
 };

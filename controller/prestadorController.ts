@@ -19,8 +19,9 @@ export const prestadorController = {
     try {
       const body = await req.json();
       const id = await prestadorService.criar(body);
-      return NextResponse.json({ id_prestador: id }, { status: 201 });
+      return NextResponse.json({ id_usuario: id }, { status: 201 });
     } catch (e) {
+      console.error('ERRO AO CRIAR PRESTADOR:', e);
       return NextResponse.json(
         { erro: 'Erro ao criar prestador' },
         { status: 500 }
