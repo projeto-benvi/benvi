@@ -3,7 +3,7 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { Avaliacao } from '@/model/avaliacaoModel';
 
 export const AvaliacaoService = {
-
+    
     async listar(): Promise<Avaliacao[]> {
 
         const [rows] = await pool.query<(RowDataPacket & any)[]>(

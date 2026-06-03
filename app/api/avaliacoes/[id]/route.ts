@@ -11,7 +11,9 @@ export async function GET(
     const { id } = await params;
 
     const avaliacoes = await AvaliacaoController.listar();
-    const avaliacao = avaliacoes.find((a: any) => a.id === Number(id));
+    const avaliacao = await AvaliacaoController.buscarPorId(Number(id)
+
+  );
 
     if (!avaliacao) {
       return NextResponse.json(
@@ -49,8 +51,9 @@ export async function PUT(
     const { id } = await params;
 
     const body = await request.json();
-
-    await AvaliacaoController.criar(
+    
+    await AvaliacaoController.atualizar(
+      Number(id),
       body.nota,
       body.comentario
     );

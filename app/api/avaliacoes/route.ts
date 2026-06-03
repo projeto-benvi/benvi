@@ -28,19 +28,6 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    /*erro
-    console.log(body);
-    console.log(typeof body);
-
-    const nota = body.nota;
-    const comentario = body.comentario;
-
-    console.log(nota);
-    console.log(comentario);
-
-    console.log('BODY RECEBIDO:', body);
-    */ 
-
     const id =
       await AvaliacaoController.criar(
         body.nota,
