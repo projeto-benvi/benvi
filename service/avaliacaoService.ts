@@ -11,6 +11,7 @@ export const AvaliacaoService = {
             `
       SELECT
         id_avaliacao,
+        id_usuario,
         nota,
         comentario,
         data_avaliacao
@@ -20,6 +21,7 @@ export const AvaliacaoService = {
 
         return rows.map(
             row => new Avaliacao(
+                row.id_usuario,
                 row.nota,
                 row.comentario,
                 row.data_avaliacao,
