@@ -33,29 +33,53 @@ export const prestadorService = {
   },
 
   async criar(dados: Prestador): Promise<number> {
-    await pool.query(
-      `INSERT INTO prestador 
-        (id_usuario, descricao_profissional, status_verificado, status_social, impulsiona_perfil, categoria_principal)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        dados.id_usuario,
-        dados.descricao_profissional,
-        dados.status_verificado ?? false,
-        dados.status_social ?? 'ativo',
-        dados.impulsiona_perfil ?? false,
-        dados.categoria_principal
-      ]
-    );
-    return dados.id_usuario;
-  },
+  await pool.query(
+    `INSERT INTO prestador 
+    (id_usuario, descricao_profissional, status_verificado, status_social, impulsiona_perfil, categoria_principal) 
+    VALUES (?, ?, ?, ?, ?, ?)` ,
+    [
+      dados.id_usuario,
+      dados.descricao_profissional ?? null,
+      dados.status_verificado ?? false,
+      dados.status_social ?? 'ativo',
+      dados.impulsiona_perfil ?? false,
+      dados.categoria_principal ?? null
+    ]
+  );
+  return dados.id_usuario!
+},
 
-  async atualizar(id: number, dados: Partial<Prestador>): Promise<void> {
-    const campos = Object.keys(dados).map(k => `${k} = ?`).join(', ');
-    const valores = [...Object.values(dados), id];
-    await pool.query(
-      `UPDATE prestador SET ${campos} WHERE id_usuario = ?`, valores
-    );
-  },
+async atualizar(id: number, dados: Partial<Prestador>): Promise<void> {
+  // 1. Lista estrita de campos que realmente existem na tabela prestador
+  const camposPermitidos = [
+    'descricao_profissional',
+    'status_verificado',
+    'status_social',
+    'impulsiona_perfil',
+    'categoria_principal'
+  ];
+
+  // 2. Filtra o objeto 'dados' para pegar apenas o que pertence ao prestador
+  const camposParaAtualizar: string[] = [];
+  const valores: any[] = [];
+
+  camposPermitidos.forEach(campo => {
+    if (dados[campo as keyof Partial<Prestador>] !== undefined) {
+      camposParaAtualizar.push(`${campo} = ?`);
+      valores.push(dados[campo as keyof Partial<Prestador>]);
+    }
+  });
+
+  // Se nenhum campo válido de prestador foi enviado para atualizar, interrompe aqui
+  if (camposParaAtualizar.length === 0) return;
+
+  // 3. Adiciona o ID no final do array de valores para o WHERE
+  valores.push(id);
+
+  const sql = `UPDATE prestador SET ${camposParaAtualizar.join(', ')} WHERE id_usuario = ?`;
+  
+  await pool.query(sql, valores);
+},
 
   async deletar(id: number): Promise<void> {
     await pool.query(
