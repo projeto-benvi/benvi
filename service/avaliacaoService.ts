@@ -1,11 +1,12 @@
 import pool from '@/app/lib/dataBase';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import { Avaliacao } from '@/model/avaliacaoModel';
+import { AvaliacaoModel } from '@/model/avaliacaoModel';
+//import { Avaliacao } from '@/model/avaliacaoModel';
 
 
 export const AvaliacaoService = {
 
-    async listar(): Promise<Avaliacao[]> {
+    async listar(): Promise<AvaliacaoModel[]> {
 
         const [rows] = await pool.query<(RowDataPacket & any)[]>(
             `
@@ -20,7 +21,7 @@ export const AvaliacaoService = {
         );
 
         return rows.map(
-            row => new Avaliacao(
+            row => new AvaliacaoModel(
                 row.id_usuario,
                 row.nota,
                 row.comentario,
@@ -31,6 +32,7 @@ export const AvaliacaoService = {
     },
 
     async buscarPorId(id: number) {
+
 
         const avaliacoes =
             await this.listar();
@@ -46,16 +48,91 @@ export const AvaliacaoService = {
             );
         }
 
-        return avaliacao;
+        //buscar tambem as informações do usuário para retornar junto com a avaliação
+
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `
+        SELECT
+            a.id_avaliacao,
+            a.id_usuario,
+            a.nota,
+            a.comentario,
+            a.data_avaliacao,
+
+            u.id_usuario,
+            u.nome,
+            u.email,
+            u.telefone,
+            u.cidade,
+            u.nivel_acesso,
+            u.status_conta,
+            u.data_criacao,
+            u.is_admin
+
+        FROM avaliacao a
+
+        INNER JOIN usuario u
+            ON a.id_usuario = u.id_usuario
+
+        WHERE a.id_avaliacao = ?
+        `,
+            [id]
+        );
+
+        if (rows.length === 0) {
+            throw new Error(
+                'Avaliação não encontrada'
+            );
+        }
+
+        //return rows[0];
+        const row = rows[0];
+
+        return {
+            id_avaliacao: row.id_avaliacao,
+            nota: row.nota,
+            comentario: row.comentario,
+            data_avaliacao: row.data_avaliacao,
+
+            usuario: {
+                id_usuario: row.id_usuario,
+                nome: row.nome,
+                email: row.email,
+                telefone: row.telefone,
+                cidade: row.cidade,
+                nivel_acesso: row.nivel_acesso,
+                status_conta: row.status_conta,
+                data_criacao: row.data_criacao,
+                is_admin: row.is_admin
+            }
+        };
+
     },
+
 
     async criar(
         id_usuario: number,
         nota: number,
         comentario: string
+
+
+
     ): Promise<number> {
 
-        const avaliacao = new Avaliacao(
+        const [usuario] = await pool.query<RowDataPacket[]>(
+            `
+            SELECT id_usuario
+            FROM usuario
+            WHERE id_usuario = ?
+        `,
+            [id_usuario]
+        );
+
+        if (usuario.length === 0) {
+            throw new Error('Usuário não encontrado');
+        }
+
+        const avaliacao = new AvaliacaoModel(
             id_usuario,
             nota,
             comentario
