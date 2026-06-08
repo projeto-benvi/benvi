@@ -55,7 +55,8 @@ export const imagemController = {
       return NextResponse.json(imagem);
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao buscar imagem' },
+        { erro: 'Erro ao buscar imagem',
+          detalhes: String(e) },
         { status: 500 }
       );
     }
@@ -68,7 +69,8 @@ export const imagemController = {
       return NextResponse.json(imagens);
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao buscar imagens do serviço' },
+        { erro: 'Erro ao buscar imagens do serviço',
+          detalhes: String(e) },
         { status: 500 }
       );
     }
@@ -86,7 +88,8 @@ export const imagemController = {
       });
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao atualizar imagem' },
+        { erro: 'Erro ao atualizar imagem',
+          detalhes: String(e) },
         { status: 500 }
       );
     }
@@ -102,7 +105,8 @@ export const imagemController = {
       });
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao deletar imagem' },
+        { erro: 'Erro ao deletar imagem',
+          detalhes: String(e) },
         { status: 500 }
       );
     }
