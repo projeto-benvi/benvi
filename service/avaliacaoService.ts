@@ -13,6 +13,7 @@ export const AvaliacaoService = {
       SELECT
         id_avaliacao,
         id_usuario,
+        id_prestador,
         nota,
         comentario,
         data_avaliacao
@@ -23,6 +24,7 @@ export const AvaliacaoService = {
         return rows.map(
             row => new AvaliacaoModel(
                 row.id_usuario,
+                row.id_prestador,
                 row.nota,
                 row.comentario,
                 row.data_avaliacao,
@@ -109,15 +111,45 @@ export const AvaliacaoService = {
 
     },
 
+    async listarPorPrestador(id_prestador: number) {
+
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `
+        SELECT
+            a.*,
+            u.nome,
+            u.foto_perfil
+        FROM avaliacao a
+
+        INNER JOIN usuario u
+            ON a.id_usuario = u.id_usuario
+
+        WHERE a.id_prestador = ?
+
+        ORDER BY a.data_avaliacao DESC
+        `,
+            [id_prestador]
+        );
+
+        return rows;
+    },
+
 
     async criar(
         id_usuario: number,
+        id_prestador: number,
         nota: number,
         comentario: string
 
 
 
     ): Promise<number> {
+
+        if (id_usuario === id_prestador) {
+            throw new Error(
+                'Um prestador não pode avaliar a si mesmo'
+            );
+        }
 
         const [usuario] = await pool.query<RowDataPacket[]>(
             `
@@ -132,8 +164,22 @@ export const AvaliacaoService = {
             throw new Error('Usuário não encontrado');
         }
 
+        const [prestador] = await pool.query<RowDataPacket[]>(
+            `
+            SELECT id_usuario
+            FROM prestador
+            WHERE id_usuario = ?
+`,
+            [id_prestador]
+        );
+
+        if (prestador.length === 0) {
+            throw new Error('Prestador não encontrado');
+        }
+
         const avaliacao = new AvaliacaoModel(
             id_usuario,
+            id_prestador,
             nota,
             comentario
         );
@@ -149,14 +195,16 @@ export const AvaliacaoService = {
       INSERT INTO avaliacao
       (
         id_usuario,
+        id_prestador,
         nota,
         comentario,
         data_avaliacao
       )
-      VALUES (?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?)
       `,
             [
                 avaliacao.id_usuario,
+                avaliacao.id_prestador,
                 avaliacao.nota,
                 avaliacao.comentario,
                 avaliacao.data_avaliacao

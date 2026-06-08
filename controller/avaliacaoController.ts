@@ -13,12 +13,14 @@ export const AvaliacaoController = {
 
     async criar(
         id_usuario: number,
+        id_prestador: number,
         nota: number,
         comentario: string
     ) {
 
         return await AvaliacaoService.criar(
             id_usuario,
+            id_prestador,
             nota,
             comentario
         );
