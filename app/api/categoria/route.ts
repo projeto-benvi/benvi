@@ -1,14 +1,63 @@
-import { NextResponse } from 'next/server';
-import { CategoriaService } from '@/service/categoriaService';
+import { NextRequest, NextResponse } from "next/server";
 
-const categoriaService = new CategoriaService();
+import {
+  listarCategoriasController,
+  buscarCategoriaPorIdController,
+  criarCategoriaController,
+  atualizarCategoriaController,
+  deletarCategoriaController,
+} from "@/controller/categoriaController";
 
-export async function GET() {
-  try {
-    const categorias = await categoriaService.listarTodasCategorias();
-    return NextResponse.json(categorias, { status: 200 });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ erro: "Erro ao buscar categorias." }, { status: 500 });
+export async function GET(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get("id");
+
+  if (id) {
+    return buscarCategoriaPorIdController(Number(id));
   }
+
+  return listarCategoriasController();
 }
+
+export async function POST(req: NextRequest) {
+  return criarCategoriaController(req);
+}
+
+export async function PUT(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json(
+      {
+        erro: "Parâmetro 'id' é obrigatório.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  return atualizarCategoriaController(
+    Number(id),
+    req
+  );
+}
+
+export async function DELETE(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json(
+      {
+        erro: "Parâmetro 'id' é obrigatório.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  return deletarCategoriaController(
+    Number(id)
+  );
+}
+

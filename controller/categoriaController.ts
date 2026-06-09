@@ -1,33 +1,94 @@
-import { Request, Response } from 'express';
-import { CategoriaService } from '@/service/categoriaService';
+import { NextRequest, NextResponse } from "next/server";
+import {
+  listarCategorias,
+  buscarCategoriaPorId,
+  criarCategoria,
+  atualizarCategoria,
+  deletarCategoria,
+} from "@/service/categoriaService";
 
-// Instancia o serviço para usar seus métodos
-const categoriaService = new CategoriaService();
-
-export class CategoriaController {
-
-  // Endpoint: GET /api/categorias (Para os botões do topo)
-  async getBotoesTopo(req: Request, res: Response) {
-    try {
-      const categorias = await categoriaService.listarTodasCategorias();
-      return res.status(200).json(categorias);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ erro: "Erro ao buscar botões de categorias." });
-    }
+export async function listarCategoriasController() {
+  try {
+    const categorias = await listarCategorias();
+    return NextResponse.json(categorias);
+  } catch (error) {
+    return NextResponse.json(
+      { erro: "Erro ao listar categorias." },
+      { status: 500 }
+    );
   }
+}
 
-  // Endpoint: GET /api/servicos?categoria=2 (Para a lista de cards)
-  async getCardsTela(req: Request, res: Response) {
-    try {
-      // Pega o id da categoria da URL se houver (ex: ?categoria=2)
-      const { categoria } = req.query; 
-      
-      const cards = await categoriaService.listarCardsServicos(categoria as string);
-      return res.status(200).json(cards);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ erro: "Erro ao buscar cards de serviços." });
+export async function buscarCategoriaPorIdController(id: number) {
+  try {
+    const categoria = await buscarCategoriaPorId(id);
+
+    if (!categoria) {
+      return NextResponse.json(
+        { erro: "Categoria não encontrada." },
+        { status: 404 }
+      );
     }
+
+    return NextResponse.json(categoria);
+  } catch (error) {
+    return NextResponse.json(
+      { erro: "Erro ao buscar categoria." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function criarCategoriaController(req: NextRequest) {
+  try {
+    const dados = await req.json();
+
+    if (!dados.nome_categoria) {
+      return NextResponse.json(
+        { erro: "O nome da categoria é obrigatório." },
+        { status: 400 }
+      );
+    }
+
+    const novaCategoria = await criarCategoria(dados);
+    return NextResponse.json(novaCategoria, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { erro: "Erro ao criar categoria." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function atualizarCategoriaController(
+  id: number,
+  req: NextRequest
+) {
+  try {
+    const dados = await req.json();
+
+    const categoriaAtualizada = await atualizarCategoria(id, dados);
+
+    return NextResponse.json(categoriaAtualizada);
+  } catch (error) {
+    return NextResponse.json(
+      { erro: "Erro ao atualizar categoria." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function deletarCategoriaController(id: number) {
+  try {
+    await deletarCategoria(id);
+
+    return NextResponse.json({
+      mensagem: "Categoria deletada com sucesso.",
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { erro: "Erro ao deletar categoria." },
+      { status: 500 }
+    );
   }
 }
