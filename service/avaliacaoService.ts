@@ -69,12 +69,21 @@ export const AvaliacaoService = {
             u.nivel_acesso,
             u.status_conta,
             u.data_criacao,
-            u.is_admin
+            u.is_admin,
+
+            p.descricao_profissional,
+            p.status_verificado,
+            p.status_social,
+            p.impulsiona_perfil,
+            p.categoria_principal
 
         FROM avaliacao a
 
         INNER JOIN usuario u
             ON a.id_usuario = u.id_usuario
+
+        INNER JOIN prestador p
+            ON a.id_prestador = p.id_usuario
 
         WHERE a.id_avaliacao = ?
         `,
@@ -106,6 +115,17 @@ export const AvaliacaoService = {
                 status_conta: row.status_conta,
                 data_criacao: row.data_criacao,
                 is_admin: row.is_admin
+
+            },
+
+            prestador: {
+                id_usuario: row.id_usuario,
+                descricao_profissional: row.descricao_profissional,
+                status_verificado: row.status_verificado,
+                status_social: row.status_social,
+                impulsiona_perfil: row.impulsiona_perfil,
+                categoria_principal: row.categoria_principal,
+
             }
         };
 
