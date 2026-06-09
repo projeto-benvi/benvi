@@ -21,6 +21,7 @@ export const SolicitacaoServicoController = {
     async criar(dados: {
         id_usuario: number;
         id_prestador: number;
+        id_agenda?: number;
         endereco?: string;
         data_agendamento?: Date;
         descricao_servico?: string;

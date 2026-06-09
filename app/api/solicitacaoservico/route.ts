@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
         const id = await SolicitacaoServicoController.criar({
             id_usuario:       body.id_usuario,
             id_prestador:     body.id_prestador,
+            id_agenda:        body.id_agenda,
             endereco:         body.endereco,
             data_agendamento: body.data_agendamento ? new Date(body.data_agendamento) : undefined,
             descricao_servico: body.descricao_servico,

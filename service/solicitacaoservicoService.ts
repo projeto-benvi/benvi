@@ -168,6 +168,7 @@ export const SolicitacaoServicoService = {
     async criar(dados: {
         id_usuario: number;
         id_prestador: number;
+        id_agenda?: number;
         endereco?: string;
         data_agendamento?: Date;
         descricao_servico?: string;
@@ -199,13 +200,14 @@ export const SolicitacaoServicoService = {
         const [result] = await pool.query<ResultSetHeader>(
             `
             INSERT INTO solicitacaoservico
-                (id_usuario, id_prestador, endereco, data_solicitacao,
+                (id_usuario, id_prestador, id_agenda, endereco, data_solicitacao,
                  data_agendamento, status, descricao_servico, complemento)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
                 solicitacao.id_usuario,
                 solicitacao.id_prestador,
+                
                 solicitacao.endereco ?? null,
                 solicitacao.data_solicitacao,
                 solicitacao.data_agendamento ?? null,
