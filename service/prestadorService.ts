@@ -12,6 +12,36 @@ export const prestadorService = {
     return rows;
   },
 
+//Modifiquei essa função de busca, para o prestador trazer além das informações pessoais, também mostrar as categorias vinculadas ao Prestador.
+//Romulo
+  async buscarPorId(id: number) {
+    
+    const [rows]: any = await pool.query(
+      `SELECT p.*, u.nome, u.email, u.telefone, u.foto_perfil, u.cidade, u.status_conta
+       FROM prestador p
+       INNER JOIN usuario u ON p.id_usuario = u.id_usuario
+       WHERE p.id_usuario = ?`, [id]
+    );
+
+    const prestador = rows[0];
+
+    if (!prestador) return null;
+
+    const [categorias]: any = await pool.query(
+      `SELECT c.id_categoria, c.nome_categoria 
+       FROM tag t
+       INNER JOIN categoria c ON t.id_categoria = c.id_categoria
+       WHERE t.id_prestador = ?`, [id]
+    );
+
+    return {
+      ...prestador,
+      categorias_vinculadas: categorias
+    };
+  },
+
+
+  /* codigo original de Camille a baixo:
   async buscarPorId(id: number) {
     const [rows]: any = await pool.query(
       `SELECT p.*, u.nome, u.email, u.telefone, u.foto_perfil, u.cidade, u.status_conta
@@ -21,6 +51,7 @@ export const prestadorService = {
     );
     return rows[0] ?? null;
   },
+  */
 
   async buscarPorIdUsuario(id_usuario: number) {
     const [rows]: any = await pool.query(
