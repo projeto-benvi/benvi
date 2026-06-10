@@ -9,7 +9,7 @@ export class Servico {
   status_servico?: string;
   data_inicio?: Date;
   data_fim?: Date;
-
+ 
   constructor(dados: {
     id_servico?: number;
     id_prestador?: number;
