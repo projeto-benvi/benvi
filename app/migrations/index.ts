@@ -5,6 +5,8 @@ import { up as createPrestador } from './002_create_prestador';
 import { up as createAvaliacao } from './003_create_solicaoServico';
 import { up as createSolicitacaoServico } from './004_create_avaliacao';
 import { up as createAgenda } from './010_creat_agenda';
+import { up as creatAssinaturaPlano } from './019_assinaturaPlano';
+
 
 //A ordem de criação importa, então prestem atenção nas FK's
 const migrations = [
@@ -13,6 +15,7 @@ const migrations = [
   { name: '003_create_SolicitacaoServico', fn: createSolicitacaoServico },
   { name: '004_create_avaliacao', fn: createAvaliacao },
   { name: '010_create_agenda', fn: createAgenda },
+  { name: '019_create_assinaturaPlano', fn: creatAssinaturaPlano },
 ];
 
 export async function runMigrations(): Promise<void> {
