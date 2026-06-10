@@ -7,7 +7,7 @@ export class Prestador extends Usuario {
   status_social: string;
   impulsiona_perfil: boolean;
   categoria_principal?: string;
-
+ 
   constructor(dados: {
     // Dados obrigatórios herdados do Usuário
     id_usuario: number; nome: string; email: string; senha: string; cpf: string; data_nascimento: Date;
@@ -30,20 +30,4 @@ export class Prestador extends Usuario {
     this.categoria_principal = dados.categoria_principal;
   }
 
-  
-  static getCreateTableSQL(): string {
-    return `
-      CREATE TABLE IF NOT EXISTS prestador (
-        id_usuario INT PRIMARY KEY,
-        descricao_profissional TEXT,
-        status_verificado BOOLEAN DEFAULT FALSE,
-        status_social VARCHAR(50) DEFAULT 'ativo',
-        impulsiona_perfil BOOLEAN DEFAULT FALSE,
-        categoria_principal VARCHAR(100),
-        CONSTRAINT fk_prestador_usuario 
-          FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) 
-          ON DELETE CASCADE ON UPDATE CASCADE
-      );
-    `;
-  }
 }
