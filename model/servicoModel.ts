@@ -9,7 +9,8 @@ export class Servico {
   status_servico?: string;
   data_inicio?: Date;
   data_fim?: Date;
- 
+  imagens?: string[];
+
   constructor(dados: {
     id_servico?: number;
     id_prestador?: number;
@@ -19,6 +20,7 @@ export class Servico {
     status_servico?: string;
     data_inicio?: Date;
     data_fim?: Date;
+    imagens?: string[];
   }) {
     this.id_servico = dados.id_servico;
     this.id_prestador = dados.id_prestador;
@@ -28,6 +30,7 @@ export class Servico {
     this.status_servico = dados.status_servico ?? 'ativo';
     this.data_inicio = dados.data_inicio;
     this.data_fim = dados.data_fim;
+    this.imagens = dados.imagens ?? [];
   }
   static createTableQuery(): string {
         return `
@@ -39,7 +42,11 @@ export class Servico {
             descricao TEXT NOT NULL,
             status_servico VARCHAR(50) NOT NULL DEFAULT 'ativo',
             data_inicio DATETIME,
-            data_fim DATETIME
+            data_fim DATETIME,
+            imagens JSON,
+            CONSTRAINT fk_servico_prestador 
+              FOREIGN KEY (id_prestador) REFERENCES prestador(id_usuario) 
+              ON DELETE CASCADE ON UPDATE CASCADE
       );
     `;
   }

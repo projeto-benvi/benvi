@@ -22,7 +22,8 @@ export const usuarioController = {
       return NextResponse.json({ id_usuario: id }, { status: 201 });
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao criar usuário' },
+        { erro: 'Erro ao criar usuário', 
+          detalhes: String(e)  },
         { status: 500 }
       );
     }
@@ -40,7 +41,8 @@ export const usuarioController = {
       return NextResponse.json(usuario);
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao buscar usuário' },
+        { erro: 'Erro ao buscar usuário', 
+          detalhes: String(e)  },
         { status: 500 }
       );
     }
@@ -53,7 +55,8 @@ export const usuarioController = {
       return NextResponse.json({ mensagem: 'Atualizado com sucesso' });
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao atualizar usuário' },
+        { erro: 'Erro ao atualizar usuário', 
+          detalhes: String(e)  },
         { status: 500 }
       );
     }
@@ -65,7 +68,8 @@ export const usuarioController = {
       return NextResponse.json({ mensagem: 'Deletado com sucesso' });
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao deletar usuário' },
+        { erro: 'Erro ao deletar usuário', 
+          detalhes: String(e)  },
         { status: 500 }
       );
     }
