@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import LogoBranca from "@/assets/logo-branca.png"; 
@@ -51,7 +53,7 @@ export default function Login() {
           </button>
         </div>
 
-        {/* Bloco Central: Títulos e Formulário (Aumentado o max-w para dar mais espaço aos inputs) */}
+        {/* Bloco Central: Títulos e Formulário */}
         <div className="w-full max-w-[420px] mx-auto my-auto">
           <div className="text-center mb-10">
             <h1 className="text-[34px] font-bold text-[#1E293B] mb-2 tracking-tight">
@@ -129,10 +131,10 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Link para criar conta */}
+          {/* Link para criar conta - REDIRECIONAMENTO CORRIGIDO */}
           <div className="text-center mt-8 text-sm text-gray-500">
             <span>É novo por aqui? </span>
-            <Link href="/cadastro" className="text-[#3B82F6] font-semibold hover:underline">
+            <Link href="/cadastro/usuario" className="text-[#3B82F6] font-semibold hover:underline">
               Criar uma conta
             </Link>
           </div>
@@ -147,4 +149,4 @@ export default function Login() {
       </div>
     </section>
   );
-}
+}''
