@@ -21,6 +21,7 @@ export const usuarioController = {
       const id = await usuarioService.criar(body);
       return NextResponse.json({ id_usuario: id }, { status: 201 });
     } catch (e) {
+      console.error('ERRO DETALHADO:', e); 
       return NextResponse.json(
         { erro: 'Erro ao criar usuário', 
           detalhes: String(e)  },
