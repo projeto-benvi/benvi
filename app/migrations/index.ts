@@ -6,8 +6,9 @@ import { up as createCategoria} from './003_create_categoria';
 import { up as createSolicitacaoServico } from './008_create_solicitacaoServico';
 import { up as createAgenda } from './009_create_agenda';
 import { up as createAvaliacao } from './010_create_avaliacao';
+import { up as createConversa } from './015_create_conversa';
+import { up as createConversaMensagem } from './016_create_mensagem';
 import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
-
 
 //A ordem de criação importa, então prestem atenção nas FK's
 const migrations = [
@@ -17,6 +18,8 @@ const migrations = [
   { name: '008_create_SolicitacaoServico', fn: createSolicitacaoServico },
   { name: '009_create_agenda', fn: createAgenda },
   { name: '010_create_avaliacao', fn: createAvaliacao },
+  { name: '015_create_conversa', fn: createConversa },
+  { name: '016_create_mensagem', fn: createConversaMensagem },
   { name: '018_create_assinaturaPlano', fn: creatAssinaturaPlano },
 ];
 
