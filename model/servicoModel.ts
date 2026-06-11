@@ -32,22 +32,5 @@ export class Servico {
     this.data_fim = dados.data_fim;
     this.imagens = dados.imagens ?? [];
   }
-  static createTableQuery(): string {
-        return `
-          CREATE TABLE IF NOT EXISTS servico (
-            id_servico INT AUTO_INCREMENT PRIMARY KEY,
-            id_prestador INT NOT NULL,
-            id_categoria INT NOT NULL,
-            titulo VARCHAR(255) NOT NULL,
-            descricao TEXT NOT NULL,
-            status_servico VARCHAR(50) NOT NULL DEFAULT 'ativo',
-            data_inicio DATETIME,
-            data_fim DATETIME,
-            imagens JSON,
-            CONSTRAINT fk_servico_prestador 
-              FOREIGN KEY (id_prestador) REFERENCES prestador(id_usuario) 
-              ON DELETE CASCADE ON UPDATE CASCADE
-      );
-    `;
-  }
+
 }
