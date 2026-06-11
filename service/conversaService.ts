@@ -1,5 +1,5 @@
 // service/conversaService.ts
-import pool from '@/app/lib/dataBase';adfsdfssf //criar o inicializador na pasta lib, para criar a conexão com o banco de dados e exportar o pool para ser utilizado em outros arquivos.
+import pool from '@/app/lib/dataBase';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 interface DadosConversa {
