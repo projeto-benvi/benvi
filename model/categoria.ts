@@ -15,14 +15,4 @@ export class Categoria {
     this.descricao = dados.descricao;
   }
 
-  static getCreateTableSQL(): string {
-    return `
-      CREATE TABLE IF NOT EXISTS categoria (
-        id_categoria INT PRIMARY KEY AUTO_INCREMENT,
-        nome_categoria VARCHAR(100) NOT NULL,
-        descricao TEXT
-      );
-    `;
-  }
-
 }
