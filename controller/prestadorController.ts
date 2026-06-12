@@ -23,7 +23,8 @@ export const prestadorController = {
     } catch (e) {
       console.error('ERRO AO CRIAR PRESTADOR:', e);
       return NextResponse.json(
-        { erro: 'Erro ao criar prestador' },
+        { erro: 'Erro ao criar prestador', 
+          detalhes: String(e)  },
         { status: 500 }
       );
     }

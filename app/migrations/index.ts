@@ -3,6 +3,7 @@ import pool from '@/app/lib/dataBase';
 import { up as createUsuario }   from './001_create_usuario';
 import { up as createPrestador } from './002_create_prestador';
 import { up as createCategoria} from './003_create_categoria';
+import { up as createServico } from './004_create_servico';
 import { up as createSolicitacaoServico } from './008_create_solicitacaoServico';
 import { up as createAgenda } from './009_create_agenda';
 import { up as createAvaliacao } from './010_create_avaliacao';
@@ -15,12 +16,14 @@ const migrations = [
   { name: '001_create_usuario',   fn: createUsuario },
   { name: '002_create_prestador', fn: createPrestador },
   { name: '003_create_categoria', fn: createCategoria },
+  { name: '004_create_servico', fn: createServico },
   { name: '008_create_SolicitacaoServico', fn: createSolicitacaoServico },
   { name: '009_create_agenda', fn: createAgenda },
   { name: '010_create_avaliacao', fn: createAvaliacao },
   { name: '015_create_conversa', fn: createConversa },
   { name: '016_create_mensagem', fn: createConversaMensagem },
   { name: '018_create_assinaturaPlano', fn: creatAssinaturaPlano },
+
 ];
 
 export async function runMigrations(): Promise<void> {

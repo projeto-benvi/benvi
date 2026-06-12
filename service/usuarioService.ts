@@ -22,6 +22,7 @@ export const usuarioService = {
 
   // Cria um novo usuário (criptografa a senha)
   async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
+    console.log('Criando usuário com dados:', dados); // Log para depuração
     const senhaHash = await bcrypt.hash(dados.senha, 10);
     const [result]: any = await pool.query(
       `INSERT INTO usuario 
