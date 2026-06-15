@@ -20,7 +20,6 @@ interface UserCustom {
 }
 
 export default function SearchBar() {
-<<<<<<< HEAD
     // Usamos o 'as' para dizer ao TypeScript: "confie em mim, este objeto tem esses campos"
     const { user: currentUser } = useAuth() as { user: UserCustom | null };
     
@@ -180,7 +179,7 @@ export default function SearchBar() {
           {/* Foto de Perfil Redonda */}
           <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 relative">
             <Image
-              src={user}
+              src={avatarUsuario}
               alt="Foto usuario"
               fill
               className="object-cover"
