@@ -1,5 +1,6 @@
 import Form from "next/form"
 import Image from "next/image"
+import { Bell } from "lucide-react"
 
 import iconSearch from "@/assets/icons/search.svg"
 import iconFilter from "@/assets/icons/filter-alt-2.svg"
@@ -21,7 +22,7 @@ export default function SearchBar() {
                         alt={"icon Search"}
 
                     />
-                    <input type="text" className="border-r-2 border-gray-200 w-150" />
+                    <input type="text" className="w-150 border border-gray-200 rounded-lg outline-none focus:border-blue-400 transition-colors px-2" />
                     <Image
                         className="px-2"
                         src={iconFilter}
@@ -31,12 +32,9 @@ export default function SearchBar() {
                 </div>
 
                 <div className="flex">
-                    <Image
-                        src={iconNotification}
-                        alt="icon notificação"
-                        width={40}
-                        className="pb-7 px-2"
-                    />
+                    <button className="cursor-pointer mr-4 hover:text-[#2563EB]">
+                        <Bell/>
+                    </button>
                     <div>
                         <p>Olá, Pedro</p>
                         <p className="text-sm text-[#1F2937] text-right hover:text-[#2563EB] cursor-pointer">Cliente</p>
