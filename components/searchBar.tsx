@@ -1,9 +1,7 @@
-import Form from "next/form"
-import Image from "next/image"
-import { Bell } from "lucide-react"
+"use client";
 
 import Image from "next/image";
-import Link from "next/link"; // Mantido para navegação fluida ao perfil
+import Link from "next/link"; 
 
 // Importações de assets
 import iconSearch from "@/assets/icons/search.svg";
@@ -13,38 +11,53 @@ import iconPerfil from "@/assets/comSearchBar/nft-profile.svg";
 import iconConfig from "@/assets/comSearchBar/iconConfig.svg";
 import userPlaceholder from "@/assets/user.png";
 
-// Hook de autenticação vindo da main
+
 import { useAuth } from '@/hooks/useAuth';
 
-// Interface para silenciar o erro de "Property does not exist"
+
 interface UserCustom {
   nome?: string;
   avatar?: string;
 }
 
-                    />
-                    <input type="text" className="w-150 border border-gray-200 rounded-lg outline-none focus:border-blue-400 transition-colors px-2" />
-                    <Image
-                        className="px-2"
-                        src={iconFilter}
-                        alt={"icon Filter"}
+export default function SearchBar() {
+ 
+  const { user: currentUser } = useAuth() as { user: UserCustom | null };
+    
+  const nomeUsuario = currentUser?.nome || "Pedro";
+  const avatarUsuario = currentUser?.avatar || userPlaceholder.src;
 
-  // Lista de notificações limpa e tipada
+ 
   const notificacoes: string[] = [];
 
-                <div className="flex">
-                    <button className="cursor-pointer mr-4 hover:text-[#2563EB]">
-                        <Bell/>
-                    </button>
-                    <div>
-                        <p>Olá, Pedro</p>
-                        <p className="text-sm text-[#1F2937] text-right hover:text-[#2563EB] cursor-pointer">Cliente</p>
-                    </div>
+  return (
+    <div className="w-full bg-white">
+      <header className="border-b-2 border-gray-100 h-20 flex items-center justify-between px-10">
+        
+       
+        <div className="flex items-center border border-gray-200 rounded-xl h-11 shadow-sm w-full max-w-[440px] bg-white group focus-within:border-blue-500 transition-all">
+          <div className="pl-3 pr-2 flex items-center justify-center text-gray-400">
+            <Image src={iconSearch} alt="Buscar" width={18} height={18} />
+          </div>
+          
+          <input 
+            type="text" 
+            placeholder="Buscar serviços..."
+            className="flex-1 h-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
+          />
+          
+          <button 
+            type="button" 
+            className="px-3 border-l border-gray-200 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
+          >
+            <Image src={iconFilter} alt="Filtro" width={18} height={18} />
+          </button>
+        </div>
 
-        {/* 2. Bloco do Usuário e Notificações (Lado Direito) */}
+        
         <div className="flex items-center gap-4">
           
-          {/* MENU DROPDOWN DE NOTIFICAÇÕES */}
+          
           <div className="relative flex items-center"> 
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none p-2 hover:bg-gray-50 rounded-full transition-colors relative">
@@ -59,7 +72,7 @@ interface UserCustom {
                 )}
               </summary>
 
-              {/* Caixa do Dropdown de Notificações */}
+              
               <div className="absolute right-0 mt-3 w-64 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden p-4 animate-in fade-in slide-in-from-top-1 duration-200">
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                   Notificações
@@ -84,7 +97,7 @@ interface UserCustom {
             </details>
           </div>
 
-          {/* Info Textual Dinâmica do Usuário */}
+          
           <div className="flex flex-col text-right select-none">
             <span className="text-sm font-semibold text-gray-800 leading-tight">
               Olá, <span className="font-bold">{nomeUsuario}</span>
