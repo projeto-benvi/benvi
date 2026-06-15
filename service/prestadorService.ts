@@ -19,20 +19,22 @@ export const prestadorService = {
         u.id_usuario,
         u.nome,
         u.foto_perfil,
-        p.id_prestador,
         p.categoria_principal,
-        ROUND(COALESCE(AVG(a.nota), 0), 1) AS media_nota,
+        COALESCE(AVG(a.nota), 0) AS media_nota,
         COUNT(a.id_avaliacao) AS total_avaliacoes
        FROM usuario u
        INNER JOIN prestador p ON u.id_usuario = p.id_usuario
-       LEFT JOIN avaliacao a ON p.id_prestador = a.id_prestador
-       GROUP BY u.id_usuario, p.id_prestador
+       LEFT JOIN avaliacao a ON p.id_usuario = a.id_prestador
+       GROUP BY 
+        u.id_usuario, 
+        u.nome, 
+        u.foto_perfil, 
+        p.categoria_principal
        ORDER BY media_nota DESC, total_avaliacoes DESC
        LIMIT 10`
     );
     return rows;
   },
-
 
   async buscarPorId(id: number) {
     
