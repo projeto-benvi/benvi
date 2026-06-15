@@ -15,6 +15,20 @@ export const prestadorController = {
     }
   },
 
+ 
+  async listarDestaques() {
+    try {
+      const destaques = await prestadorService.listarDestaques();
+      return NextResponse.json(destaques, { status: 200 });
+    } catch (e) {
+      console.error('ERRO AO LISTAR DESTAQUES:', e);
+      return NextResponse.json(
+        { erro: 'Erro ao listar profissionais de destaque' },
+        { status: 500 }
+      );
+    }
+  },
+
   async criar(req: NextRequest) {
     try {
       const body = await req.json();
@@ -30,7 +44,7 @@ export const prestadorController = {
     }
   },
 
-async buscarPorId(id: number) {
+  async buscarPorId(id: number) {
     try {
       const prestador = await prestadorService.buscarPorId(id);
       if (!prestador) {
@@ -41,13 +55,14 @@ async buscarPorId(id: number) {
       }
       return NextResponse.json(prestador);
     } catch (e) {
-      console.error('ERRO AO BUSCAR PRESTADOR:', e); // adiciona essa linha
+      console.error('ERRO AO BUSCAR PRESTADOR:', e); 
       return NextResponse.json(
         { erro: 'Erro ao buscar prestador' },
         { status: 500 }
       );
     }
   },
+
   async buscarPorIdUsuario(id_usuario: number) {
     try {
       const prestador = await prestadorService.buscarPorIdUsuario(id_usuario);
