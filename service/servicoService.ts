@@ -64,12 +64,22 @@ export const servicoService = {
     return rows[0] ?? null;
   },
 
-  // Busca todos os serviços de um prestador específico
-  async buscarPorPrestador(idPrestador: number): Promise<Servico[]> {
-    const [rows] = await pool.query(
-      `SELECT * FROM servico WHERE id_prestador = ?`, [idPrestador]
+// BUSCA CORRIGIDA: Agora traz os dados do prestador junto com os serviços
+  async buscarPorPrestador(idPrestador: number): Promise<any[]> {
+    const [rows]: any = await pool.query(
+      `SELECT 
+        s.*,
+        u.nome AS nome_prestador,
+        u.foto_perfil AS foto_prestador,
+        u.cidade AS cidade_prestador,
+        p.descricao_profissional,
+        p.categoria_principal
+       FROM servico s
+       LEFT JOIN prestador p ON s.id_prestador = p.id_usuario
+       LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
+       WHERE s.id_prestador = ?`, [idPrestador]
     );
-    return rows as Servico[];
+    return rows as any[];
   },
 
   // Cria un novo serviço
