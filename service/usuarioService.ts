@@ -226,7 +226,7 @@ export const adminService = {
     return {
       usuarios: {
         total:           contagem.total_usuarios,
-        prestadores:      contagem.total_prestadores,
+        prestadores:     contagem.total_prestadores,
         usuarios_comuns: contagem.total_usuarios_comuns,
       },
       plataforma: {
@@ -272,6 +272,8 @@ export const adminService = {
     }
   },
 
+  // ─── Funções de gestão de usuários pelo Admin ──────────────────────────────
+
   /**
    * Admin cria um usuário (pode definir is_admin, nivel_acesso e status_conta).
    */
@@ -295,7 +297,7 @@ export const adminService = {
 
     const [result]: any = await pool.query(
       `INSERT INTO usuario
-        (nome, email, senha, cpf, data_nascimento, telefone, foto_perfil, city, nivel_acesso, status_conta, is_admin)
+        (nome, email, senha, cpf, data_nascimento, telefone, foto_perfil, cidade, nivel_acesso, status_conta, is_admin)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         dados.nome,
@@ -319,6 +321,7 @@ export const adminService = {
   async atualizarUsuario(id_solicitante: number, id_alvo: number, dados: Record<string, any>): Promise<void> {
     await this._verificarAdmin(id_solicitante);
 
+    // Campos que o admin não pode alterar diretamente por aqui
     const camposBloqueados = ['id_usuario', 'senha', 'data_criacao'];
     camposBloqueados.forEach(c => delete dados[c]);
 
@@ -341,10 +344,7 @@ export const adminService = {
     );
   },
 
-  /**
-   * Soft delete: marca status_conta = 'inativo' em vez de deletar o registro.
-   * Admin não pode desativar a si próprio.
-   */
+  
   async desativarUsuario(id_solicitante: number, id_alvo: number): Promise<void> {
     await this._verificarAdmin(id_solicitante);
 
