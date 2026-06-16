@@ -1,5 +1,3 @@
-// service/reporteService.ts
-
 import pool from '@/app/lib/dataBase';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { ReporteModel } from '@/model/reporteModel';

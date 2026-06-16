@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ReporteController } from '@/controller/reporteController';
+import { ParceriaController } from '@/controller/parceriaController';
 
 type Params = Promise<{ id: string }>;
 
@@ -9,11 +9,11 @@ export async function GET(
 ) {
     try {
         const { id } = await params;
-        const data = await ReporteController.buscarPorId(Number(id));
+        const data = await ParceriaController.buscarPorId(Number(id));
         return NextResponse.json(data, { status: 200 });
     } catch (error) {
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Reporte não encontrado' },
+            { error: error instanceof Error ? error.message : 'Parceria não encontrada' },
             { status: 404 }
         );
     }
@@ -26,9 +26,9 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body   = await request.json();
-        await ReporteController.atualizar(Number(id), body);
+        await ParceriaController.atualizar(Number(id), body);
         return NextResponse.json(
-            { message: 'Reporte atualizado com sucesso' },
+            { message: 'Parceria atualizada com sucesso' },
             { status: 200 }
         );
     } catch (error) {
@@ -45,17 +45,17 @@ export async function DELETE(
 ) {
     try {
         const { id }   = await params;
-        const removido = await ReporteController.remover(Number(id));
+        const removido = await ParceriaController.remover(Number(id));
 
         if (!removido) {
             return NextResponse.json(
-                { error: 'Reporte não encontrado' },
+                { error: 'Parceria não encontrada' },
                 { status: 404 }
             );
         }
 
         return NextResponse.json(
-            { message: 'Reporte removido com sucesso' },
+            { message: 'Parceria removida com sucesso' },
             { status: 200 }
         );
     } catch (error) {
