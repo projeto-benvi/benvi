@@ -1,4 +1,4 @@
-import NotificacaoServicoController from "../../../controller/notificacaoServicoController";
+import { NotificacaoServicoController } from "../../../controller/notificacaoServicoController";
 
 
 const controller = new NotificacaoServicoController();
