@@ -11,8 +11,9 @@ import { up as createNotificacao } from './011_create_notificacao';
 import { up as createAlerta } from './012_create_alerta';
 import { up as createConversa } from './015_create_conversa';
 import { up as createConversaMensagem } from './016_create_mensagem';
-import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
 import { up as createReporte } from './017_create_reporte';
+import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
+import { up as createParceria } from './019_create_parceria';
 
 //A ordem de criação importa, então prestem atenção nas FK's
 const migrations = [
@@ -29,6 +30,7 @@ const migrations = [
   { name: '016_create_mensagem', fn: createConversaMensagem },
   { name: '017_create_reporte', fn: createReporte },
   { name: '018_create_assinaturaPlano', fn: creatAssinaturaPlano },
+  { name: '019_create_parceria', fn: createParceria }
 
 ];
 
