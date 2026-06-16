@@ -1,10 +1,8 @@
 'use client';
 
-
-import { createContext, useContext } from 'react';
+import { createContext } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 
-// ── Tipo do contexto ──────────────────────────────────────────────────────────
 interface AuthContextType {
   user: {
     id: string;
@@ -26,14 +24,12 @@ export const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
-// ── Provider ──────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
 
   const carregando = status === 'loading';
   const logado = status === 'authenticated';
 
-  
   const user = session?.user
     ? {
         id: (session.user as any).id ?? '',
@@ -46,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     : null;
 
   function logout() {
+    // Limpa os cookies do NextAuth e joga para a página de login
     signOut({ callbackUrl: '/login' });
   }
 
@@ -54,10 +51,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
-// Mantém compatibilidade com o useAuth() que já existe no projeto
-export function useAuth() {
-  return useContext(AuthContext);
 }

@@ -14,9 +14,8 @@ export default function ClientLayout({
 
   const esconderSidebar =
     pathname.startsWith("/login") ||
-    pathname.startsWith("/cadastro") ||
-    pathname.startsWith("/opc_cadastro");
-
+    pathname.startsWith("/cadastro"); 
+    
   return (
    
     <SessionProvider>
