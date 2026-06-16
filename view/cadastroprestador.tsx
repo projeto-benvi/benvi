@@ -1,5 +1,5 @@
 import Image from "next/image";
-import logoBenvi from "../../assets/logo Benvi1.png";
+import logoBenvi from "../../benvi/assets/logo-Benvi1.png";
 
 import {
   FaBriefcase,

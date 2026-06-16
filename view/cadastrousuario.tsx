@@ -1,5 +1,5 @@
 import Image from "next/image";
-import logo from "@/assets/logo Benvi1.png"
+import logo from "@/assets/logo-Benvi1.png"
 import iconCadeado from "@/assets/icons/iconCadeado.svg"
 import iconCarta from "@/assets/icons/iconCarta.svg"
 import iconCpf from "@/assets/icons/iconCpf.svg"
