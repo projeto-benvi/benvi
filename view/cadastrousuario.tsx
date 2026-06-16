@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 3f816a89bf16159275c74cc5baa76f20f15e46d1
 import logo from "@/assets/logo-Benvi1.png"
 import iconCadeado from "@/assets/icons/iconCadeado.svg"
 import iconCarta from "@/assets/icons/iconCarta.svg"
