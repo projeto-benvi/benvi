@@ -1,0 +1,12 @@
+import NotificacaoServicoController from "../../../controller/notificacaoServicoController";
+
+
+const controller = new NotificacaoServicoController();
+
+export async function POST(request: Request) {
+  return controller.handleCriar(request);
+}
+
+export async function GET() {
+  return controller.handleListar();
+}

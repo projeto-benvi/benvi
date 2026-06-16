@@ -9,6 +9,7 @@ import { up as createAgenda } from './009_create_agenda';
 import { up as createAvaliacao } from './010_create_avaliacao';
 import { up as createNotificacao } from './011_create_notificacao';
 import { up as createAlerta } from './012_create_alerta';
+import { up as createNotificacaoServico } from './013_create_notificacaoServico';
 import { up as createConversa } from './015_create_conversa';
 import { up as createConversaMensagem } from './016_create_mensagem';
 import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
@@ -25,6 +26,7 @@ const migrations = [
   { name: '010_create_avaliacao', fn: createAvaliacao },
   { name: '011_create_notificacao', fn: createNotificacao },
   { name: '012_create_alerta', fn: createAlerta },
+  { name: '013_create_notificacaoServico', fn: createNotificacaoServico },
   { name: '015_create_conversa', fn: createConversa },
   { name: '016_create_mensagem', fn: createConversaMensagem },
   { name: '017_create_reporte', fn: createReporte },
