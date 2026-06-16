@@ -20,7 +20,7 @@ export const usuarioService = {
     return rows[0] ?? null;
   },
 
-  // ── busca pelo email (sem senha) ──────────────────────────────────
+
   async buscarPorEmail(email: string): Promise<Usuario | null> {
     const [rows]: any = await pool.query(
       'SELECT id_usuario, nome, email, telefone, foto_perfil, cidade, nivel_acesso, status_conta, is_admin FROM usuario WHERE email = ?',
@@ -29,8 +29,7 @@ export const usuarioService = {
     return rows[0] ?? null;
   },
 
-  // ── busca com senha (só usado internamente no login) ──────────────
-  // Separado do buscarPorEmail para nunca vazar a senha por acidente
+
   async validarLogin(email: string, senha: string): Promise<Usuario | null> {
     const [rows]: any = await pool.query(
       'SELECT * FROM usuario WHERE email = ? AND status_conta = "ativo"',
@@ -272,11 +271,7 @@ export const adminService = {
     }
   },
 
-  // ─── Funções de gestão de usuários pelo Admin ──────────────────────────────
-
-  /**
-   * Admin cria um usuário (pode definir is_admin, nivel_acesso e status_conta).
-   */
+  
   async criarUsuario(id_solicitante: number, dados: {
     nome: string;
     email: string;
@@ -365,9 +360,8 @@ export const adminService = {
     );
   },
 
-  /**
-   * Reativa um usuário que estava com status_conta = 'inativo'.
-   */
+ eativa um usuário que estava com status_conta = 'inativo'.
+
   async reativarUsuario(id_solicitante: number, id_alvo: number): Promise<void> {
     await this._verificarAdmin(id_solicitante);
 
