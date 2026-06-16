@@ -1,6 +1,15 @@
 "use client";
 
 import Image from "next/image";
+<<<<<<< HEAD
+=======
+import logo from "@/assets/logo-Benvi1.png"
+import iconCadeado from "@/assets/icons/iconCadeado.svg"
+import iconCarta from "@/assets/icons/iconCarta.svg"
+import iconCpf from "@/assets/icons/iconCpf.svg"
+import iconPessoa from "@/assets/icons/iconPessoa.svg"
+import iconTelefone from "@/assets/icons/iconTelefone.svg"
+>>>>>>> 3f816a8 (tela de editar usuario sem atualização de codigo)
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
