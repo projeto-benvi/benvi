@@ -9,32 +9,27 @@ import iconFilter from "@/assets/icons/filter-alt-2.svg";
 import iconNotification from "@/assets/icons/notification.svg";
 import iconPerfil from "@/assets/comSearchBar/nft-profile.svg";
 import iconConfig from "@/assets/comSearchBar/iconConfig.svg";
-import userPlaceholder from "@/assets/user.png";
 
 
 import { useAuth } from '@/hooks/useAuth';
 
-
-interface UserCustom {
-  nome?: string;
-  avatar?: string;
-}
-
 export default function SearchBar() {
  
-  const { user: currentUser } = useAuth() as { user: UserCustom | null };
+  const { user: currentUser } = useAuth();
     
-  const nomeUsuario = currentUser?.nome || "Pedro";
-  const avatarUsuario = currentUser?.avatar || userPlaceholder.src;
+  
+  const nomeUsuario = currentUser?.nome || "Visitante";
+  
 
- 
+  const subTitulo = currentUser?.isAdmin ? "Administrador 🛡️" : "Cliente";
+
   const notificacoes: string[] = [];
 
   return (
     <div className="w-full bg-white">
       <header className="border-b-2 border-gray-100 h-20 flex items-center justify-between px-10">
         
-       
+      
         <div className="flex items-center border border-gray-200 rounded-xl h-11 shadow-sm w-full max-w-[440px] bg-white group focus-within:border-blue-500 transition-all">
           <div className="pl-3 pr-2 flex items-center justify-center text-gray-400">
             <Image src={iconSearch} alt="Buscar" width={18} height={18} />
@@ -54,10 +49,10 @@ export default function SearchBar() {
           </button>
         </div>
 
-        
+        {/* Lado Direito: Notificações + Info Usuário */}
         <div className="flex items-center gap-4">
           
-          
+          {/* Menu Dropdown de Notificações */}
           <div className="relative flex items-center"> 
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none p-2 hover:bg-gray-50 rounded-full transition-colors relative">
@@ -72,7 +67,6 @@ export default function SearchBar() {
                 )}
               </summary>
 
-              
               <div className="absolute right-0 mt-3 w-64 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden p-4 animate-in fade-in slide-in-from-top-1 duration-200">
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                   Notificações
@@ -97,24 +91,32 @@ export default function SearchBar() {
             </details>
           </div>
 
-          
+          {/* Textos Informativos */}
           <div className="flex flex-col text-right select-none">
             <span className="text-sm font-semibold text-gray-800 leading-tight">
               Olá, <span className="font-bold">{nomeUsuario}</span>
             </span>
             <span className="text-xs text-gray-400 font-medium">
-              Cliente
+              {subTitulo}
             </span>
           </div>
 
-          {/* Foto de Perfil Dinâmica */}
-          <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 relative">
-            <Image
-              src={avatarUsuario}
-              alt="Foto usuário"
-              fill
-              className="object-cover"
-            />
+          {/* FOTO DE PERFIL DINÂMICA (Com tratamento de ausência de foto) */}
+          <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 relative shrink-0">
+            {currentUser?.avatar ? (
+              <Image
+                src={currentUser.avatar}
+                alt={`Foto de ${nomeUsuario}`}
+                fill
+                className="object-cover"
+                unoptimized={currentUser.avatar.startsWith("http")} // Evita problemas caso a imagem venha do Google
+              />
+            ) : (
+              /* Se não tiver foto, exibe a inicial do nome centralizada */
+              <div className="w-full h-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold uppercase select-none">
+                {nomeUsuario.charAt(0)}
+              </div>
+            )}
           </div>
 
           {/* Menu Dropdown de Perfil */}
