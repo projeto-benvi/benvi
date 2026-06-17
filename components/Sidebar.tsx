@@ -71,7 +71,7 @@ export default function Sidebar() {
             return (
               <button
                 key={item.label}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition cursor-pointer ${
                   item.active
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:bg-gray-100"
@@ -86,32 +86,7 @@ export default function Sidebar() {
       </div>
 
       <div className="flex flex-col gap-2">
-        {/* Bloco de Perfil do Usuário Logado */}
-        {logado && user && (
-          <div className="flex items-center gap-3 px-4 py-3 mb-2 border-b border-gray-100 pb-4">
-            {user.avatar ? (
-              <img
-                src={user.avatar}
-                alt={`Foto de ${user.nome}`}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                {user.nome.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-gray-700 truncate">
-                {user.nome}
-              </span>
-              <span className="text-xs text-gray-400 truncate">
-                {user.email}
-              </span>
-            </div>
-          </div>
-        )}
-
-        <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition text-left w-full">
+        <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <Settings size={18} />
           Configurações
         </button>
