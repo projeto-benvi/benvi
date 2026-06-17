@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import LogoBranca from "@/assets/logo-branca.png"; 
@@ -9,6 +12,41 @@ import googleicon from "@/assets/icons/googleicon.svg";
 import ilustracao from "@/assets/ilustracao_login.png"; 
 
 export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const router = useRouter();
+
+  // Função para lidar com o login de Email + Senha (MySQL)
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setErro("");
+    setCarregando(true);
+
+    const resultado = await signIn("credentials", {
+      email,
+      password,
+      redirect: false, // Evita recargas brutas de página
+    });
+
+    if (resultado?.error) {
+      setCarregando(false);
+      setErro("E-mail ou senha incorretos.");
+    } else {
+      // Login com sucesso! Força a atualização do estado e vai para a home
+      router.push("/");
+      router.refresh();
+    }
+  }
+
+  // Função para lidar com o login do Google
+  async function handleGoogleLogin() {
+    setErro("");
+    // O NextAuth já cuida do redirecionamento completo aqui
+    await signIn("google", { callbackUrl: "/" });
+  }
+
   return (
     <section className="flex w-full h-screen bg-gradient-to-b from-[#60A5FA] to-[#22C55E] overflow-hidden">
       
@@ -48,7 +86,10 @@ export default function Login() {
         
         {/* Botão de Voltar discreto no topo */}
         <div className="flex items-center justify-start pt-2">
-          <button className="text-gray-600 hover:text-gray-900 transition-colors cursor-pointer">
+          <button 
+            onClick={() => router.back()} 
+            className="text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+          >
             <span className="text-xl font-medium">&lt;</span>
           </button>
         </div>
@@ -64,8 +105,8 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Formulário */}
-          <form className="flex flex-col gap-5">
+          {/* Formulário Conectado ao Estado */}
+          <form onSubmit={handleLogin} className="flex flex-col gap-5">
             
             {/* Input Email */}
             <div className="relative">
@@ -78,8 +119,12 @@ export default function Login() {
               />
               <input
                 type="email"
+                required
+                disabled={carregando}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="seuemail@gmail.com"
-                className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-4 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 font-normal text-sm"
+                className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-4 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 font-normal text-sm disabled:opacity-60"
               />
             </div>
 
@@ -94,8 +139,12 @@ export default function Login() {
               />
               <input
                 type="password"
+                required
+                disabled={carregando}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Sua senha"
-                className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-4 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 font-normal text-sm"
+                className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-4 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 font-normal text-sm disabled:opacity-60"
               />
             </div>
 
@@ -106,12 +155,20 @@ export default function Login() {
               </Link>
             </div>
 
-            {/* Botão Entrar */}
+            {/* Mensagem de Erro Dinâmica */}
+            {erro && (
+              <p className="text-xs text-red-500 font-medium text-center bg-red-50 py-2 rounded-lg border border-red-100">
+                {erro}
+              </p>
+            )}
+
+            {/* Botão Entrar com Feedback Visual */}
             <button 
               type="submit" 
-              className="bg-[#F97316] text-white font-semibold rounded-xl py-4 mt-2 cursor-pointer hover:bg-[#EA580C] transition-colors text-base shadow-md shadow-orange-500/10"
+              disabled={carregando}
+              className="bg-[#F97316] text-white font-semibold rounded-xl py-4 mt-2 cursor-pointer hover:bg-[#EA580C] transition-colors text-base shadow-md shadow-orange-500/10 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Entrar
+              {carregando ? "Autenticando..." : "Entrar"}
             </button>
 
             {/* Divisor "ou" */}
@@ -121,17 +178,19 @@ export default function Login() {
               <div className="flex-1 h-px bg-gray-200"></div>
             </div>
 
-            {/* Botão Google */}
+            {/* Botão Google Conectado */}
             <button 
               type="button" 
-              className="bg-[#EFEFEF] text-gray-700 font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-200 transition-colors text-sm"
+              disabled={carregando}
+              onClick={handleGoogleLogin}
+              className="bg-[#EFEFEF] text-gray-700 font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-200 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Image src={googleicon} alt="Google" width={18} height={18} />
               Entrar com Google
             </button>
           </form>
 
-          {/* Link para criar conta - REDIRECIONAMENTO CORRIGIDO */}
+          {/* Link para criar conta */}
           <div className="text-center mt-8 text-sm text-gray-500">
             <span>É novo por aqui? </span>
             <Link href="/cadastro/usuario" className="text-[#3B82F6] font-semibold hover:underline">
@@ -149,4 +208,4 @@ export default function Login() {
       </div>
     </section>
   );
-}''
+}
