@@ -10,6 +10,7 @@ declare module "next-auth" {
       isAdmin: boolean;
       nivelAcesso: number;
       role: string;
+      isPrestador: boolean;
     };
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
     isAdmin?: boolean;
     nivelAcesso?: number;
     role?: string;
+    isPrestador?: boolean;
   }
 }
 
@@ -27,5 +29,6 @@ declare module "next-auth/jwt" {
     isAdmin?: boolean;
     nivelAcesso?: number;
     role?: string;
+    isPrestador?: boolean;
   }
 }
