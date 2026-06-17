@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, Star, Wrench, MessageSquareDot } from "lucide-react";
+import { ArrowLeft, Star, Wrench, MessageSquareDot } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import SearchBar from "@/components/searchBar";
@@ -116,11 +116,12 @@ export default function PerfilUsuario() {
 
       <div className="px-6 py-6 flex flex-col gap-5 w-full max-w-[1200px] mx-auto">
         
+        {/* BOTÃO VOLTAR DINÂMICO ADICIONADO AQUI */}
         <button 
           onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
-          className="flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-gray-700 w-fit transition-colors cursor-pointer"
+          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 w-fit transition-colors cursor-pointer select-none"
         >
-          <ChevronLeft size={16} />
+          <ArrowLeft size={16} />
           Voltar
         </button>
 
