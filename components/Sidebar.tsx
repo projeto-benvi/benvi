@@ -59,7 +59,7 @@ export default function Sidebar() {
             return (
               <button
                 key={item.label}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition cursor-pointer ${
                   item.active
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:bg-gray-100"
@@ -74,12 +74,12 @@ export default function Sidebar() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">
+        <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <Settings size={18} />
           Configurações
         </button>
 
-        <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">
+        <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition cursor-pointer">
           <LogOut size={18} />
           Sair
         </button>
