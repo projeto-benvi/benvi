@@ -12,8 +12,10 @@ import { up as createAlerta } from './012_create_alerta';
 import { up as createNotificacaoServico } from './013_create_notificacaoServico';
 import { up as createConversa } from './014_create_conversa';
 import { up as createConversaMensagem } from './015_create_mensagem';
-import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
 import { up as createReporte } from './017_create_reporte';
+import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
+import { up as createParceria } from './019_create_parceria';
+import { up as createCidadeAtendida } from './020_create_cidadeAtendida';
 
 //A ordem de criação importa, então prestem atenção nas FK's
 const migrations = [
@@ -30,7 +32,9 @@ const migrations = [
   { name: '014_create_conversa', fn: createConversa },
   { name: '015_create_mensagem', fn: createConversaMensagem },
   { name: '017_create_reporte', fn: createReporte },
-  { name: '018_create_assinaturaPlano', fn: creatAssinaturaPlano },
+  { name: '018_create_assinaturaPlano', fn: createAssinaturaPlano },
+  { name: '019_create_parceria', fn: createParceria },
+  { name: '020_create_cidadeAtendida', fn: createCidadeAtendida },
 
 ];
 
