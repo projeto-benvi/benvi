@@ -1,26 +1,40 @@
 
 import pool from '@/app/lib/dataBase';
-import { up as createUsuario }   from './001_create_usuario';
+import { up as createUsuario } from './001_create_usuario';
 import { up as createPrestador } from './002_create_prestador';
-import { up as createCategoria} from './003_create_categoria';
+import { up as createCategoria } from './003_create_categoria';
 import { up as createServico } from './004_create_servico';
 import { up as createSolicitacaoServico } from './008_create_solicitacaoServico';
 import { up as createAgenda } from './009_create_agenda';
 import { up as createAvaliacao } from './010_create_avaliacao';
+import { up as createNotificacao } from './011_create_notificacao';
+import { up as createAlerta } from './012_create_alerta';
+import { up as createNotificacaoServico } from './013_create_notificacaoServico';
+import { up as createConversa } from './014_create_conversa';
+import { up as createConversaMensagem } from './015_create_mensagem';
+import { up as createReporte } from './017_create_reporte';
 import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
-
-
+import { up as createParceria } from './019_create_parceria';
+import { up as createCidadeAtendida } from './020_create_cidadeAtendida';
 
 //A ordem de criação importa, então prestem atenção nas FK's
 const migrations = [
-  { name: '001_create_usuario',   fn: createUsuario },
+  { name: '001_create_usuario', fn: createUsuario },
   { name: '002_create_prestador', fn: createPrestador },
   { name: '003_create_categoria', fn: createCategoria },
   { name: '004_create_servico', fn: createServico },
   { name: '008_create_SolicitacaoServico', fn: createSolicitacaoServico },
   { name: '009_create_agenda', fn: createAgenda },
   { name: '010_create_avaliacao', fn: createAvaliacao },
-  { name: '018_create_assinaturaPlano', fn: creatAssinaturaPlano },
+  { name: '011_create_notificacao', fn: createNotificacao },
+  { name: '012_create_alerta', fn: createAlerta },
+  { name: '013_create_notificacaoServico', fn: createNotificacaoServico },
+  { name: '014_create_conversa', fn: createConversa },
+  { name: '015_create_mensagem', fn: createConversaMensagem },
+  { name: '017_create_reporte', fn: createReporte },
+  { name: '018_create_assinaturaPlano', fn: createAssinaturaPlano },
+  { name: '019_create_parceria', fn: createParceria },
+  { name: '020_create_cidadeAtendida', fn: createCidadeAtendida },
 
 ];
 

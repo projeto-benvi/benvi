@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
-import logo from "@/assets/benvi colorido 2.svg"
+import logo from "@/assets/benvi colorido 2.svg";
+import { useAuth } from "@/hooks/useAuth"; // Certifique-se de que o caminho aponta para o useAuth.ts isolado
 import {
   Home,
   Search,
@@ -39,8 +42,11 @@ const menuItems = [
 ];
 
 export default function Sidebar() {
+  // Puxamos os dados da sessão e a função de logout limpa
+  const { user, logado, logout } = useAuth();
+
   return (
-    <aside className="w-250px min-h-screen bg-white border-r border-gray-200 px-5 py-6 flex flex-col justify-between">
+    <aside className="w-[250px] min-h-screen bg-white border-r border-gray-200 px-5 py-6 flex flex-col justify-between">
       <div>
         <div className="mb-10">
           <Image

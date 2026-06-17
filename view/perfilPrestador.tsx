@@ -1,8 +1,7 @@
 import { ArrowLeft, Star } from "lucide-react";
-import SearchBar from "@/components/searchBar";
+import SearchBar from "@/components/searchBar"; 
 import { servicoService } from "@/service/servicoService";
 
-// Importação flexível do módulo de avaliações
 import * as avaliacaoModulo from "@/service/avaliacaoService";
 const AvaliacaoService = (avaliacaoModulo as any).AvaliacaoService || (avaliacaoModulo as any).avaliacaoService;
 
@@ -14,18 +13,14 @@ interface PerfilPrestadorViewProps {
 }
 
 export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewProps)  {
-  // 1. Resolve os parâmetros da URL apenas UMA vez de forma segura
- 
-  console.log("ID recebido para o perfil do prestador:", id); // Log para verificar o ID recebido
-  // Captura o ID da URL (?id=X). Se não for informado, adota 1 por padrão
+
+  console.log("ID recebido para o perfil do prestador:", id); 
   const idPrestador = id ? parseInt(id) : 1;
   console.log("Executando busca no banco para o ID:", idPrestador);
 
-  // 2. Busca os serviços vinculados a este ID
   const todosServicos = await servicoService.buscarPorPrestador(idPrestador) || [];
   const primeiroServico = todosServicos[0] as any;
 
-  // CORREÇÃO VISUAL: Se o banco não trouxer dados, mostra o ID tentado para fins de teste
   const prestador = primeiroServico ? {
     nome: primeiroServico.nome_prestador,
     foto_perfil: primeiroServico.foto_prestador,
@@ -59,6 +54,7 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
   return (
     <div className="w-full min-h-screen bg-[#F9FAFB]">
       
+      {/* CORRIGIDO: Tag agora em PascalCase para referenciar o componente customizado */}
       <SearchBar />
 
       <div className="text-[#1F2937] p-6 w-full">
