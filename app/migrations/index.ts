@@ -13,7 +13,7 @@ import { up as createNotificacaoServico } from './013_create_notificacaoServico'
 import { up as createConversa } from './014_create_conversa';
 import { up as createConversaMensagem } from './015_create_mensagem';
 import { up as createReporte } from './017_create_reporte';
-import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
+import { up as createAssinaturaPlano } from './018_create_assinaturaPlano';
 import { up as createParceria } from './019_create_parceria';
 import { up as createCidadeAtendida } from './020_create_cidadeAtendida';
 
