@@ -1,5 +1,5 @@
 import { usuarioController } from '@/controller/usuarioController';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET    /api/usuario/[id]                                   → busca por id (público)
 // PUT    /api/usuario/[id]                                   → atualiza (próprio usuário)

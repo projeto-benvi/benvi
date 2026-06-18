@@ -42,7 +42,7 @@ interface CidadeAtendida {
 }
 
 export default function AdminDashboard() {
-    const id_solicitante = 1; // ID padrão do admin
+    const id_solicitante = 3; // ID padrão do admin
 
     // Estados dos dados do Backend
     const [metrics, setMetrics] = useState<DashboardData | null>(null);
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
                         <div>
                             <p className="text-sm font-semibold text-slate-500">Usuários ativos</p>
                             <h3 className="text-3xl font-bold text-slate-900">
-                                {metrics?.usuarios.total.toLocaleString('pt-BR') || '12.000'}
+                                {metrics?.usuarios.total.toLocaleString('pt-BR') || '0'}
                             </h3>
                             {/*<p className="text-xs text-emerald-600 mt-0.5 font-medium">↑ 12,5% <span className="text-slate-400 font-normal">em relação ao mês anterior</span></p>*/}
                         </div>
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
                         <div>
                             <p className="text-sm font-semibold text-slate-500">Prestadores ativos</p>
                             <h3 className="text-3xl font-bold text-slate-900">
-                                {metrics?.usuarios.prestadores.toLocaleString('pt-BR') || '5.000'}
+                                {metrics?.usuarios.prestadores.toLocaleString('pt-BR') || '0'}
                             </h3>
                             {/*<p className="text-xs text-emerald-600 mt-0.5 font-medium">18% <span className="text-slate-400 font-normal">em relação ao mês anterior</span></p>*/}
                         </div>
@@ -176,12 +176,12 @@ export default function AdminDashboard() {
                         <div>
                             <p className="text-sm font-semibold text-slate-500">Ticktes abertos</p>
                             <h3 className="text-3xl font-bold text-slate-900">
-                                
-                                {metrics?.suporte.tickets_pendentes !== undefined && metrics.suporte.tickets_pendentes > 0
+
+                                {metrics?.suporte?.tickets_pendentes !== undefined
                                     ? metrics.suporte.tickets_pendentes.toLocaleString('pt-BR')
-                                    : tickets.filter(t => t.status.toLowerCase() === 'aberto').length > 0
-                                        ? tickets.filter(t => t.status.toLowerCase() === 'aberto').length.toLocaleString('pt-BR')
-                                        : '12.000'}
+                                    : Array.isArray(tickets)
+                                        ? tickets.filter(t => t?.status?.toLowerCase() === 'aberto').length.toLocaleString('pt-BR')
+                                        : '0'}
                             </h3>
                         </div>
                     </div>
