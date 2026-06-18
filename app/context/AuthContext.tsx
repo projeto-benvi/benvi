@@ -11,6 +11,7 @@ interface AuthContextType {
     avatar: string;
     isAdmin: boolean;
     nivelAcesso: number;
+    isPrestador: boolean;
   } | null;
   logado: boolean;
   carregando: boolean;
@@ -38,11 +39,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         avatar: session.user.image ?? '',
         isAdmin: (session.user as any).isAdmin ?? false,
         nivelAcesso: (session.user as any).nivelAcesso ?? 1,
+        isPrestador: (session.user as any).isPrestador ?? false,
       }
     : null;
 
   function logout() {
-    // Limpa os cookies do NextAuth e joga para a página de login
     signOut({ callbackUrl: '/login' });
   }
 
