@@ -1,26 +1,21 @@
-
-
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { usuarioService } from '@/service/usuarioService';
+import pool from '@/app/lib/dataBase';
+import { RowDataPacket } from 'mysql2/promise';
 
 export const authOptions: NextAuthOptions = {
   providers: [
-
-    // ── Email + Senha ────────────────────────────────────────────────────────
     CredentialsProvider({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Senha', type: 'password' },
       },
-
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Chama o service diretamente — sem fetch, sem rota intermediária
-        // O validarLogin já verifica a senha com bcrypt e retorna null se errar
         const usuario = await usuarioService.validarLogin(
           credentials.email,
           credentials.password
@@ -28,21 +23,24 @@ export const authOptions: NextAuthOptions = {
 
         if (!usuario) return null;
 
-        // O que retornar aqui vai ficar salvo no cookie de sessão (criptografado)
+        const [prestadorRows] = await pool.query<RowDataPacket[]>(
+          'SELECT id_usuario FROM prestador WHERE id_usuario = ?',
+          [usuario.id_usuario]
+        );
+
         return {
           id: String(usuario.id_usuario),
           name: usuario.nome,
           email: usuario.email,
           image: usuario.foto_perfil ?? null,
-          // Campos extras do seu banco:
           role: usuario.is_admin ? 'admin' : String(usuario.nivel_acesso),
           nivelAcesso: usuario.nivel_acesso,
           isAdmin: usuario.is_admin,
+          isPrestador: prestadorRows.length > 0,
         };
       },
     }),
 
-    // ── Google ───────────────────────────────────────────────────────────────
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -50,32 +48,34 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    // jwt() → roda ao criar/renovar o token
-    // Aqui "colamos" os campos extras (role, isAdmin) no cookie
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
         token.nivelAcesso = (user as any).nivelAcesso;
         token.isAdmin = (user as any).isAdmin;
+        token.isPrestador = (user as any).isPrestador;
       }
 
-      // Login via Google: tenta achar o usuário no banco pelo email
-      // Se não existir, cria automaticamente
       if (account?.provider === 'google') {
         const usuarioExistente = await usuarioService.buscarPorEmail(token.email!);
 
         if (usuarioExistente) {
+          const [prestadorRows] = await pool.query<RowDataPacket[]>(
+            'SELECT id_usuario FROM prestador WHERE id_usuario = ?',
+            [usuarioExistente.id_usuario]
+          );
+
           token.id = String(usuarioExistente.id_usuario);
           token.role = usuarioExistente.is_admin ? 'admin' : String(usuarioExistente.nivel_acesso);
           token.nivelAcesso = usuarioExistente.nivel_acesso;
           token.isAdmin = usuarioExistente.is_admin;
+          token.isPrestador = prestadorRows.length > 0;
         } else {
-          // Primeiro login com Google → cria o usuário no banco
           const novoId = await usuarioService.criar({
             nome: token.name!,
             email: token.email!,
-            senha: '', // sem senha (login só via Google)
+            senha: '',
             foto_perfil: token.picture ?? '',
             telefone: '',
             cpf: '',
@@ -85,36 +85,37 @@ export const authOptions: NextAuthOptions = {
             status_conta: 'ativo',
             is_admin: false,
           } as any);
+
           token.id = String(novoId);
           token.role = '1';
           token.nivelAcesso = 1;
           token.isAdmin = false;
+          token.isPrestador = false;
         }
       }
 
       return token;
     },
 
-    // session() → roda quando o frontend pede a sessão
-    // O que você colocar aqui fica acessível via useAuth() / getServerSession()
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).nivelAcesso = token.nivelAcesso;
         (session.user as any).isAdmin = token.isAdmin;
+        (session.user as any).isPrestador = token.isPrestador;
       }
       return session;
     },
   },
 
   pages: {
-    signIn: '/login', // usa sua própria tela de login
+    signIn: '/login',
   },
 
   session: {
     strategy: 'jwt',
-    maxAge: 60 * 60 * 24 * 7, // sessão dura 7 dias
+    maxAge: 60 * 60 * 24 * 7,
   },
 
   secret: process.env.AUTH_SECRET,
