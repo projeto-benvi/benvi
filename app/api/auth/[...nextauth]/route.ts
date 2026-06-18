@@ -48,7 +48,8 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
+      // Login inicial com credentials
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
@@ -57,6 +58,7 @@ export const authOptions: NextAuthOptions = {
         token.isPrestador = (user as any).isPrestador;
       }
 
+      // Login com Google
       if (account?.provider === 'google') {
         const usuarioExistente = await usuarioService.buscarPorEmail(token.email!);
 
@@ -94,6 +96,21 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // Chamado quando atualizarSessao() é disparado no frontend
+      if (trigger === 'update') {
+        const [rows] = await pool.query<RowDataPacket[]>(
+          'SELECT foto_perfil, nome FROM usuario WHERE id_usuario = ?',
+          [token.id]
+        );
+        const dadosAtualizados = (rows as any)[0];
+        if (dadosAtualizados?.foto_perfil) {
+          token.picture = dadosAtualizados.foto_perfil;
+        }
+        if (dadosAtualizados?.nome) {
+          token.name = dadosAtualizados.nome;
+        }
+      }
+
       return token;
     },
 
@@ -104,6 +121,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).nivelAcesso = token.nivelAcesso;
         (session.user as any).isAdmin = token.isAdmin;
         (session.user as any).isPrestador = token.isPrestador;
+        session.user.image = token.picture as string;
+        session.user.name = token.name as string;
       }
       return session;
     },
