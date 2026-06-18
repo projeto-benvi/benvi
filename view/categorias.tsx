@@ -27,6 +27,7 @@ interface Categoria {
   descricao?: string;
   status?: string;
   data_criacao?: Date;
+  total_prestadores?: number; 
 }
 
 export default function CategoriasView() {
@@ -36,7 +37,6 @@ export default function CategoriasView() {
   const [carregando, setCarregando] = useState<boolean>(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // 1. Definição dos Grupos (Pílulas) e quais palavras-chave pertencem a cada um
   const gruposFiltros = [
     { nome: "Todos", palavrasChave: [] },
     { nome: "Serviços domésticos", palavrasChave: ["diarista", "faxineira", "babá", "cuidador", "costureira", "lavador", "jardineiro"] },
@@ -48,13 +48,23 @@ export default function CategoriasView() {
   useEffect(() => {
     async function carregarCategorias() {
       try {
-        const response = await fetch("/api/categoria"); 
+        setCarregando(true);
+        setErro(null);
+
+        const response = await fetch(`/api/categoria?t=${new Date().getTime()}`, {
+          method: "GET",
+          headers: {
+            "Cache-Control": "no-cache"
+          }
+        }); 
+
         if (!response.ok) {
           throw new Error("Erro ao buscar as categorias do servidor.");
         }
+        
         const dados = await response.json();
         setCategorias(dados);
-        setCategoriasFiltradas(dados); // Inicialmente mostra tudo
+        setCategoriasFiltradas(dados);
       } catch (err: any) {
         setErro(err.message || "Algo deu errado.");
       } finally {
@@ -64,7 +74,6 @@ export default function CategoriasView() {
     carregarCategorias();
   }, []);
 
-  // 2. Função que lida com o clique nos filtros
   const aplicarFiltro = (nomeGrupo: string) => {
     setFiltroAtivo(nomeGrupo);
     
@@ -76,7 +85,6 @@ export default function CategoriasView() {
     const grupoSelecionado = gruposFiltros.find(g => g.nome === nomeGrupo);
     if (!grupoSelecionado) return;
 
-    // Filtra as categorias se o nome dela incluir alguma das palavras-chave do grupo
     const filtradas = categorias.filter(cat => {
       const nomeCatNormalizado = cat.nome_categoria.toLowerCase();
       return grupoSelecionado.palavrasChave.some(palavra => nomeCatNormalizado.includes(palavra));
@@ -85,11 +93,9 @@ export default function CategoriasView() {
     setCategoriasFiltradas(filtradas);
   };
 
-  // Mapeamento visual avançado para dar um ícone correto a cada profissão da sua imagem
   const renderIcon = (nome: string) => {
     const props = { className: "text-gray-700 w-12 h-12 mb-4" };
     const n = nome.toLowerCase().trim();
-
 
     if (n.includes("pintor") || n.includes("pintura")) return <FaPaintRoller {...props} />;
     if (n.includes("eletricista")) return <FaWrench {...props} className="text-yellow-500 w-12 h-12 mb-4" />;
@@ -102,11 +108,9 @@ export default function CategoriasView() {
     if (n.includes("manicure") || n.includes("cabeleireiro") || n.includes("maquiador")) return <FaCut {...props} />;
     if (n.includes("personal")) return <FaDumbbell {...props} />;
     if (n.includes("professor")) return <FaBookOpen {...props} />;
- 
     if (n.includes("babá")) return <FaBaby {...props} />;
     if (n.includes("lavador")) return <FaCar {...props} />;
     if (n.includes("motoboy")) return <FaMotorcycle {...props} />;
-
     if (n.includes("confeiteira") || n.includes("decorador")) return <FaBirthdayCake {...props} />;
     if (n.includes("frete") || n.includes("mudança")) return <FaTruck {...props} />;
 
@@ -117,7 +121,6 @@ export default function CategoriasView() {
     <section className="flex w-full h-screen bg-[#F8FAFC] overflow-hidden">
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         
-        {/* Header Superior */}
         <header className="w-full bg-white border-b border-gray-100 px-8 py-4 flex justify-between items-center shrink-0">
           <div className="w-full max-w-[480px] relative">
             <input 
@@ -137,7 +140,6 @@ export default function CategoriasView() {
           </div>
         </header>
 
-        {/* Container Principal */}
         <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
           <div className="max-w-[1200px] w-full mx-auto">
             
@@ -146,14 +148,13 @@ export default function CategoriasView() {
               <p className="text-gray-400 text-sm">Encontre o profissional ideal que você precisa</p>
             </div>
 
-            {/* 3. Renderização Dinâmica dos Botões de Filtros */}
             <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-none">
               {gruposFiltros.map((grupo) => (
                 <button
                   key={grupo.nome}
                   onClick={() => aplicarFiltro(grupo.nome)}
                   className={`px-5 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
-                    filtroAtivo === grupo.nome
+                    filtroAtivo === grupo.nome // 👈 Corrigido de group.nome para grupo.nome!
                       ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
                       : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
                   }`}
@@ -173,7 +174,6 @@ export default function CategoriasView() {
               <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100">{erro}</div>
             )}
 
-            {/* 4. Grid Dinâmica utilizando o estado 'categoriasFiltradas' */}
             {!carregando && !erro && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {categoriasFiltradas.map((cat) => (
@@ -189,12 +189,11 @@ export default function CategoriasView() {
                     </p>
                     
                     <div className="text-[11px] font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full mt-auto flex items-center gap-1">
-                      <span>👤 Disponíveis na plataforma</span>
+                      <span>👤 {cat.total_prestadores || 0} Disponíveis na plataforma</span>
                     </div>
                   </div>
                 ))}
 
-                {/* Mensagem caso o filtro selecionado não encontre nenhuma categoria */}
                 {categoriasFiltradas.length === 0 && (
                   <div className="col-span-full text-center py-12">
                     <p className="text-gray-400 font-medium">Nenhuma categoria encontrada para este filtro.</p>

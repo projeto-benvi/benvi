@@ -1,18 +1,27 @@
 import pool from "@/app/lib/dataBase";
 import { Categoria } from "@/model/categoria";
 
-
+// service/categoriaService.ts
 export async function listarCategorias() {
+  // Esta query unifica os prestadores mapeados via categoria_principal
+  // com as tags secundárias salvas na tabela intermediária 'tag'
   const query = `
     SELECT 
       c.id_categoria, 
       c.nome_categoria, 
       c.descricao, 
-      c.status, 
-      c.data_criacao,
-      COUNT(p.id_usuario) AS total_prestadores -- 👈 Conta quantos prestadores estão nessa categoria
+      COUNT(DISTINCT todos.id_usuario) AS total_prestadores
     FROM categoria c
-    LEFT JOIN prestador p ON p.id_categoria_principal = c.id_categoria -- 👈 Junta com a tabela de prestadores
+    LEFT JOIN (
+      SELECT id_usuario, categoria_principal AS id_categoria 
+      FROM prestador 
+      WHERE categoria_principal IS NOT NULL
+      
+      UNION ALL
+      
+      SELECT id_prestador AS id_usuario, id_categoria 
+      FROM tag
+    ) AS todos ON todos.id_categoria = c.id_categoria
     GROUP BY c.id_categoria
     ORDER BY c.nome_categoria ASC
   `;
@@ -20,6 +29,7 @@ export async function listarCategorias() {
   const [rows] = await pool.query(query);
   return rows;
 }
+
 
 export async function buscarCategoriaPorId(id: number) {
   const [rows]: any = await pool.query(
@@ -69,7 +79,6 @@ export async function deletarCategoria(id: number) {
   };
 }
 
-// FUNÇÃO CORRIGIDA COM PREVENÇÃO DE DUPLICIDADE E TODAS AS CATEGORIAS DA IMAGEM
 export async function popularCategoriasIniciais() {
   const listaCategorias = [
     { nome_categoria: "Pedreiro", descricao: "Executa a alvenaria, revestimentos, concretagem e acabamentos gerais." },
@@ -102,18 +111,15 @@ export async function popularCategoriasIniciais() {
     { nome_categoria: "Costureira / Ajustes de Roupas", descricao: "Consertos, barras, ajustes de medidas e confecção de roupas sob medida." },
     { nome_categoria: "Confeiteira / Bolos e Doces", descricao: "Produção de bolos artísticos, docinhos para festas e sobremesas." },
     { nome_categoria: "Decorador(a) de Eventos", descricao: "Planejamento visual, ornamentação e arranjos decorativos para festas." },
-    { nome_categoria: "Social Media / Gestor de Redes Sociais", descricao: "Gerenciamento de perfis profissionais e estratégias de engajamento." }
+    { nome_categoria: "Social Media / Gestor de Redes Sociais", descricao: "Gerenciamento de profiles profissionais e estratégias de engajamento." }
   ];
 
-  // Loop corrigido com validação anti-duplicação
   for (const cat of listaCategorias) {
-    // 1. Verifica se a categoria com esse nome exato já existe na tabela
     const [existente]: any = await pool.query(
       "SELECT id_categoria FROM categoria WHERE nome_categoria = ?",
       [cat.nome_categoria]
     );
 
-    // 2. Se o array retornado for vazio (length === 0), significa que não existe. Pode inserir!
     if (existente.length === 0) {
       await pool.query(
         `INSERT INTO categoria (nome_categoria, descricao) 
@@ -123,5 +129,5 @@ export async function popularCategoriasIniciais() {
     }
   }
 
-  return { mensagem: "Categorias sincronizadas e atualizadas com sucesso no banco de dados!" };
+  return { mensagem: "Categorias sincronizadas e updated com sucesso no banco de dados!" };
 }
