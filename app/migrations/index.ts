@@ -4,6 +4,7 @@ import { up as createUsuario } from './001_create_usuario';
 import { up as createPrestador } from './002_create_prestador';
 import { up as createCategoria } from './003_create_categoria';
 import { up as createServico } from './004_create_servico';
+import { up as createTag} from './006_create_tag';
 import { up as createSolicitacaoServico } from './008_create_solicitacaoServico';
 import { up as createAgenda } from './009_create_agenda';
 import { up as createAvaliacao } from './010_create_avaliacao';
@@ -22,6 +23,7 @@ const migrations = [
   { name: '002_create_prestador', fn: createPrestador },
   { name: '003_create_categoria', fn: createCategoria },
   { name: '004_create_servico', fn: createServico },
+  { name: '006_create_tag', fn: createTag},
   { name: '008_create_SolicitacaoServico', fn: createSolicitacaoServico },
   { name: '009_create_agenda', fn: createAgenda },
   { name: '010_create_avaliacao', fn: createAvaliacao },
@@ -30,6 +32,7 @@ const migrations = [
   { name: '014_create_conversa', fn: createConversa },
   { name: '015_create_mensagem', fn: createConversaMensagem },
   { name: '016_create_ticketSuporte', fn: createTicketSuporte },
+  { name: '017_create_reporte', fn: createReporte},
   { name: '018_create_assinaturaPlano', fn: creatAssinaturaPlano },
   { name: '019_create_parceria', fn: createParceria }
 
