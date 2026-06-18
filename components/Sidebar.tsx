@@ -21,36 +21,30 @@ import {
 } from "lucide-react";
 
 export default function Sidebar() {
-  // Puxamos os dados da sessão e a função de logout do hook de autenticação
   const { user, logado, logout } = useAuth();
-  
-  // Estados para o comportamento responsivo e o aviso de sair
+
   const [confirmandoSair, setConfirmandoSair] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
 
-  // Filtra e reconstrói a lista de links baseado no isPrestador
   const obterItensMenu = () => {
     const itensBase = [
       { label: "Início", icon: Home, active: true },
       { label: "Mensagens", icon: MessageCircle, active: false },
     ];
 
-    // Forçamos o 'as any' para ignorar o erro de tipagem temporária do objeto user
-    if ((user as any)?.isPrestador) {
-      // Menu exclusivo do Prestador
+    if (user?.isPrestador) {
       return [
-        itensBase[0], // Início
+        itensBase[0],
         { label: "Meus serviços", icon: ShoppingBag, active: false },
-        itensBase[1], // Mensagens
+        itensBase[1],
         { label: "Agendamentos", icon: CalendarDays, active: false },
         { label: "Avaliações", icon: Star, active: false },
       ];
     } else {
-      // Menu padrão do Cliente / Usuário comum
       return [
-        itensBase[0], // Início
+        itensBase[0],
         { label: "Buscar serviços", icon: Search, active: false },
-        itensBase[1], // Mensagens
+        itensBase[1],
         { label: "Favoritos", icon: Heart, active: false },
         { label: "Meus pedidos", icon: Briefcase, active: false },
       ];
@@ -61,7 +55,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* BOTÃO HAMBÚRGUER: Abre o menu lateral em telas mobile (menores que lg) */}
       <button
         onClick={() => setMenuAberto(true)}
         className="lg:hidden fixed top-5 left-5 z-40 bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 transition cursor-pointer flex items-center justify-center text-gray-700"
@@ -69,7 +62,6 @@ export default function Sidebar() {
         <Menu size={22} />
       </button>
 
-      {/* OVERLAY ESCURO DE BACKGROUND: Fecha a barra lateral se clicar fora */}
       {menuAberto && (
         <div
           onClick={() => setMenuAberto(false)}
@@ -77,13 +69,11 @@ export default function Sidebar() {
         />
       )}
 
-      {/* COMPONENTE DA SIDEBAR FLUTUANTE / FIXA */}
       <aside
         className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 px-5 py-6 flex flex-col justify-between select-none z-50 w-[250px] transition-transform duration-300 ease-in-out
           lg:sticky lg:translate-x-0 ${menuAberto ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div>
-          {/* Topo da barra: Logotipo Benvi e X para fechar no Mobile */}
           <div className="flex items-center justify-between mb-10">
             <Image
               src={logo}
@@ -100,15 +90,13 @@ export default function Sidebar() {
             </button>
           </div>
 
-          {/* Links de navegação construídos de forma condicional */}
           <nav className="flex flex-col gap-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
-
               return (
                 <button
                   key={item.label}
-                  onClick={() => setMenuAberto(false)} // Fecha a barra ao trocar de página no celular
+                  onClick={() => setMenuAberto(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition cursor-pointer ${
                     item.active
                       ? "bg-blue-100 text-blue-700"
@@ -123,7 +111,6 @@ export default function Sidebar() {
           </nav>
         </div>
 
-        {/* Rodapé: Informações básicas da conta e controles */}
         <div className="flex flex-col gap-2">
           {logado && user && (
             <div className="flex items-center gap-3 px-4 py-3 mb-2 border-b border-gray-100 pb-4">
@@ -154,7 +141,6 @@ export default function Sidebar() {
             Configurações
           </button>
 
-          {/* Botão de Saída com Pop-up de segurança embutido */}
           {!confirmandoSair ? (
             <button
               onClick={() => setConfirmandoSair(true)}
