@@ -3,11 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Camera, Trash2, Star, X, AlertTriangle } from 'lucide-react';
 
-export default function EditarPerfilComponent() {
-
-  //ATENÇÃO: O usuário está fixado como 1, para testes. Modificar para o usuário que efetuou o login.
-  const idUsuario = 1;
-
+export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -22,6 +18,8 @@ export default function EditarPerfilComponent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!idUsuario) return;
+
     async function carregarDadosDoUsuario() {
       try {
         const resposta = await fetch(`/api/usuario/${idUsuario}`);
@@ -43,6 +41,10 @@ export default function EditarPerfilComponent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!idUsuario) {
+      alert("Erro: ID do usuário não encontrado.");
+      return;
+    }
     try {
       const dadosParaAtualizar: Record<string, any> = { nome, email, telefone, cidade };
       if (data_nascimento) dadosParaAtualizar.data_nascimento = data_nascimento;
@@ -57,7 +59,7 @@ export default function EditarPerfilComponent() {
         alert('Perfil atualizado com sucesso!');
       } else {
         const erroDados = await resposta.json();
-        alert(`Erro no servidor: ${erroDados.erro || 'Falha ao atualizar.'}`);
+        alert(`Erro ao salvar: ${erroDados.erro || 'Erro ao atualizar usuário'}`);
       }
     } catch (error) {
       console.error(error);
@@ -66,21 +68,17 @@ export default function EditarPerfilComponent() {
 
   const handleExcluirConta = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!senhaConfirmacaoExcluir) {
       alert('Por favor, digite sua senha para confirmar.');
       return;
     }
-
     try {
       const resposta = await fetch(`/api/usuario/${idUsuario}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ senha: senhaConfirmacaoExcluir }),
       });
-
       const resultado = await resposta.json();
-
       if (resposta.ok) {
         alert('Sua conta foi excluída permanentemente.');
         setModalExcluirAberto(false);
@@ -89,15 +87,13 @@ export default function EditarPerfilComponent() {
         alert(`Erro ao excluir: ${resultado.erro || 'Não foi possível concluir a ação.'}`);
       }
     } catch (error) {
-      console.error("Erro na requisição DELETE:", error);
-      alert('Erro de rede ao tentar excluir a conta.');
+      console.error(error);
     }
   };
 
   return (
     <div className="w-full text-gray-800 font-sans min-h-screen bg-white relative">
       <main className="p-4 sm:p-10 pl-6 sm:pl-10 max-w-7xl w-full mx-0 grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-16">
-        
         <section className="lg:col-span-3 space-y-6 sm:space-y-8">
           <button type="button" className="flex items-center gap-2.5 text-base text-gray-500 hover:text-gray-700 font-semibold transition-colors">
             <ArrowLeft size={18} /> Voltar
@@ -105,7 +101,7 @@ export default function EditarPerfilComponent() {
 
           <div className="space-y-1.5">
             <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Editar Perfil</h1>
-            <p className="text-sm sm:text-base text-gray-500">Atualize as suas informações pessoais</p>
+            <p className="text-sm sm:text-base text-gray-500">Atualize as suas informações pessoais (ID: {idUsuario})</p>
           </div>
 
           <div className="border-b border-gray-200">
@@ -199,7 +195,6 @@ export default function EditarPerfilComponent() {
               <button type="button" className="w-full flex items-center gap-3.5 px-3 py-3.5 text-base text-gray-700 font-semibold hover:bg-gray-50 rounded-xl transition-colors border-b border-gray-50">
                 <span className="text-xl">🛠️</span> Prestar serviço
               </button>
-              
               <button type="button" onClick={() => setModalExcluirAberto(true)} className="w-full flex items-center gap-3.5 px-3 py-3.5 text-base text-red-600 font-semibold hover:bg-red-50 rounded-xl transition-colors">
                 <Trash2 size={20} className="text-red-500" /> Excluir conta
               </button>
