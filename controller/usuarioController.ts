@@ -1,6 +1,8 @@
 import { usuarioService } from '@/service/usuarioService';
 import { adminService } from '@/service/usuarioService';
 import { NextRequest, NextResponse } from 'next/server';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
 // Helper para extrair id_solicitante e retornar erro padronizado
 function getIdSolicitante(req: NextRequest): number | null {
@@ -49,11 +51,70 @@ export const usuarioController = {
     }
   },
 
+  // SALVAMENTO REAL DA FOTO LOCALMENTE CONFIGURADO AQUI:
   async atualizar(id: number, req: NextRequest) {
     try {
-      const body = await req.json();
-      await usuarioService.atualizar(id, body);
-      return NextResponse.json({ mensagem: 'Atualizado com sucesso' });
+      const data = await req.formData();
+
+      const nome = data.get("nome")?.toString();
+      const telefone = data.get("telefone")?.toString();
+      const cidade = data.get("cidade")?.toString();
+      const estado = data.get("estado")?.toString();
+      const sobreVoce = data.get("sobreVoce")?.toString();
+      const dataNascimentoString = data.get("dataNascimento")?.toString();
+
+      const avatarFile = data.get("avatar") as File | null;
+      let avatarUrl = undefined;
+
+      // Se o usuário enviou um arquivo de imagem
+      if (avatarFile && avatarFile.size > 0) {
+        const bytes = await avatarFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Gera um nome único para o arquivo evitar conflitos de cache
+        const extensao = avatarFile.name.split('.').pop();
+        const nomeArquivo = `avatar-${id}-${Date.now()}.${extensao}`;
+        
+        // Caminho da pasta public/uploads
+        const caminhoDiretorio = path.join(process.cwd(), 'public', 'uploads');
+        
+        // Garante que a pasta 'uploads' existe antes de salvar
+        try {
+          await mkdir(caminhoDiretorio, { recursive: true });
+        } catch (err) {
+          // Pasta já existe ou erro ignorável
+        }
+
+        const caminhoCompleto = path.join(caminhoDiretorio, nomeArquivo);
+
+        // Escreve o arquivo fisicamente no disco do seu computador
+        await writeFile(caminhoCompleto, buffer);
+
+        // Esta é a URL pública que o navegador lerá (aponta para public/uploads/...)
+        avatarUrl = `/uploads/${nomeArquivo}`;
+      }
+
+      const dadosParaAtualizar: any = {
+        nome,
+        telefone,
+        cidade,
+        estado,
+        sobreVoce,
+        dataNascimento: dataNascimentoString ? new Date(dataNascimentoString) : undefined,
+      };
+
+      // Se gerou um link de imagem, repassa para salvar na coluna foto_perfil do banco
+      if (avatarUrl) {
+        dadosParaAtualizar.avatar = avatarUrl;
+      }
+
+      await usuarioService.atualizar(id, dadosParaAtualizar);
+      
+      return NextResponse.json({ 
+        sucesso: true, 
+        mensagem: 'Atualizado com sucesso',
+        avatar: avatarUrl // Devolve o link para o front-end atualizar a tela na hora
+      });
     } catch (e) {
       return NextResponse.json({ erro: 'Erro ao atualizar usuário', detalhes: String(e) }, { status: 500 });
     }

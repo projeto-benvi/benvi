@@ -65,10 +65,42 @@ export const usuarioService = {
     return result.insertId;
   },
 
-  async atualizar(id: number, dados: Partial<Usuario>): Promise<void> {
-    const campos = Object.keys(dados).map((k) => `${k} = ?`).join(', ');
-    const valores = [...Object.values(dados), id];
-    await pool.query(`UPDATE usuario SET ${campos} WHERE id_usuario = ?`, valores);
+  // ─── AJUSTADO: Atualização inteligente integrada ao Banco de Dados ───
+  async atualizar(id: number, dados: Record<string, any>): Promise<void> {
+    // 1. Mapeia a propriedade 'avatar' vinda do controller para a coluna 'foto_perfil' do MySQL
+    if ('avatar' in dados) {
+      dados.foto_perfil = dados.avatar;
+      delete dados.avatar;
+    }
+
+    // 2. Se houver biografia (sobreVoce), salvamos na tabela 'prestador' separadamente
+    if ('sobreVoce' in dados) {
+      const sobreVoce = dados.sobreVoce;
+      delete dados.sobreVoce; // Remove para não quebrar a query da tabela usuario
+
+      if (sobreVoce !== undefined) {
+        // Atualiza a descrição na tabela do prestador caso ele exista
+        await pool.query(
+          'UPDATE prestador SET descricao_profissional = ? WHERE id_usuario = ?',
+          [sobreVoce, id]
+        );
+      }
+    }
+
+    // 3. Remove campos vazios ou indefinidos para não sobrescrever dados corretos no banco
+    Object.keys(dados).forEach((key) => {
+      if (dados[key] === undefined || dados[key] === '') {
+        delete dados[key];
+      }
+    });
+
+    // Se restou algum campo para atualizar na tabela 'usuario'
+    if (Object.keys(dados).length > 0) {
+      const campos = Object.keys(dados).map((k) => `${k} = ?`).join(', ');
+      const valores = [...Object.values(dados), id];
+
+      await pool.query(`UPDATE usuario SET ${campos} WHERE id_usuario = ?`, valores);
+    }
   },
 
   async deletar(id: number): Promise<void> {
