@@ -17,7 +17,14 @@ import {
   Menu,
   Briefcase,
   CalendarDays,
-  ShoppingBag
+  ShoppingBag,
+  LayoutDashboard,
+  Users,
+  Wrench,
+  HandHeart,
+  Ticket,
+  Bell,
+  Handshake,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -27,28 +34,35 @@ export default function Sidebar() {
   const [menuAberto, setMenuAberto] = useState(false);
 
   const obterItensMenu = () => {
-    const itensBase = [
-      { label: "Início", icon: Home, active: true },
-      { label: "Mensagens", icon: MessageCircle, active: false },
-    ];
+    if (user?.isAdmin) {
+      return [
+        { label: "Dashboard", icon: LayoutDashboard, active: true },
+        { label: "Usuários", icon: Users, active: false },
+        { label: "Prestadores", icon: Wrench, active: false },
+        { label: "Vulnerab. social", icon: HandHeart, active: false },
+        { label: "Tickets", icon: Ticket, active: false },
+        { label: "Alertas", icon: Bell, active: false },
+        { label: "Parcerias", icon: Handshake, active: false },
+      ];
+    }
 
     if (user?.isPrestador) {
       return [
-        itensBase[0],
+        { label: "Início", icon: Home, active: true },
         { label: "Meus serviços", icon: ShoppingBag, active: false },
-        itensBase[1],
+        { label: "Mensagens", icon: MessageCircle, active: false },
         { label: "Agendamentos", icon: CalendarDays, active: false },
         { label: "Avaliações", icon: Star, active: false },
       ];
-    } else {
-      return [
-        itensBase[0],
-        { label: "Buscar serviços", icon: Search, active: false },
-        itensBase[1],
-        { label: "Favoritos", icon: Heart, active: false },
-        { label: "Meus pedidos", icon: Briefcase, active: false },
-      ];
     }
+
+    return [
+      { label: "Início", icon: Home, active: true },
+      { label: "Buscar serviços", icon: Search, active: false },
+      { label: "Mensagens", icon: MessageCircle, active: false },
+      { label: "Favoritos", icon: Heart, active: false },
+      { label: "Meus pedidos", icon: Briefcase, active: false },
+    ];
   };
 
   const menuItems = obterItensMenu();
