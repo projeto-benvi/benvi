@@ -1,5 +1,7 @@
 import { usuarioController } from '@/controller/usuarioController';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import pool from '@/app/lib/dataBase';
+import bcrypt from 'bcryptjs';
 
 // GET    /api/usuario/[id]                                   → busca por id (público)
 // PUT    /api/usuario/[id]                                   → atualiza (próprio usuário)
@@ -39,8 +41,37 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await params;
-  return usuarioController.deletar(Number(id));
+  try {
+    const id = Number(params.id);
+    const { senha } = await req.json(); 
+
+    if (!senha) {
+      return NextResponse.json({ erro: 'A senha é obrigatória para excluir a conta.' }, { status: 400 });
+    }
+
+   
+    const [rows]: any = await pool.query(
+      'SELECT senha FROM usuario WHERE id_usuario = ?', [id]
+    );
+    const usuario = rows[0];
+
+    if (!usuario) {
+      return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 });
+    }
+
+    
+    const senhaCorreta = await bcrypt.compare(senha, usuario.senha);
+    if (!senhaCorreta) {
+      return NextResponse.json({ erro: 'Senha incorreta. Ação cancelada.' }, { status: 400 });
+    }
+
+    
+    return usuarioController.deletar(id);
+
+  } catch (error) {
+    console.error('Erro ao processar exclusão de conta:', error);
+    return NextResponse.json({ erro: 'Erro interno ao tentar deletar o usuário.' }, { status: 500 });
+  }
 }
