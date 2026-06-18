@@ -51,69 +51,82 @@ export const usuarioController = {
     }
   },
 
-  // SALVAMENTO REAL DA FOTO LOCALMENTE CONFIGURADO AQUI:
   async atualizar(id: number, req: NextRequest) {
     try {
-      const data = await req.formData();
-
-      const nome = data.get("nome")?.toString();
-      const telefone = data.get("telefone")?.toString();
-      const cidade = data.get("cidade")?.toString();
-      const estado = data.get("estado")?.toString();
-      const sobreVoce = data.get("sobreVoce")?.toString();
-      const dataNascimentoString = data.get("dataNascimento")?.toString();
-
-      const avatarFile = data.get("avatar") as File | null;
+      let nome, telefone, cidade, estado, sobreVoce, dataNascimentoString;
+      let is_admin = undefined;
+      let avatarFile = null;
       let avatarUrl = undefined;
 
-      // Se o usuário enviou um arquivo de imagem
+      // 1. Detecta dinamicamente o tipo de requisição (JSON ou FormData)
+      const contentType = req.headers.get("content-type") || "";
+
+      if (contentType.includes("multipart/form-data")) {
+        // Se vier do Front-end (com ou sem foto de perfil)
+        const data = await req.formData();
+        nome = data.get("nome")?.toString();
+        telefone = data.get("telefone")?.toString();
+        cidade = data.get("cidade")?.toString();
+        estado = data.get("estado")?.toString();
+        sobreVoce = data.get("sobreVoce")?.toString();
+        dataNascimentoString = data.get("dataNascimento")?.toString();
+        
+        const adminCheck = data.get("is_admin");
+        if (adminCheck !== null && adminCheck !== undefined) {
+          is_admin = adminCheck.toString() === "true" || adminCheck.toString() === "1";
+        }
+        
+        avatarFile = data.get("avatar") as File | null;
+      } else {
+        // Se vier do Thunder Client como JSON puro (Ex: {"is_admin": true})
+        const body = await req.json();
+        nome = body.nome;
+        telefone = body.telefone;
+        cidade = body.cidade;
+        estado = body.estado;
+        sobreVoce = body.sobreVoce;
+        dataNascimentoString = body.dataNascimento;
+        is_admin = body.is_admin;
+      }
+
+      // 2. Lógica de salvamento físico da foto (mantida exatamente como você criou)
       if (avatarFile && avatarFile.size > 0) {
         const bytes = await avatarFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Gera um nome único para o arquivo evitar conflitos de cache
         const extensao = avatarFile.name.split('.').pop();
         const nomeArquivo = `avatar-${id}-${Date.now()}.${extensao}`;
         
-        // Caminho da pasta public/uploads
         const caminhoDiretorio = path.join(process.cwd(), 'public', 'uploads');
         
-        // Garante que a pasta 'uploads' existe antes de salvar
         try {
           await mkdir(caminhoDiretorio, { recursive: true });
-        } catch (err) {
-          // Pasta já existe ou erro ignorável
-        }
+        } catch (err) {}
 
         const caminhoCompleto = path.join(caminhoDiretorio, nomeArquivo);
-
-        // Escreve o arquivo fisicamente no disco do seu computador
         await writeFile(caminhoCompleto, buffer);
-
-        // Esta é a URL pública que o navegador lerá (aponta para public/uploads/...)
         avatarUrl = `/uploads/${nomeArquivo}`;
       }
 
-      const dadosParaAtualizar: any = {
-        nome,
-        telefone,
-        cidade,
-        estado,
-        sobreVoce,
-        dataNascimento: dataNascimentoString ? new Date(dataNascimentoString) : undefined,
-      };
+      // 3. Monta dinamicamente os campos que realmente foram enviados para atualizar
+      const dadosParaAtualizar: any = {};
+      if (nome !== undefined) dadosParaAtualizar.nome = nome;
+      if (telefone !== undefined) dadosParaAtualizar.telefone = telefone;
+      if (cidade !== undefined) dadosParaAtualizar.cidade = cidade;
+      if (estado !== undefined) dadosParaAtualizar.estado = estado;
+      if (sobreVoce !== undefined) dadosParaAtualizar.sobreVoce = sobreVoce;
+      if (is_admin !== undefined) dadosParaAtualizar.is_admin = is_admin; // <-- Crucial para o seu teste
+      if (dataNascimentoString) dadosParaAtualizar.dataNascimento = new Date(dataNascimentoString);
+      if (avatarUrl) dadosParaAtualizar.avatar = avatarUrl;
 
-      // Se gerou um link de imagem, repassa para salvar na coluna foto_perfil do banco
-      if (avatarUrl) {
-        dadosParaAtualizar.avatar = avatarUrl;
-      }
-
+      // Executa a query no banco através do seu service
       await usuarioService.atualizar(id, dadosParaAtualizar);
       
       return NextResponse.json({ 
         sucesso: true, 
         mensagem: 'Atualizado com sucesso',
-        avatar: avatarUrl // Devolve o link para o front-end atualizar a tela na hora
+        avatar: avatarUrl,
+        dadosAtualizados: dadosParaAtualizar
       });
     } catch (e) {
       return NextResponse.json({ erro: 'Erro ao atualizar usuário', detalhes: String(e) }, { status: 500 });
