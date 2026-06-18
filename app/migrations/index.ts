@@ -37,7 +37,7 @@ const migrations = [
   { name: '016_create_ticketSuporte', fn: createTicketSuporte },
   { name: '017_create_reporte', fn: createReporte},
   { name: '018_create_assinaturaPlano', fn: createAssinaturaPlano },
-  { name: '019_create_parceria', fn: createParceria }
+  { name: '019_create_parceria', fn: createParceria },
   { name: '017_create_reporte', fn: createReporte },
   { name: '018_create_assinaturaPlano', fn: createAssinaturaPlano },
   { name: '019_create_parceria', fn: createParceria },
