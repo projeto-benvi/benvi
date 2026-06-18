@@ -21,6 +21,15 @@ export async function PUT(
   return servicoController.atualizar(Number(resolvedParams.id), req);
 }
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: RouteContext
+) {
+  const resolvedParams = await params;
+  // Repassa para o método atualizar do seu controller
+  return servicoController.atualizar(Number(resolvedParams.id), req);
+}
+
 export async function DELETE(
   _: NextRequest,
   { params }: RouteContext

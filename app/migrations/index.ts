@@ -10,12 +10,13 @@ import { up as createAgenda } from './009_create_agenda';
 import { up as createAvaliacao } from './010_create_avaliacao';
 import { up as createNotificacao } from './011_create_notificacao';
 import { up as createAlerta } from './012_create_alerta';
+import { up as createNotificacaoServico } from './013_create_notificacaoServico';
 import { up as createConversa } from './014_create_conversa';
 import { up as createConversaMensagem } from './015_create_mensagem';
-import { up as createTicketSuporte } from './016_create_ticketSuporte';
-import { up as creatAssinaturaPlano } from './018_assinaturaPlano';
 import { up as createReporte } from './017_create_reporte';
+import { up as createAssinaturaPlano } from './018_create_assinaturaPlano';
 import { up as createParceria } from './019_create_parceria';
+import { up as createCidadeAtendida } from './020_create_cidadeAtendida';
 
 //A ordem de criação importa, então prestem atenção nas FK's
 const migrations = [
@@ -29,12 +30,17 @@ const migrations = [
   { name: '010_create_avaliacao', fn: createAvaliacao },
   { name: '011_create_notificacao', fn: createNotificacao },
   { name: '012_create_alerta', fn: createAlerta },
+  { name: '013_create_notificacaoServico', fn: createNotificacaoServico },
   { name: '014_create_conversa', fn: createConversa },
   { name: '015_create_mensagem', fn: createConversaMensagem },
   { name: '016_create_ticketSuporte', fn: createTicketSuporte },
   { name: '017_create_reporte', fn: createReporte},
   { name: '018_create_assinaturaPlano', fn: creatAssinaturaPlano },
   { name: '019_create_parceria', fn: createParceria }
+  { name: '017_create_reporte', fn: createReporte },
+  { name: '018_create_assinaturaPlano', fn: createAssinaturaPlano },
+  { name: '019_create_parceria', fn: createParceria },
+  { name: '020_create_cidadeAtendida', fn: createCidadeAtendida },
 
 ];
 
