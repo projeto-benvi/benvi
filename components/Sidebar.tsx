@@ -33,7 +33,7 @@ export default function Sidebar() {
     if (user?.isPrestador) {
       return [
         { label: "Início", icon: Home, href: "/" },
-        { label: "Meus serviços", icon: ShoppingBag, href: "/servicos" },
+        { label: "Meus serviços", icon: ShoppingBag, href: "/servicoPrestador" },
         { label: "Mensagens", icon: MessageCircle, href: "/mensagens" },
         { label: "Agendamentos", icon: CalendarDays, href: "/agendamentos" },
         { label: "Avaliações", icon: Star, href: "/avaliacoes" },
