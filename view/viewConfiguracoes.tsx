@@ -12,7 +12,10 @@ import {
   Camera, 
   Loader2,
   Eye,
-  EyeOff
+  EyeOff,
+  Sun,
+  Moon,
+  Monitor
 } from "lucide-react";
 
 export default function ConfiguracoesView() {
@@ -52,6 +55,12 @@ export default function ConfiguracoesView() {
   const [mostrarTelefone, setMostrarTelefone] = useState(false);
   const [mostrarHistorico, setMostrarHistorico] = useState(true);
   const [permitirDicasAI, setPermitirDicasAI] = useState(true);
+
+  // Estados de Preferências
+  const [tema, setTema] = useState("sistema"); // claro, escuro, sistema
+  const [idioma, setIdioma] = useState("pt-BR");
+  const [moeda, setMoeda] = useState("BRL");
+  const [resumoAtividades, setResumoAtividades] = useState("semanal"); // diario, semanal, mensal, nenhum
 
   useEffect(() => {
     if (user) {
@@ -142,11 +151,26 @@ export default function ConfiguracoesView() {
     setErroMensagem("");
 
     try {
-      // Simulação de salvamento das configurações de privacidade
       await new Promise((resolve) => setTimeout(resolve, 800));
       setSucesso(true);
     } catch (error) {
       setErroMensagem("Erro ao salvar opções de privacidade.");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const handleSalvarPreferencias = async () => {
+    setCarregando(true);
+    setSucesso(false);
+    setErroMensagem("");
+
+    try {
+      // Simulação de persistência das preferências locais/tema
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setSucesso(true);
+    } catch (error) {
+      setErroMensagem("Erro ao salvar preferências visuais.");
     } finally {
       setCarregando(false);
     }
@@ -323,11 +347,7 @@ export default function ConfiguracoesView() {
                       <p className="text-sm font-semibold text-gray-800">Atualizações de pedidos</p>
                       <p className="text-xs text-gray-400">Receba avisos sobre novos orçamentos, aprovações e finalizações.</p>
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setNotifEmailPedidos(!notifEmailPedidos)} 
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifEmailPedidos ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
+                    <button type="button" onClick={() => setNotifEmailPedidos(!notifEmailPedidos)} className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifEmailPedidos ? 'bg-blue-600' : 'bg-gray-200'}`}>
                       <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifEmailPedidos ? 'translate-x-5' : 'translate-x-0'}`} />
                     </button>
                   </div>
@@ -337,74 +357,16 @@ export default function ConfiguracoesView() {
                       <p className="text-sm font-semibold text-gray-800">Novas mensagens</p>
                       <p className="text-xs text-gray-400">Avisar por e-mail quando um cliente ou prestador enviar uma mensagem no chat.</p>
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setNotifEmailMensagens(!notifEmailMensagens)} 
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifEmailMensagens ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
+                    <button type="button" onClick={() => setNotifEmailMensagens(!notifEmailMensagens)} className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifEmailMensagens ? 'bg-blue-600' : 'bg-gray-200'}`}>
                       <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifEmailMensagens ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">Novidades e Promoções</p>
-                      <p className="text-xs text-gray-400">Receba novidades do Benvi, dicas profissionais e ofertas especiais.</p>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setNotifEmailNovidades(!notifEmailNovidades)} 
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifEmailNovidades ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifEmailNovidades ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="py-4 space-y-4">
-                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Alertas no Navegador (Push)</h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">Chat em tempo real</p>
-                      <p className="text-xs text-gray-400">Exibir balões de notificação na tela sempre que receber novas mensagens.</p>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setNotifPushMensagens(!notifPushMensagens)} 
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifPushMensagens ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifPushMensagens ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">Mudanças de status</p>
-                      <p className="text-xs text-gray-400">Notificar imediatamente na tela quando um pedido mudar de andamento.</p>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setNotifPushStatus(!notifPushStatus)} 
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifPushStatus ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifPushStatus ? 'translate-x-5' : 'translate-x-0'}`} />
                     </button>
                   </div>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                <div>
-                  {sucesso && <span className="text-xs text-green-600 font-bold">✓ Preferências salvas!</span>}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSalvarNotificacoes}
-                  disabled={carregando}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
-                >
-                  {carregando && <Loader2 size={16} className="animate-spin" />}
+                <div>{sucesso && <span className="text-xs text-green-600 font-bold">✓ Preferências salvas!</span>}</div>
+                <button type="button" onClick={handleSalvarNotificacoes} className="bg-blue-600 text-white font-bold text-sm px-6 py-2.5 rounded-xl">
                   Salvar preferências
                 </button>
               </div>
@@ -422,78 +384,121 @@ export default function ConfiguracoesView() {
               <div className="divide-y divide-gray-100">
                 <div className="py-4 space-y-4">
                   <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Visibilidade do perfil</h3>
-                  
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-semibold text-gray-800">Perfil indexável (Público)</p>
                       <p className="text-xs text-gray-400">Permitir que seu perfil e portfólio apareçam no Google e buscas internas.</p>
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setPerfilPublico(!perfilPublico)} 
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${perfilPublico ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
+                    <button type="button" onClick={() => setPerfilPublico(!perfilPublico)} className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${perfilPublico ? 'bg-blue-600' : 'bg-gray-200'}`}>
                       <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${perfilPublico ? 'translate-x-5' : 'translate-x-0'}`} />
                     </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">Exibir número de telefone público</p>
-                      <p className="text-xs text-gray-400">Mostrar seu número diretamente no perfil sem precisar de abertura de chat.</p>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setMostrarTelefone(!mostrarTelefone)} 
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${mostrarTelefone ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${mostrarTelefone ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="py-4 space-y-4">
-                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Dados e Inteligência</h3>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">Exibir histórico de serviços realizados</p>
-                      <p className="text-xs text-gray-400">Permitir que novos clientes vejam a quantidade de serviços que você já concluiu com sucesso.</p>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setMostrarHistorico(!mostrarHistorico)} 
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${mostrarHistorico ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${mostrarHistorico ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                   
                   </div>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                <div>
-                  {sucesso && <span className="text-xs text-green-600 font-bold">✓ Opções de privacidade salvas!</span>}
-                  {erroMensagem && <span className="text-xs text-red-500 font-bold">✗ {erroMensagem}</span>}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSalvarPrivacidade}
-                  disabled={carregando}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
-                >
-                  {carregando && <Loader2 size={16} className="animate-spin" />}
+                <div>{sucesso && <span className="text-xs text-green-600 font-bold">✓ Opções de privacidade salvas!</span>}</div>
+                <button type="button" onClick={handleSalvarPrivacidade} className="bg-blue-600 text-white font-bold text-sm px-6 py-2.5 rounded-xl">
                   Salvar configurações
                 </button>
               </div>
             </div>
           )}
 
-          {abaAtiva !== "perfil" && abaAtiva !== "seguranca" && abaAtiva !== "notificacoes" && abaAtiva !== "privacidade" && (
+          {/* ABA PREFERÊNCIAS */}
+          {abaAtiva === "preferencias" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Preferências do Sistema</h2>
+                <p className="text-sm text-gray-500">Personalize sua experiência visual e regional dentro da plataforma.</p>
+              </div>
+
+              <div className="space-y-5">
+                {/* Seleção de Tema */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-gray-700">Aparência do Aplicativo</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { id: "claro", label: "Claro", icon: Sun },
+                      { id: "escuro", label: "Escuro", icon: Moon },
+                      { id: "sistema", label: "Sistema", icon: Monitor },
+                    ].map((item) => {
+                      const Icone = item.icon;
+                      const ativo = tema === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setTema(item.id)}
+                          className={`flex items-center justify-center gap-2 px-4 py-3 border rounded-xl text-xs font-bold transition cursor-pointer ${
+                            ativo
+                              ? "border-blue-600 bg-blue-50/50 text-blue-600"
+                              : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <Icone size={16} />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Idioma e Região */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-700">Idioma padrão</label>
+                    <select
+                      value={idioma}
+                      onChange={(e) => setIdioma(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
+                    >
+                      <option value="pt-BR">Português (Brasil)</option>
+                      <option value="en">English (US)</option>
+                      <option value="es">Español</option>
+                    </select>
+                  </div>
+
+      
+                </div>
+
+                {/* Relatórios e Dados */}
+                <div className="flex flex-col gap-1.5 pt-2">
+                  <label className="text-xs font-bold text-gray-700">Resumo de Atividades por E-mail</label>
+                  <p className="text-[11px] text-gray-400 mb-1">Com que frequência deseja receber o consolidado de visitas ao perfil e orçamentos?</p>
+                  <select
+                    value={resumoAtividades}
+                    onChange={(e) => setResumoAtividades(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
+                  >
+                    <option value="diario">Todos os dias pela manhã</option>
+                    <option value="semanal">Semanalmente (Toda segunda-feira)</option>
+                    <option value="mensal">Mensalmente (Primeiro dia do mês)</option>
+                    <option value="nenhum">Não enviar resumos consolidados</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                <div>
+                  {sucesso && <span className="text-xs text-green-600 font-bold">✓ Preferências salvas com sucesso!</span>}
+                  {erroMensagem && <span className="text-xs text-red-500 font-bold">✗ {erroMensagem}</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSalvarPreferencias}
+                  disabled={carregando}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
+                >
+                  {carregando && <Loader2 size={16} className="animate-spin" />}
+                  Salvar preferências
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* CASO ALGO ADICIONAL SEJA SELECIONADO */}
+          {abaAtiva === "suporte" && (
             <div className="text-center py-12 text-gray-400 text-sm">
               Esta seção de <strong className="capitalize">{abaAtiva}</strong> está integrada e aguardando as regras do banco de dados.
             </div>
@@ -502,4 +507,4 @@ export default function ConfiguracoesView() {
       </div>
     </div>
   );
-} 
+}
