@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/app/lib/dataBase';
 import bcrypt from 'bcryptjs';
 
-// GET    /api/usuario/[id]                                  → busca por id (público)
-// PUT    /api/usuario/[id]                                  → atualiza (próprio usuário)
+// GET    /api/usuario/[id]                                   → busca por id (público)
+// PUT    /api/usuario/[id]                                   → atualiza (próprio usuário)
 // PATCH  /api/usuario/[id]?admin=desativar&id_solicitante=1  → soft delete admin
 // PATCH  /api/usuario/[id]?admin=reativar&id_solicitante=1   → reativa usuário admin
-// DELETE /api/usuario/[id]                                  → hard delete
+// DELETE /api/usuario/[id]                                   → hard delete
 
 export async function GET(
   req: NextRequest,
