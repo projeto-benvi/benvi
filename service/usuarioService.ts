@@ -19,6 +19,7 @@ export const usuarioService = {
     return rows[0] ?? null;
   },
 
+  
   async buscarPorEmail(email: string): Promise<Usuario | null> {
     const [rows]: any = await pool.query(
       'SELECT id_usuario, nome, email, telefone, foto_perfil, cidade, nivel_acesso, status_conta, is_admin FROM usuario WHERE email = ?',
@@ -42,7 +43,8 @@ export const usuarioService = {
     return usuarioSemSenha as Usuario;
   },
 
-  async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
+async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
+  try {
     const senhaHash = await bcrypt.hash(dados.senha, 10);
     const [result]: any = await pool.query(
       `INSERT INTO usuario 
@@ -52,18 +54,22 @@ export const usuarioService = {
         dados.nome,
         dados.email,
         senhaHash,
-        dados.telefone,
-        dados.foto_perfil,
-        dados.cpf,
-        dados.data_nascimento,
-        dados.cidade,
+        dados.telefone ?? null,
+        dados.foto_perfil ?? null,
+        dados.cpf ?? null,
+        dados.data_nascimento ?? null,
+        dados.cidade ?? null,
         dados.nivel_acesso ?? 1,
         dados.status_conta ?? 'ativo',
         dados.is_admin ?? false,
       ]
     );
     return result.insertId;
-  },
+  } catch (e) {
+    console.error("❌ ERRO SQL criar usuário:", e); // ← vai aparecer no terminal
+    throw e;
+  }
+},
 
   // ─── AJUSTADO: Atualização inteligente integrada ao Banco de Dados ───
   async atualizar(id: number, dados: Record<string, any>): Promise<void> {
@@ -337,3 +343,4 @@ export const adminService = {
     );
   }
 };
+
