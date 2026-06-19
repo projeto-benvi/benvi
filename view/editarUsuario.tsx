@@ -17,6 +17,7 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Carrega os dados do usuário ao abrir a página
   useEffect(() => {
     if (!idUsuario) return;
 
@@ -39,6 +40,41 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
     carregarDadosDoUsuario();
   }, [idUsuario]);
 
+  // Função para lidar com a mudança da foto de perfil
+  const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const arquivos = e.target.files;
+    if (!arquivos || arquivos.length === 0) return;
+
+    const arquivo = arquivos[0];
+
+    // 1. Atualiza a prévia visual na tela imediatamente
+    const urlPrevia = URL.createObjectURL(arquivo);
+    setFotoPerfil(urlPrevia);
+
+    // 2. Prepara o arquivo dentro de um FormData para enviar via API
+    const formData = new FormData();
+    formData.append('foto', arquivo);
+
+    try {
+      // Rota atualizada para bater com a pasta 'uploadFoto'
+      const resposta = await fetch(`/api/usuario/${idUsuario}/uploadFoto`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (resposta.ok) {
+        const dados = await resposta.json();
+        setFotoPerfil(dados.urlCompleta || urlPrevia);
+        alert('Foto de perfil alterada com sucesso!');
+      } else {
+        console.warn('Rota de upload não encontrada ou erro no servidor. A prévia foi atualizada na tela localmente.');
+      }
+    } catch (error) {
+      console.error("Erro no upload da foto:", error);
+    }
+  };
+
+  // Salva as alterações dos campos de texto (Nome, Email, etc.)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!idUsuario) {
@@ -46,7 +82,7 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
       return;
     }
     try {
-      const dadosParaAtualizar: Record<string, any> = { nome, email, telefone, cidade };
+      const dadosParaAtualizar: Record<string, any> = { nome, email, telefone, cidade, estado, foto_perfil };
       if (data_nascimento) dadosParaAtualizar.data_nascimento = data_nascimento;
       
       const resposta = await fetch(`/api/usuario/${idUsuario}`, {
@@ -56,16 +92,18 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
       });
 
       if (resposta.ok) {
-        alert('Perfil atualizado com sucesso!');
+        alert('Perfil updated com sucesso!');
       } else {
         const erroDados = await resposta.json();
         alert(`Erro ao salvar: ${erroDados.erro || 'Erro ao atualizar usuário'}`);
       }
     } catch (error) {
       console.error(error);
+      alert("Erro de rede ao tentar salvar.");
     }
   };
 
+  // Exclui a conta do usuário
   const handleExcluirConta = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!senhaConfirmacaoExcluir) {
@@ -113,7 +151,13 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
           <div className="space-y-4">
             <h3 className="text-base font-bold text-gray-800">Foto de perfil</h3>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              <input type="file" ref={fileInputRef} accept="image/*" className="hidden" />
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleFotoChange} 
+              />
               <img src={foto_perfil} alt="Foto de perfil" className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-4 ring-gray-50" />
               <div className="space-y-1 w-full sm:w-auto">
                 <h4 className="font-bold text-gray-900 text-lg">{nome || 'Carregando...'}</h4>
@@ -217,7 +261,7 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
             </div>
             <form onSubmit={handleExcluirConta} className="p-6 space-y-4">
               <p className="text-sm text-gray-500 font-medium leading-relaxed">
-                Atenção: Esta ação é **irreversível**. Todos os seus dados, serviços contratados e históricos serão removidos para sempre da nossa plataforma.
+                Atenção: Esta ação é **irreversível**. Todos os seus dados serão removidos para sempre.
               </p>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs font-bold text-amber-800 leading-normal">
                 ⚠️ Para confirmar a exclusão, digite a sua senha atual no campo abaixo.
@@ -227,7 +271,7 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
                 <input type="password" required placeholder="Digite sua senha aqui" value={senhaConfirmacaoExcluir} onChange={(e) => setSenhaConfirmacaoExcluir(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-base bg-gray-50 focus:bg-white focus:ring-2 focus:ring-red-500 focus:outline-none transition-all" />
               </div>
               <div className="flex items-center gap-3 pt-4 border-t border-gray-100 mt-6">
-                <button type="button" onClick={() => setModalExcluirAberto(false)} className="w-full py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 text-center">Voltar e Salvar Conta</button>
+                <button type="button" onClick={() => setModalExcluirAberto(false)} className="w-full py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 text-center">Voltar</button>
                 <button type="submit" className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all text-center">Excluir de Vez</button>
               </div>
             </form>

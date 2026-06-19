@@ -12,6 +12,13 @@ export async function listarCategoriasController() {
     const categorias = await listarCategorias();
     return NextResponse.json(categorias);
   } catch (error) {
+
+    console.error("====== 🚨 ERRO REAL DO BANCO DE DADOS 🚨 ======");
+    console.error(error);
+    console.error("===============================================");
+
+
+
     return NextResponse.json(
       { erro: "Erro ao listar categorias." },
       { status: 500 }

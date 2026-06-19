@@ -14,7 +14,7 @@ export async function up(): Promise<void> {
         FOREIGN KEY (idUsuario) REFERENCES usuario(id_usuario) 
         ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT fk_conversa_prestador 
-        FOREIGN KEY (idPrestador) REFERENCES usuario(id_usuario) -- Altere para prestador(id_usuario) se houver uma tabela específica
+        FOREIGN KEY (idPrestador) REFERENCES prestador(id_usuario)
         ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `;

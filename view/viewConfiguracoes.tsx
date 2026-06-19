@@ -22,11 +22,16 @@ import {
   MessageSquare,
   Mail,
   Phone,
-  Upload
+  Upload,
+  Briefcase
 } from "lucide-react";
 
 export default function ConfiguracoesView() {
   const { user, logado, atualizarSessao } = useAuth();
+
+  useEffect(() => {
+    console.log('user:', user);
+  }, [user]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadSuporteRef = useRef<HTMLInputElement>(null);
@@ -51,6 +56,14 @@ export default function ConfiguracoesView() {
   
   const [avatarUrl, setAvatarUrl] = useState(""); 
   const [arquivoFoto, setArquivoFoto] = useState<File | null>(null);
+
+  // Estados Profissionais
+  const [descricaoProfissional, setDescricaoProfissional] = useState("");
+  const [categoriaPrincipal, setCategoriaPrincipal] = useState("");
+  const [carregandoProfissional, setCarregandoProfissional] = useState(false);
+  const [sucessoProfissional, setSucessoProfissional] = useState(false);
+  const [erroProfissional, setErroProfissional] = useState("");
+  const [tagsSelecionadas, setTagsSelecionadas] = useState<string[]>([]);
 
   // Estados das Notificações
   const [notifEmailPedidos, setNotifEmailPedidos] = useState(true);
@@ -88,6 +101,17 @@ export default function ConfiguracoesView() {
       setEstado((user as any).estado || "");
       setSobreVoce((user as any).sobreVoce || "");
       setDataNascimento((user as any).dataNascimento || "");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.isPrestador && user?.id) {
+      fetch(`/api/prestador/por-usuario/${user.id}`)
+        .then(res => res.json())
+        .then(dados => {
+          setDescricaoProfissional(dados.descricao_profissional || "");
+          setCategoriaPrincipal(dados.categoria_principal || "");
+        });
     }
   }, [user]);
 
@@ -143,6 +167,29 @@ export default function ConfiguracoesView() {
       setErroMensagem(error.message || "Erro inesperado ao salvar");
     } finally {
       setCarregando(false);
+    }
+  };
+
+  const handleSalvarProfissional = async () => {
+    if (!user?.id) return;
+    setCarregandoProfissional(true);
+    setSucessoProfissional(false);
+    setErroProfissional("");
+    try {
+      const res = await fetch(`/api/prestador/por-usuario/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          descricao_profissional: descricaoProfissional,
+          categoria_principal: categoriaPrincipal,
+        }),
+      });
+      if (!res.ok) throw new Error("Erro ao salvar");
+      setSucessoProfissional(true);
+    } catch {
+      setErroProfissional("Erro ao salvar informações profissionais.");
+    } finally {
+      setCarregandoProfissional(false);
     }
   };
 
@@ -230,6 +277,7 @@ export default function ConfiguracoesView() {
         <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col gap-1 shadow-sm">
           {[
             { id: "perfil", icon: User, label: "Editar perfil", sub: "Suas informações pessoais" },
+            ...(user?.isPrestador ? [{ id: "profissional", icon: Briefcase, label: "Informações profissionais", sub: "Dados do seu perfil de prestador" }] : []),
             { id: "seguranca", icon: Lock, label: "Conta e segurança", sub: "Senha, login e privacidade" },
             { id: "notificacoes", icon: Bell, label: "Notificações", sub: "Preferências de alertas" },
             { id: "privacidade", icon: Shield, label: "Privacidade", sub: "Quem pode ver seu perfil" },
@@ -315,6 +363,128 @@ export default function ConfiguracoesView() {
               </div>
             </form>
           )}
+
+       {abaAtiva === "profissional" && (
+  <div className="space-y-6">
+    <div>
+      <h2 className="text-lg font-bold text-gray-900">Informações Profissionais</h2>
+      <p className="text-sm text-gray-500">Configure como seu perfil de prestador aparece para os clientes.</p>
+    </div>
+
+    <div className="space-y-5">
+
+      {/* Categoria Principal */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold text-gray-700">Categoria principal</label>
+        <select
+          value={categoriaPrincipal}
+          onChange={(e) => setCategoriaPrincipal(e.target.value)}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
+        >
+          <option value="">Selecione uma categoria</option>
+          <option value="Eletricista">Eletricista</option>
+          <option value="Encanador">Encanador</option>
+          <option value="Pedreiro">Pedreiro</option>
+          <option value="Pintor">Pintor</option>
+          <option value="Diarista">Diarista</option>
+          <option value="Faxineira">Faxineira</option>
+          <option value="Jardineiro">Jardineiro</option>
+          <option value="Marceneiro">Marceneiro</option>
+          <option value="Serralheiro">Serralheiro</option>
+          <option value="Técnico em Ar-condicionado">Técnico em Ar-condicionado</option>
+          <option value="Técnico em Informática">Técnico em Informática</option>
+          <option value="Montador de Móveis">Montador de Móveis</option>
+          <option value="Chaveiro">Chaveiro</option>
+          <option value="Gesseiro">Gesseiro</option>
+          <option value="Instalador de Câmeras">Instalador de Câmeras</option>
+          <option value="Manicure e Pedicure">Manicure e Pedicure</option>
+          <option value="Cabeleireiro">Cabeleireiro</option>
+          <option value="Maquiador(a)">Maquiador(a)</option>
+          <option value="Designer Gráfico">Designer Gráfico</option>
+          <option value="Fotógrafo">Fotógrafo</option>
+          <option value="Personal Trainer">Personal Trainer</option>
+          <option value="Professor Particular / Reforço Escolar">Professor Particular / Reforço Escolar</option>
+          <option value="Cuidador de Idosos">Cuidador de Idosos</option>
+          <option value="Babá">Babá</option>
+          <option value="Lavador de Carros / Estética Automotiva">Lavador de Carros / Estética Automotiva</option>
+          <option value="Motoboy / Entregador Particular">Motoboy / Entregador Particular</option>
+          <option value="Costureira / Ajustes de Roupas">Costureira / Ajustes de Roupas</option>
+          <option value="Confeiteira / Bolos e Doces">Confeiteira / Bolos e Doces</option>
+          <option value="Decorador(a) de Eventos">Decorador(a) de Eventos</option>
+          <option value="Social Media / Gestor de Redes Sociais">Social Media / Gestor de Redes Sociais</option>
+        </select>
+      </div>
+
+      {/* Tags / Outras especialidades */}
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-bold text-gray-700">Outras especialidades</label>
+        <p className="text-[11px] text-gray-400">Selecione todas as áreas em que você também atua.</p>
+        <div className="flex flex-wrap gap-2 mt-1">
+          {[
+            'Eletricista','Encanador','Pedreiro','Pintor','Diarista','Faxineira',
+            'Jardineiro','Marceneiro','Serralheiro','Técnico em Ar-condicionado',
+            'Técnico em Informática','Montador de Móveis','Chaveiro','Gesseiro',
+            'Instalador de Câmeras','Manicure e Pedicure','Cabeleireiro','Maquiador(a)',
+            'Designer Gráfico','Fotógrafo','Personal Trainer',
+            'Professor Particular / Reforço Escolar','Cuidador de Idosos','Babá',
+            'Lavador de Carros / Estética Automotiva','Motoboy / Entregador Particular',
+            'Costureira / Ajustes de Roupas','Confeiteira / Bolos e Doces',
+            'Decorador(a) de Eventos','Social Media / Gestor de Redes Sociais'
+          ].filter(c => c !== categoriaPrincipal).map((cat) => {
+            const selecionado = tagsSelecionadas.includes(cat);
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => {
+                  setTagsSelecionadas(prev =>
+                    selecionado ? prev.filter(t => t !== cat) : [...prev, cat]
+                  );
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer ${
+                  selecionado
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Descrição profissional */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold text-gray-700">Descrição profissional</label>
+        <textarea
+          rows={5}
+          value={descricaoProfissional}
+          onChange={(e) => setDescricaoProfissional(e.target.value)}
+          placeholder="Fale sobre sua experiência, especialidades e diferenciais..."
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition resize-none"
+        />
+        <p className="text-[10px] text-gray-400">{descricaoProfissional.length}/500 caracteres</p>
+      </div>
+    </div>
+
+    <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+      <div>
+        {sucessoProfissional && <span className="text-xs text-green-600 font-bold">✓ Informações salvas com sucesso!</span>}
+        {erroProfissional && <span className="text-xs text-red-500 font-bold">✗ {erroProfissional}</span>}
+      </div>
+      <button
+        type="button"
+        onClick={handleSalvarProfissional}
+        disabled={carregandoProfissional}
+        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
+      >
+        {carregandoProfissional && <Loader2 size={16} className="animate-spin" />}
+        Salvar informações
+      </button>
+    </div>
+  </div>
+)}*
 
           {/* ABA CONTA E SEGURANÇA */}
           {abaAtiva === "seguranca" && (
@@ -526,7 +696,6 @@ export default function ConfiguracoesView() {
               </div>
 
               <div className="space-y-5">
-                {/* Seleção de Tema */}
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold text-gray-700">Aparência do Aplicativo</label>
                   <div className="grid grid-cols-3 gap-3">
@@ -556,15 +725,10 @@ export default function ConfiguracoesView() {
                   </div>
                 </div>
 
-                {/* Idioma e Moeda */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-700">Idioma padrão</label>
-                    <select
-                      value={idioma}
-                      onChange={(e) => setIdioma(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
-                    >
+                    <select value={idioma} onChange={(e) => setIdioma(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition">
                       <option value="pt-BR">Português (Brasil)</option>
                       <option value="en">English (US)</option>
                       <option value="es">Español</option>
@@ -573,11 +737,7 @@ export default function ConfiguracoesView() {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-700">Moeda de exibição</label>
-                    <select
-                      value={moeda}
-                      onChange={(e) => setMoeda(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
-                    >
+                    <select value={moeda} onChange={(e) => setMoeda(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition">
                       <option value="BRL">Real Brasileiro (R$)</option>
                       <option value="USD">Dólar Americano ($)</option>
                       <option value="EUR">Euro (€)</option>
@@ -585,15 +745,10 @@ export default function ConfiguracoesView() {
                   </div>
                 </div>
 
-                {/* Resumo de Atividades */}
                 <div className="flex flex-col gap-1.5 pt-2">
                   <label className="text-xs font-bold text-gray-700">Resumo de Atividades por E-mail</label>
                   <p className="text-[11px] text-gray-400 mb-1">Com que frequência deseja receber o consolidado de visitas ao perfil e orçamentos?</p>
-                  <select
-                    value={resumoAtividades}
-                    onChange={(e) => setResumoAtividades(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
-                  >
+                  <select value={resumoAtividades} onChange={(e) => setResumoAtividades(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition">
                     <option value="diario">Todos os dias pela manhã</option>
                     <option value="semanal">Semanalmente (Toda segunda-feira)</option>
                     <option value="mensal">Mensalmente (Primeiro dia do mês)</option>
@@ -607,12 +762,7 @@ export default function ConfiguracoesView() {
                   {sucesso && <span className="text-xs text-green-600 font-bold">✓ Preferências salvas com sucesso!</span>}
                   {erroMensagem && <span className="text-xs text-red-500 font-bold">✗ {erroMensagem}</span>}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSalvarPreferencias}
-                  disabled={carregando}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
-                >
+                <button type="button" onClick={handleSalvarPreferencias} disabled={carregando} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2">
                   {carregando && <Loader2 size={16} className="animate-spin" />}
                   Salvar preferências
                 </button>
@@ -628,7 +778,6 @@ export default function ConfiguracoesView() {
                 <p className="text-sm text-gray-500 mt-1">Encontre suporte, tire dúvidas ou reporte um problema na plataforma</p>
               </div>
 
-              {/* Cards de Ação Rápida */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="border border-gray-100 bg-white rounded-2xl p-5 flex flex-col items-start gap-3 shadow-sm">
                   <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
@@ -670,10 +819,7 @@ export default function ConfiguracoesView() {
                 </div>
               </div>
 
-              {/* Grid Inferior */}
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-
-                {/* Formulário Reportar Problema */}
                 <form onSubmit={handleEnviarSuporte} className="lg:col-span-3 border border-gray-100 rounded-2xl p-6 space-y-4 shadow-sm bg-white">
                   <div>
                     <h3 className="text-base font-bold text-gray-900">Reportar problema</h3>
@@ -683,11 +829,7 @@ export default function ConfiguracoesView() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-bold text-gray-700">Tipo de problema</label>
-                      <select
-                        value={suporteTipo}
-                        onChange={(e) => setSuporteTipo(e.target.value)}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
-                      >
+                      <select value={suporteTipo} onChange={(e) => setSuporteTipo(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition">
                         <option value="">Selecione uma opção</option>
                         <option value="pagamento">Pagamento</option>
                         <option value="plataforma">Bug na plataforma</option>
@@ -698,56 +840,30 @@ export default function ConfiguracoesView() {
 
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-bold text-gray-700">Data do ocorrido:</label>
-                      <input
-                        type="date"
-                        value={suporteData}
-                        onChange={(e) => setSuporteData(e.target.value)}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition"
-                      />
+                      <input type="date" value={suporteData} onChange={(e) => setSuporteData(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition" />
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-700">Assunto:</label>
-                    <input
-                      type="text"
-                      value={suporteAssunto}
-                      onChange={(e) => setSuporteAssunto(e.target.value)}
-                      placeholder="Resuma brevemente o problema"
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition"
-                    />
+                    <input type="text" value={suporteAssunto} onChange={(e) => setSuporteAssunto(e.target.value)} placeholder="Resuma brevemente o problema" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition" />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-700">Descreva o problema:</label>
-                    <textarea
-                      rows={4}
-                      value={suporteDescricao}
-                      onChange={(e) => setSuporteDescricao(e.target.value)}
-                      placeholder="Detalhes sobre o que aconteceu..."
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition resize-none"
-                    />
+                    <textarea rows={4} value={suporteDescricao} onChange={(e) => setSuporteDescricao(e.target.value)} placeholder="Detalhes sobre o que aconteceu..." className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition resize-none" />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-700">Anexar imagem ou arquivo</label>
-                    <div
-                      onClick={() => uploadSuporteRef.current?.click()}
-                      className="border border-dashed border-blue-300 bg-blue-50/20 rounded-xl p-4 text-center cursor-pointer hover:bg-blue-50/50 transition flex flex-col items-center justify-center gap-1"
-                    >
+                    <div onClick={() => uploadSuporteRef.current?.click()} className="border border-dashed border-blue-300 bg-blue-50/20 rounded-xl p-4 text-center cursor-pointer hover:bg-blue-50/50 transition flex flex-col items-center justify-center gap-1">
                       <Upload size={20} className="text-blue-500" />
                       <p className="text-xs text-gray-600 font-medium">
                         {suporteArquivo ? suporteArquivo.name : "Clique para anexar ou arraste o arquivo até aqui"}
                       </p>
                       <p className="text-[10px] text-gray-400">JPG, PNG OU PDF até 10 mb</p>
                     </div>
-                    <input
-                      type="file"
-                      ref={uploadSuporteRef}
-                      onChange={(e) => setSuporteArquivo(e.target.files?.[0] || null)}
-                      accept="image/*,application/pdf"
-                      className="hidden"
-                    />
+                    <input type="file" ref={uploadSuporteRef} onChange={(e) => setSuporteArquivo(e.target.files?.[0] || null)} accept="image/*,application/pdf" className="hidden" />
                   </div>
 
                   <div className="pt-2 flex items-center justify-between">
@@ -762,9 +878,7 @@ export default function ConfiguracoesView() {
                   </div>
                 </form>
 
-                {/* Canais de Atendimento + Chamados Recentes */}
                 <div className="lg:col-span-2 space-y-4 w-full">
-
                   <div className="border border-gray-100 rounded-2xl p-5 space-y-3 shadow-sm bg-white">
                     <div>
                       <h3 className="text-sm font-bold text-gray-900">Falar com suporte</h3>
@@ -815,7 +929,6 @@ export default function ConfiguracoesView() {
                     </div>
                   </div>
 
-                  {/* Chamados Recentes */}
                   <div className="border border-gray-100 rounded-2xl p-5 shadow-sm bg-white">
                     <h3 className="text-sm font-bold text-gray-900 mb-3">Meus chamados recentes</h3>
                     <div className="overflow-x-auto">
@@ -857,7 +970,6 @@ export default function ConfiguracoesView() {
                       </table>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
