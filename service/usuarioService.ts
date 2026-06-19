@@ -19,6 +19,7 @@ export const usuarioService = {
     return rows[0] ?? null;
   },
 
+  
   async buscarPorEmail(email: string): Promise<Usuario | null> {
     const [rows]: any = await pool.query(
       'SELECT id_usuario, nome, email, telefone, foto_perfil, cidade, nivel_acesso, status_conta, is_admin FROM usuario WHERE email = ?',
@@ -42,7 +43,8 @@ export const usuarioService = {
     return usuarioSemSenha as Usuario;
   },
 
-  async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
+async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
+  try {
     const senhaHash = await bcrypt.hash(dados.senha, 10);
     const [result]: any = await pool.query(
       `INSERT INTO usuario 
@@ -52,23 +54,59 @@ export const usuarioService = {
         dados.nome,
         dados.email,
         senhaHash,
-        dados.telefone,
-        dados.foto_perfil,
-        dados.cpf,
-        dados.data_nascimento,
-        dados.cidade,
+        dados.telefone ?? null,
+        dados.foto_perfil ?? null,
+        dados.cpf ?? null,
+        dados.data_nascimento ?? null,
+        dados.cidade ?? null,
         dados.nivel_acesso ?? 1,
         dados.status_conta ?? 'ativo',
         dados.is_admin ?? false,
       ]
     );
     return result.insertId;
-  },
+  } catch (e) {
+    console.error("❌ ERRO SQL criar usuário:", e); // ← vai aparecer no terminal
+    throw e;
+  }
+},
 
-  async atualizar(id: number, dados: Partial<Usuario>): Promise<void> {
-    const campos = Object.keys(dados).map((k) => `${k} = ?`).join(', ');
-    const valores = [...Object.values(dados), id];
-    await pool.query(`UPDATE usuario SET ${campos} WHERE id_usuario = ?`, valores);
+  // ─── AJUSTADO: Atualização inteligente integrada ao Banco de Dados ───
+  async atualizar(id: number, dados: Record<string, any>): Promise<void> {
+    // 1. Mapeia a propriedade 'avatar' vinda do controller para a coluna 'foto_perfil' do MySQL
+    if ('avatar' in dados) {
+      dados.foto_perfil = dados.avatar;
+      delete dados.avatar;
+    }
+
+    // 2. Se houver biografia (sobreVoce), salvamos na tabela 'prestador' separadamente
+    if ('sobreVoce' in dados) {
+      const sobreVoce = dados.sobreVoce;
+      delete dados.sobreVoce; // Remove para não quebrar a query da tabela usuario
+
+      if (sobreVoce !== undefined) {
+        // Atualiza a descrição na tabela do prestador caso ele exista
+        await pool.query(
+          'UPDATE prestador SET descricao_profissional = ? WHERE id_usuario = ?',
+          [sobreVoce, id]
+        );
+      }
+    }
+
+    // 3. Remove campos vazios ou indefinidos para não sobrescrever dados corretos no banco
+    Object.keys(dados).forEach((key) => {
+      if (dados[key] === undefined || dados[key] === '') {
+        delete dados[key];
+      }
+    });
+
+    // Se restou algum campo para atualizar na tabela 'usuario'
+    if (Object.keys(dados).length > 0) {
+      const campos = Object.keys(dados).map((k) => `${k} = ?`).join(', ');
+      const valores = [...Object.values(dados), id];
+
+      await pool.query(`UPDATE usuario SET ${campos} WHERE id_usuario = ?`, valores);
+    }
   },
 
   async deletar(id: number): Promise<void> {
@@ -305,3 +343,4 @@ export const adminService = {
     );
   }
 };
+
