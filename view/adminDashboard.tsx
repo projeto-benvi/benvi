@@ -42,16 +42,21 @@ interface CidadeAtendida {
 }
 
 export default function AdminDashboard() {
-    const id_solicitante = 3; // ID padrão do admin
+    const id_solicitante = 1; // ID padrão do admin
 
     // Estados dos dados do Backend
     const [metrics, setMetrics] = useState<DashboardData | null>(null);
     const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
     const [tickets, setTickets] = useState<TicketSuporte[]>([]);
     const [cidades, setCidades] = useState<CidadeAtendida[]>([]);
+    const [parcerias, setParcerias] = useState<any[]>([]); 
     const [loading, setLoading] = useState(true);
 
-    // Estados do formulário de Alerta (Adequado aos parâmetros do alertaController)
+    // Estados da paginação das Parcerias Ativas
+    const [currentPartnerPage, setCurrentPartnerPage] = useState(0);
+    const itemsPerPage = 4; // Quantidade de parcerias exibidas por vez
+
+    // Estados do formulário de Alerta
     const [idNotificacao, setIdNotificacao] = useState<number>(1);
     const [prioridade, setPrioridade] = useState<number>(3); // 1-Baixa, 2-Média, 3-Alta
     const [categoria, setCategoria] = useState('Geral');
@@ -64,7 +69,7 @@ export default function AdminDashboard() {
             try {
                 setLoading(true);
 
-                // 1. Resumo numérico geral (Métricas de Usuários e Suporte)
+                // 1. Resumo numérico geral
                 const resMetrics = await fetch(`/api/usuario?admin=dashboard&id_solicitante=${id_solicitante}`);
                 const dataMetrics = await resMetrics.json();
                 setMetrics(dataMetrics);
@@ -74,7 +79,7 @@ export default function AdminDashboard() {
                 const dataUsers = await resUsers.json();
                 setRecentUsers(Array.isArray(dataUsers) ? dataUsers.slice(0, 5) : []);
 
-                // 3. Tickets Recentes do sistema via ticketSuporteController
+                // 3. Tickets Recentes do sistema
                 const resTickets = await fetch(`/api/ticketSuporte`);
                 const dataTickets = await resTickets.json();
                 setTickets(Array.isArray(dataTickets) ? dataTickets.slice(0, 6) : []);
@@ -83,6 +88,11 @@ export default function AdminDashboard() {
                 const resCidades = await fetch(`/api/cidadeAtendida`);
                 const dataCidades = await resCidades.json();
                 setCidades(Array.isArray(dataCidades) ? dataCidades : []);
+
+                // 5. Parcerias do sistema
+                const resParcerias = await fetch(`/api/parceria`);
+                const dataParcerias = await resParcerias.json();
+                setParcerias(Array.isArray(dataParcerias) ? dataParcerias : []);
 
             } catch (error) {
                 console.error("Erro ao integrar componentes do painel:", error);
@@ -94,7 +104,7 @@ export default function AdminDashboard() {
         loadDashboardData();
     }, []);
 
-    // Envio do formulário de Alerta em conformidade com o backend
+    // Envio do formulário de Alerta
     const handleSendAlert = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!idNotificacao || !categoria) return alert("Por favor, preencha todos os campos obrigatórios!");
@@ -152,7 +162,6 @@ export default function AdminDashboard() {
                             <h3 className="text-3xl font-bold text-slate-900">
                                 {metrics?.usuarios.total.toLocaleString('pt-BR') || '0'}
                             </h3>
-                            {/*<p className="text-xs text-emerald-600 mt-0.5 font-medium">↑ 12,5% <span className="text-slate-400 font-normal">em relação ao mês anterior</span></p>*/}
                         </div>
                     </div>
 
@@ -165,7 +174,6 @@ export default function AdminDashboard() {
                             <h3 className="text-3xl font-bold text-slate-900">
                                 {metrics?.usuarios.prestadores.toLocaleString('pt-BR') || '0'}
                             </h3>
-                            {/*<p className="text-xs text-emerald-600 mt-0.5 font-medium">18% <span className="text-slate-400 font-normal">em relação ao mês anterior</span></p>*/}
                         </div>
                     </div>
 
@@ -174,9 +182,8 @@ export default function AdminDashboard() {
                             <Ticket size={28} />
                         </div>
                         <div>
-                            <p className="text-sm font-semibold text-slate-500">Ticktes abertos</p>
+                            <p className="text-sm font-semibold text-slate-500">Tickets abertos</p>
                             <h3 className="text-3xl font-bold text-slate-900">
-
                                 {metrics?.suporte?.tickets_pendentes !== undefined
                                     ? metrics.suporte.tickets_pendentes.toLocaleString('pt-BR')
                                     : Array.isArray(tickets)
@@ -239,7 +246,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    {/* Tabela: Tickets Recentes Reais (Mapeado da API) */}
+                    {/* Tabela: Tickets Recentes Reais */}
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-bold text-slate-900">Tickets Recentes</h2>
@@ -287,13 +294,12 @@ export default function AdminDashboard() {
                             </table>
                         </div>
                     </div>
-
                 </div>
 
-                {/* ─── SEÇÃO INFERIOR (FORMULÁRIO DE ALERTA & PARCERIAS DINÂMICAS) ─── */}
+                {/* ─── SEÇÃO INFERIOR (FORMULÁRIO DE ALERTA & PARCERIAS DINÂMICAS PAGINADAS) ─── */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-                    {/* Formulário: Criar Alerta (Mapeado para AlertaController) */}
+                    {/* Formulário: Criar Alerta */}
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <h2 className="text-lg font-bold text-slate-900 mb-4">Enviar alerta rápido</h2>
                         <form onSubmit={handleSendAlert} className="space-y-4">
@@ -367,7 +373,7 @@ export default function AdminDashboard() {
                         </form>
                     </div>
 
-                    {/* Carrossel de Parcerias Ativas (Cidades Atendidas Dinâmicas via Controller) */}
+                    {/* Carrossel de Parcerias Ativas com Paginação por Bolinhas Funcional */}
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
                         <div>
                             <div className="flex justify-between items-center mb-4">
@@ -376,38 +382,50 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {cidades.length > 0 ? cidades.slice(0, 4).map((item) => (
-                                    <div key={item.id_cidade} className="bg-slate-50 border border-slate-100 p-3 rounded-2xl flex flex-col items-center text-center justify-between min-h-[140px]">
-                                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xs text-indigo-600 font-bold">
-                                            🏛️
-                                        </div>
-                                        <div className="my-2">
-                                            <p className="text-[11px] font-bold text-slate-800 leading-tight truncate max-w-[100px]">
-                                                Prefeitura de {item.cidade}
-                                            </p>
-                                            <p className="text-[9px] text-slate-400 uppercase">
-                                                {item.cidade} - {item.estado}
-                                            </p>
-                                        </div>
-                                        <span className={`text-[9px] font-bold px-3 py-0.5 rounded-full ${item.acesso_gratuito ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                            }`}>
-                                            {item.acesso_gratuito ? 'Gratuito' : 'Convênio'}
-                                        </span>
+                                {parcerias.length > 0 ? (
+                                    parcerias
+                                        .slice(currentPartnerPage * itemsPerPage, (currentPartnerPage + 1) * itemsPerPage)
+                                        .map((item) => (
+                                            <div key={item.id_cidade || item.id_parceria} className="bg-slate-50 border border-slate-100 p-3 rounded-2xl flex flex-col items-center text-center justify-between min-h-[140px]">
+                                                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xs text-indigo-600 font-bold">
+                                                    🏛️
+                                                </div>
+                                                <div className="my-2">
+                                                    <p className="text-[11px] font-bold text-slate-800 leading-tight truncate max-w-[100px]">
+                                                        Prefeitura de {item.cidade}
+                                                    </p>
+                                                    <p className="text-[9px] text-slate-400 uppercase">
+                                                        {item.cidade} - {item.estado}
+                                                    </p>
+                                                </div>
+                                                <span className={`text-[9px] font-bold px-3 py-0.5 rounded-full ${item.acesso_gratuito ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                    {item.acesso_gratuito ? 'Gratuito' : 'Convênio'}
+                                                </span>
+                                            </div>
+                                        ))
+                                ) : (
+                                    <div className="col-span-4 text-center py-8 text-slate-400 text-sm">
+                                        Nenhuma parceria registrada.
                                     </div>
-                                )) : (
-                                    // Fallback Mock se a tabela "cidadeatendida" no banco de dados estiver vazia
-                                    <>
-
-                                    </>
                                 )}
                             </div>
                         </div>
 
-                        <div className="flex justify-center gap-1.5 mt-4">
-                            <span className="w-2 h-2 rounded-full bg-indigo-600" />
-                            <span className="w-2 h-2 rounded-full bg-slate-200" />
-                            <span className="w-2 h-2 rounded-full bg-slate-200" />
-                        </div>
+                        {/* Paginação Dinâmica via Bolinhas */}
+                        {parcerias.length > itemsPerPage && (
+                            <div className="flex justify-center gap-1.5 mt-4">
+                                {Array.from({ length: Math.ceil(parcerias.length / itemsPerPage) }).map((_, index) => (
+                                    <button
+                                        key={`dot-partner-${index}`}
+                                        onClick={() => setCurrentPartnerPage(index)}
+                                        className={`w-2 h-2 rounded-full transition-all ${
+                                            currentPartnerPage === index ? 'bg-indigo-600 w-4' : 'bg-slate-200'
+                                        }`}
+                                        aria-label={`Ir para página ${index + 1}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                 </div>
