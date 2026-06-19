@@ -1,20 +1,30 @@
+// app/api/parceria/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { ParceriaController } from '@/controller/parceriaController';
 
+/**
+ * GET /api/parceria
+ * Lista todas as parcerias.
+ *
+ * GET /api/parceria?status=ativo
+ * GET /api/parceria?estado=PE
+ * GET /api/parceria?status=ativo&estado=PE   ← agora os dois juntos funcionam
+ */
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
         const estado = searchParams.get('estado');
 
-        let data;
+        let data = await ParceriaController.listar();
 
         if (status) {
-            data = await ParceriaController.listarPorStatus(status);
-        } else if (estado) {
-            data = await ParceriaController.listarPorEstado(estado);
-        } else {
-            data = await ParceriaController.listar();
+            data = data.filter((p: any) => p.status?.toLowerCase() === status.toLowerCase());
+        }
+
+        if (estado) {
+            data = data.filter((p: any) => p.estado?.toLowerCase() === estado.toLowerCase());
         }
 
         return NextResponse.json(data, { status: 200 });
@@ -27,6 +37,13 @@ export async function GET(request: NextRequest) {
     }
 }
 
+/**
+ * POST /api/parceria
+ * Cria uma nova parceria.
+ *
+ * Body obrigatório: nome_parceiro, cidade, estado, data_inicio
+ * Body opcional:    status, data_fim
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
