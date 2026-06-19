@@ -10,13 +10,18 @@ import {
   Sliders, 
   LifeBuoy, 
   Camera, 
-  Loader2 
+  Loader2,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 export default function ConfiguracoesView() {
   const { user, logado, atualizarSessao } = useAuth();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [verSenhaAtual, setVerSenhaAtual] = useState(false);
+  const [verNovaSenha, setVerNovaSenha] = useState(false);
+  const [verConfirmaSenha, setVerConfirmaSenha] = useState(false);
 
   const [abaAtiva, setAbaAtiva] = useState("perfil");
   const [carregando, setCarregando] = useState(false);
@@ -91,18 +96,11 @@ export default function ConfiguracoesView() {
       }
 
       const dados = await res.json();
-
-      if (dados.avatar) {
-        setAvatarUrl(dados.avatar);
-      }
-
-      // Atualiza a sessão para persistir após reload
+      if (dados.avatar) setAvatarUrl(dados.avatar);
       await atualizarSessao();
-
       setArquivoFoto(null);
       setSucesso(true);
     } catch (error: any) {
-      console.error("Erro ao salvar configurações:", error);
       setErroMensagem(error.message || "Erro inesperado ao salvar");
     } finally {
       setCarregando(false);
@@ -122,13 +120,7 @@ export default function ConfiguracoesView() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto font-sans">
-      <input 
-        type="file" 
-        ref={fileInputRef}
-        onChange={handleTrocarFoto}
-        accept="image/*"
-        className="hidden" 
-      />
+      <input type="file" ref={fileInputRef} onChange={handleTrocarFoto} accept="image/*" className="hidden" />
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Configurações</h1>
@@ -136,7 +128,6 @@ export default function ConfiguracoesView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        {/* Menu lateral */}
         <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col gap-1 shadow-sm">
           {[
             { id: "perfil", icon: User, label: "Editar perfil", sub: "Suas informações pessoais" },
@@ -163,23 +154,13 @@ export default function ConfiguracoesView() {
           ))}
         </div>
 
-        {/* Conteúdo principal */}
         <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl p-8 shadow-sm">
           {abaAtiva === "perfil" && (
             <form onSubmit={handleSalvarAlteracoes} className="space-y-6">
-              
-              {/* Foto de perfil */}
               <div className="flex items-center gap-5 pb-4 border-b border-gray-50">
-                <div 
-                  onClick={acionarInputArquivo}
-                  className="relative group w-20 h-20 cursor-pointer"
-                >
+                <div onClick={acionarInputArquivo} className="relative group w-20 h-20 cursor-pointer">
                   {avatarUrl ? (
-                    <img 
-                      src={avatarUrl} 
-                      alt="Avatar" 
-                      className="w-full h-full rounded-full object-cover border border-gray-200 shadow-sm"
-                    />
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover border border-gray-200 shadow-sm" />
                   ) : (
                     <div className="w-full h-full rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold">
                       {user?.nome?.charAt(0).toUpperCase()}
@@ -189,116 +170,35 @@ export default function ConfiguracoesView() {
                     <Camera size={18} />
                   </div>
                 </div>
-
                 <div>
                   <h3 className="text-lg font-bold text-gray-800">{nome || "Carregando..."}</h3>
-                  <p className="text-xs text-gray-400 font-medium mt-0.5">
-                    {isAdmin ? "Administrador do Sistema" : isPrestador ? "Prestador de Serviços" : "Cliente Benvi"}
-                  </p>
-                  <button 
-                    type="button" 
-                    onClick={acionarInputArquivo}
-                    className="mt-2 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition flex items-center gap-1.5 cursor-pointer"
-                  >
+                  <button type="button" onClick={acionarInputArquivo} className="mt-2 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer">
                     Alterar foto
                   </button>
                 </div>
               </div>
 
-              {/* Campos */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-gray-700">Nome completo</label>
-                  <input 
-                    type="text" 
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition"
-                  />
+                  <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition" />
                 </div>
-
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-gray-700">Data de nascimento</label>
-                  <input 
-                    type="date" 
-                    value={dataNascimento}
-                    onChange={(e) => setDataNascimento(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition"
-                  />
+                  <input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition" />
                 </div>
-
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-gray-700">Email</label>
-                  <input 
-                    type="email" 
-                    value={email}
-                    disabled 
-                    className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-400 cursor-not-allowed"
-                  />
+                  <input type="email" value={email} disabled className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-400 cursor-not-allowed" />
                 </div>
-
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-gray-700">Telefone</label>
-                  <input 
-                    type="text" 
-                    value={telefone}
-                    placeholder="(00) 00000-0000"
-                    onChange={(e) => setTelefone(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-gray-700">Cidade</label>
-                  <input 
-                    type="text" 
-                    value={cidade}
-                    onChange={(e) => setCidade(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-gray-700">Estado</label>
-                  <input 
-                    type="text" 
-                    value={estado}
-                    maxLength={2}
-                    placeholder="EX: PE"
-                    onChange={(e) => setEstado(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition uppercase"
-                  />
+                  <input type="text" value={telefone} placeholder="(00) 00000-0000" onChange={(e) => setTelefone(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition" />
                 </div>
               </div>
 
-              {(isPrestador || isAdmin) && (
-                <div className="flex flex-col gap-1.5 pt-2">
-                  <label className="text-xs font-bold text-gray-700">Sobre você</label>
-                  <textarea 
-                    rows={4}
-                    value={sobreVoce}
-                    onChange={(e) => setSobreVoce(e.target.value)}
-                    placeholder="Conte sobre sua experiência profissional para atrair mais clientes..."
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition resize-none"
-                  />
-                </div>
-              )}
-
-              {/* Rodapé */}
               <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                <div>
-                  {sucesso && (
-                    <span className="text-xs text-green-600 font-bold">✓ Alterações salvas com sucesso!</span>
-                  )}
-                  {erroMensagem && (
-                    <span className="text-xs text-red-500 font-bold">✗ {erroMensagem}</span>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  disabled={carregando}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 disabled:opacity-70"
-                >
+                <button type="submit" disabled={carregando} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2">
                   {carregando && <Loader2 size={16} className="animate-spin" />}
                   Salvar alterações
                 </button>
@@ -306,7 +206,52 @@ export default function ConfiguracoesView() {
             </form>
           )}
 
-          {abaAtiva !== "perfil" && (
+          {abaAtiva === "seguranca" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Conta e Segurança</h2>
+                <p className="text-sm text-gray-500">Gerencie sua senha e opções de acesso.</p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Senha Atual */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-gray-700">Senha atual</label>
+                  <div className="relative">
+                    <input type={verSenhaAtual ? "text" : "password"} placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition pr-10" />
+                    <button type="button" onClick={() => setVerSenhaAtual(!verSenhaAtual)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><EyeOff size={18} /></button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Nova Senha */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-700">Nova senha</label>
+                    <div className="relative">
+                      <input type={verNovaSenha ? "text" : "password"} placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition pr-10" />
+                      <button type="button" onClick={() => setVerNovaSenha(!verNovaSenha)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><EyeOff size={18} /></button>
+                    </div>
+                  </div>
+                  {/* Confirmar */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-700">Confirmar nova senha</label>
+                    <div className="relative">
+                      <input type={verConfirmaSenha ? "text" : "password"} placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition pr-10" />
+                      <button type="button" onClick={() => setVerConfirmaSenha(!verConfirmaSenha)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><EyeOff size={18} /></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-50 flex justify-end">
+                <button type="button" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer">
+                  Atualizar senha
+                </button>
+              </div>
+            </div>
+          )}
+
+          {abaAtiva !== "perfil" && abaAtiva !== "seguranca" && (
             <div className="text-center py-12 text-gray-400 text-sm">
               Esta seção de <strong className="capitalize">{abaAtiva}</strong> está integrada e aguardando as regras do banco de dados.
             </div>
