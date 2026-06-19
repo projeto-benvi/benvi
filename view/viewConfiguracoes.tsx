@@ -47,6 +47,12 @@ export default function ConfiguracoesView() {
   const [notifPushMensagens, setNotifPushMensagens] = useState(true);
   const [notifPushStatus, setNotifPushStatus] = useState(true);
 
+  // Estados de Privacidade
+  const [perfilPublico, setPerfilPublico] = useState(true);
+  const [mostrarTelefone, setMostrarTelefone] = useState(false);
+  const [mostrarHistorico, setMostrarHistorico] = useState(true);
+  const [permitirDicasAI, setPermitirDicasAI] = useState(true);
+
   useEffect(() => {
     if (user) {
       setNome(user.nome || "");
@@ -121,14 +127,26 @@ export default function ConfiguracoesView() {
     setErroMensagem("");
 
     try {
-      // Aqui você pode criar uma rota posterior se quiser salvar no banco de dados
-      // const res = await fetch(`/api/usuario/${user?.id}/notificacoes`, { ... })
-      
-      // Simulando resposta de sucesso
       await new Promise((resolve) => setTimeout(resolve, 800));
       setSucesso(true);
     } catch (error) {
       setErroMensagem("Erro ao salvar preferências de alertas.");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const handleSalvarPrivacidade = async () => {
+    setCarregando(true);
+    setSucesso(false);
+    setErroMensagem("");
+
+    try {
+      // Simulação de salvamento das configurações de privacidade
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setSucesso(true);
+    } catch (error) {
+      setErroMensagem("Erro ao salvar opções de privacidade.");
     } finally {
       setCarregando(false);
     }
@@ -141,9 +159,6 @@ export default function ConfiguracoesView() {
       </div>
     );
   }
-
-  const isPrestador = user?.isPrestador;
-  const isAdmin = user?.isAdmin;
 
   return (
     <div className="p-8 max-w-7xl mx-auto font-sans">
@@ -300,7 +315,6 @@ export default function ConfiguracoesView() {
               </div>
 
               <div className="divide-y divide-gray-100">
-                {/* Grupo: E-mails */}
                 <div className="py-4 space-y-4">
                   <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Alertas por E-mail</h3>
                   
@@ -347,7 +361,6 @@ export default function ConfiguracoesView() {
                   </div>
                 </div>
 
-                {/* Grupo: Notificações Push */}
                 <div className="py-4 space-y-4">
                   <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Alertas no Navegador (Push)</h3>
                   
@@ -398,7 +411,89 @@ export default function ConfiguracoesView() {
             </div>
           )}
 
-          {abaAtiva !== "perfil" && abaAtiva !== "seguranca" && abaAtiva !== "notificacoes" && (
+          {/* ABA PRIVACIDADE */}
+          {abaAtiva === "privacidade" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Configurações de Privacidade</h2>
+                <p className="text-sm text-gray-500">Controle quem tem acesso aos seus dados e histórico no Benvi.</p>
+              </div>
+
+              <div className="divide-y divide-gray-100">
+                <div className="py-4 space-y-4">
+                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Visibilidade do perfil</h3>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Perfil indexável (Público)</p>
+                      <p className="text-xs text-gray-400">Permitir que seu perfil e portfólio apareçam no Google e buscas internas.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setPerfilPublico(!perfilPublico)} 
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${perfilPublico ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${perfilPublico ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Exibir número de telefone público</p>
+                      <p className="text-xs text-gray-400">Mostrar seu número diretamente no perfil sem precisar de abertura de chat.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setMostrarTelefone(!mostrarTelefone)} 
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${mostrarTelefone ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${mostrarTelefone ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="py-4 space-y-4">
+                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Dados e Inteligência</h3>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Exibir histórico de serviços realizados</p>
+                      <p className="text-xs text-gray-400">Permitir que novos clientes vejam a quantidade de serviços que você já concluiu com sucesso.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setMostrarHistorico(!mostrarHistorico)} 
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${mostrarHistorico ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${mostrarHistorico ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                   
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                <div>
+                  {sucesso && <span className="text-xs text-green-600 font-bold">✓ Opções de privacidade salvas!</span>}
+                  {erroMensagem && <span className="text-xs text-red-500 font-bold">✗ {erroMensagem}</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSalvarPrivacidade}
+                  disabled={carregando}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
+                >
+                  {carregando && <Loader2 size={16} className="animate-spin" />}
+                  Salvar configurações
+                </button>
+              </div>
+            </div>
+          )}
+
+          {abaAtiva !== "perfil" && abaAtiva !== "seguranca" && abaAtiva !== "notificacoes" && abaAtiva !== "privacidade" && (
             <div className="text-center py-12 text-gray-400 text-sm">
               Esta seção de <strong className="capitalize">{abaAtiva}</strong> está integrada e aguardando as regras do banco de dados.
             </div>
@@ -407,4 +502,4 @@ export default function ConfiguracoesView() {
       </div>
     </div>
   );
-}
+} 
