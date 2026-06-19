@@ -11,10 +11,12 @@ interface AuthContextType {
     avatar: string;
     isAdmin: boolean;
     nivelAcesso: number;
+    isPrestador: boolean;
   } | null;
   logado: boolean;
   carregando: boolean;
   logout: () => void;
+  atualizarSessao: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -22,10 +24,11 @@ export const AuthContext = createContext<AuthContextType>({
   logado: false,
   carregando: true,
   logout: () => {},
+  atualizarSessao: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
 
   const carregando = status === 'loading';
   const logado = status === 'authenticated';
@@ -38,16 +41,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         avatar: session.user.image ?? '',
         isAdmin: (session.user as any).isAdmin ?? false,
         nivelAcesso: (session.user as any).nivelAcesso ?? 1,
+        isPrestador: (session.user as any).isPrestador ?? false,
       }
     : null;
 
   function logout() {
-    // Limpa os cookies do NextAuth e joga para a página de login
     signOut({ callbackUrl: '/login' });
   }
 
+  async function atualizarSessao() {
+    await update();
+  }
+
   return (
-    <AuthContext.Provider value={{ user, logado, carregando, logout }}>
+    <AuthContext.Provider value={{ user, logado, carregando, logout, atualizarSessao }}>
       {children}
     </AuthContext.Provider>
   );

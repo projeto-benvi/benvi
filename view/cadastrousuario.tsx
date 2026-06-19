@@ -4,123 +4,319 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
-// Assets baseados no seu design de Login/Cadastro
-import LogoBranca from "@/assets/logo-branca.png"; 
-import ilustracao from "@/assets/ilustracao_login.png"; 
+import LogoBranca from "@/assets/logo-branca.png";
+import ilustracao from "@/assets/ilustracao_login.png";
 import googleicon from "@/assets/icons/googleicon.svg";
 
-// Ícones dos Inputs (Passo 1)
 import iconPessoa from "@/assets/icons/iconPessoa.svg";
 import iconCarta from "@/assets/icons/iconCarta.svg";
 import iconCpf from "@/assets/icons/iconCpf.svg";
 import iconTelefone from "@/assets/icons/iconTelefone.svg";
 import iconCadeado from "@/assets/icons/iconCadeado.svg";
 
-// Ícones do React-Icons (Passo 2)
-import { FaWrench, FaBriefcase, FaAward } from "react-icons/fa";
+import {
+  FaWrench,
+  FaBriefcase,
+  FaAward,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
+
+const CATEGORIAS = [
+  "Eletricista",
+  "Encanador",
+  "Pedreiro",
+  "Pintor",
+  "Diarista",
+  "Faxineira",
+  "Jardineiro",
+  "Marceneiro",
+  "Serralheiro",
+  "Técnico em Ar-Condicionado",
+  "Técnico em Informática",
+  "Montador de Móveis",
+  "Chaveiro",
+  "Gesseiro",
+  "Instalador de Câmeras",
+  "Manicure e Pedicure",
+  "Cabeleireiro",
+  "Maquiador(a)",
+  "Designer Gráfico",
+  "Fotógrafo",
+  "Personal Trainer",
+  "Professor Particular / Reforço Escolar",
+  "Cuidador de Idosos",
+  "Babá",
+  "Lavador de Carros / Estética Automotiva",
+  "Motoboy / Entregador Particular",
+  "Costureira / Ajustes de Roupas",
+  "Confeiteira / Bolos e Doces",
+  "Decorador(a) de Eventos",
+  "Social Media / Gestor de Redes Sociais",
+  "Outro",
+];
+
+function mascaraCPF(valor: string) {
+  return valor
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+function mascaraTelefone(valor: string) {
+  return valor
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+}
+
+function validarEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validarIdade(dataNascimento: string) {
+  const nascimento = new Date(dataNascimento);
+  const hoje = new Date();
+
+  let idade = hoje.getFullYear() - nascimento.getFullYear();
+  const mes = hoje.getMonth() - nascimento.getMonth();
+
+  if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
+    idade--;
+  }
+
+  return idade >= 18;
+}
+
+function validarSenha(senha: string) {
+  return {
+    tamanho: senha.length >= 8,
+    maiuscula: /[A-Z]/.test(senha),
+    numero: /[0-9]/.test(senha),
+  };
+}
 
 export default function CadastroUnificado() {
   const router = useRouter();
 
-  // Controle de Fluxo e Tipo de Conta
   const [passo, setPasso] = useState<1 | 2>(1);
-  const [tipoConta, setTipoConta] = useState<"cliente" | "prestador">("cliente");
+  const [tipoConta, setTipoConta] = useState<"cliente" | "prestador">(
+    "cliente"
+  );
   const [idUsuarioGerado, setIdUsuarioGerado] = useState<number | null>(null);
 
-  // Dados do Passo 1 (Usuário)
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [telefone, setTelefone] = useState("");
   const [senha, setSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [verSenha, setVerSenha] = useState(false);
+  const [verConfirmar, setVerConfirmar] = useState(false);
 
-  // Dados do Passo 2 (Prestador)
   const [categoria, setCategoria] = useState("");
   const [descricao, setDescricao] = useState("");
   const [especialidade, setEspecialidade] = useState("");
 
-  // Estados de Interface
-  const [erro, setErro] = useState("");
+  const [erros, setErros] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(false);
 
-  // Lógica do Passo 1: Cadastro do Usuário Base
-  async function handlePasso1(e: React.FormEvent) {
-    e.preventDefault();
-    setErro("");
+  const forcaSenha = validarSenha(senha);
+  const forcaTotal = Object.values(forcaSenha).filter(Boolean).length;
 
-    if (!nome || !email || !cpf || !dataNascimento || !telefone || !senha) {
-      setErro("Por favor, preencha todos os campos.");
-      return;
+  async function fazerLoginAutomatico() {
+    const login = await signIn("credentials", {
+      email: email.trim().toLowerCase(),
+
+      // Se no seu NextAuth o campo for "senha", troque a linha abaixo por:
+      // senha,
+      password: senha,
+
+      redirect: false,
+    });
+
+    if (login?.error) {
+      setErros({
+        geral:
+          "Cadastro realizado, mas não foi possível fazer login automático. Faça login manualmente.",
+      });
+      return false;
     }
 
+    return true;
+  }
+
+  function validarPasso1() {
+    const novosErros: Record<string, string> = {};
+
+    if (!nome.trim() || nome.trim().split(" ").length < 2) {
+      novosErros.nome = "Informe seu nome completo (nome e sobrenome).";
+    }
+
+    if (!validarEmail(email)) {
+      novosErros.email = "Informe um e-mail válido.";
+    }
+
+    if (cpf.replace(/\D/g, "").length !== 11) {
+      novosErros.cpf = "Informe um CPF válido.";
+    }
+
+    if (!dataNascimento) {
+      novosErros.dataNascimento = "Informe sua data de nascimento.";
+    } else if (!validarIdade(dataNascimento)) {
+      novosErros.dataNascimento = "Você precisa ter pelo menos 18 anos.";
+    }
+
+    if (telefone.replace(/\D/g, "").length < 10) {
+      novosErros.telefone = "Informe um telefone válido com DDD.";
+    }
+
+    if (!forcaSenha.tamanho || !forcaSenha.maiuscula || !forcaSenha.numero) {
+      novosErros.senha = "A senha não atende aos requisitos mínimos.";
+    }
+
+    if (senha !== confirmarSenha) {
+      novosErros.confirmarSenha = "As senhas não coincidem.";
+    }
+
+    setErros(novosErros);
+    return Object.keys(novosErros).length === 0;
+  }
+
+  function validarPasso2() {
+    const novosErros: Record<string, string> = {};
+
+    if (!categoria) {
+      novosErros.categoria = "Selecione uma categoria de serviço.";
+    }
+
+    if (!descricao.trim() || descricao.trim().length < 20) {
+      novosErros.descricao =
+        "Descreva seus serviços em pelo menos 20 caracteres.";
+    }
+
+    if (!especialidade.trim()) {
+      novosErros.especialidade = "Informe sua especialidade principal.";
+    }
+
+    setErros(novosErros);
+    return Object.keys(novosErros).length === 0;
+  }
+
+  async function handlePasso1(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!validarPasso1()) return;
+
     setCarregando(true);
+
     try {
       const res = await fetch("/api/usuario", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, email, cpf, telefone, senha, data_nascimento: dataNascimento }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setErro(data.erro ?? "Erro ao criar usuário.");
-        return;
-      }
-
-      if (tipoConta === "prestador") {
-        setIdUsuarioGerado(data.id || data.id_usuario); 
-        setPasso(2); 
-      } else {
-        router.push("/"); 
-      }
-    } catch (e) {
-      setErro("Erro de conexão. Tente novamente.");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  // Lógica do Passo 2: Dados profissionais do Prestador
-  async function handlePasso2(e: React.FormEvent) {
-    e.preventDefault();
-    setErro("");
-
-    if (!idUsuarioGerado) {
-      setErro("ID de usuário não encontrado. Recomece o cadastro.");
-      return;
-    }
-
-    if (!categoria || !descricao || !especialidade) {
-      setErro("Por favor, preencha todos os campos profissionais.");
-      return;
-    }
-
-    setCarregando(true);
-    try {
-      const res = await fetch("/api/prestador", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          id_usuario: idUsuarioGerado,
-          categoria_principal: categoria,
-          descricao_profissional: descricao, 
-          especialidade_principal: especialidade
+          nome: nome.trim(),
+          email: email.trim().toLowerCase(),
+          cpf: cpf.replace(/\D/g, ""),
+          telefone: telefone.replace(/\D/g, ""),
+          senha,
+          data_nascimento: dataNascimento,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setErro(data.erro ?? "Erro ao cadastrar dados do prestador.");
+        if (data.campo) {
+          setErros({
+            [data.campo]: data.erro,
+          });
+        } else {
+          setErros({
+            geral: data.erro ?? "Erro ao criar usuário.",
+          });
+        }
+
         return;
       }
 
-      router.push("/"); 
-    } catch (e) {
-      setErro("Erro de conexão. Tente novamente.");
+      if (tipoConta === "prestador") {
+        setIdUsuarioGerado(data.id || data.id_usuario);
+        setPasso(2);
+        setErros({});
+        return;
+      }
+
+      const logou = await fazerLoginAutomatico();
+
+      if (!logou) return;
+
+      router.push("/");
+      router.refresh();
+    } catch {
+      setErros({
+        geral: "Erro de conexão. Tente novamente.",
+      });
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function handlePasso2(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!validarPasso2()) return;
+
+    if (!idUsuarioGerado) {
+      setErros({
+        geral: "ID de usuário não encontrado. Recomece o cadastro.",
+      });
+      return;
+    }
+
+    setCarregando(true);
+
+    try {
+      const res = await fetch("/api/prestador", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id_usuario: idUsuarioGerado,
+          categoria_principal: categoria,
+          descricao_profissional: descricao.trim(),
+          especialidade_principal: especialidade.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErros({
+          geral: data.erro ?? "Erro ao cadastrar dados do prestador.",
+        });
+        return;
+      }
+
+      const logou = await fazerLoginAutomatico();
+
+      if (!logou) return;
+
+      router.push("/");
+      router.refresh();
+    } catch {
+      setErros({
+        geral: "Erro de conexão. Tente novamente.",
+      });
     } finally {
       setCarregando(false);
     }
@@ -128,39 +324,48 @@ export default function CadastroUnificado() {
 
   return (
     <section className="flex w-full h-screen bg-gradient-to-b from-[#60A5FA] to-[#22C55E] overflow-hidden">
-      
-      {/* Lado Esquerdo: Logo Branca + Ilustração (55% da tela) */}
       <div className="hidden md:flex flex-col w-[55%] p-12 relative justify-between h-full">
         <div className="w-full flex justify-start items-center pl-6 pt-2">
-          <Image src={LogoBranca} alt="Logo Benvi" width={150} height={50} priority />
+          <Image
+            src={LogoBranca}
+            alt="Logo Benvi"
+            width={150}
+            height={50}
+            priority
+          />
         </div>
 
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-[800px] aspect-square relative">
-            <Image src={ilustracao} alt="Ilustração Benvi" fill className="object-contain" priority />
+            <Image
+              src={ilustracao}
+              alt="Ilustração Benvi"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
         </div>
-        
-        <div className="h-6 hidden lg:block"></div>
+
+        <div className="h-6 hidden lg:block" />
       </div>
 
-      {/* Lado Direito: Painel do Formulário Dinâmico (45% da tela) */}
       <div className="w-full md:w-[45%] bg-white rounded-tl-[60px] md:rounded-tl-[100px] flex flex-col justify-between p-8 md:p-12 h-full shadow-2xl z-10 overflow-y-auto custom-scrollbar">
-        
-        {/* Topo do Formulário: Botões de Voltar */}
         <div className="flex items-center justify-start pt-2 h-6">
           {passo === 1 ? (
-          
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="text-gray-600 hover:text-gray-900 transition-colors cursor-pointer text-xl font-medium"
             >
-              &lt; 
+              &lt;
             </Link>
           ) : (
-            /* Botão para voltar para o Passo 1 do cadastro (Passo 2) */
-            <button 
-              onClick={() => setPasso(1)} 
+            <button
+              type="button"
+              onClick={() => {
+                setPasso(1);
+                setErros({});
+              }}
               className="text-gray-600 hover:text-gray-900 transition-colors cursor-pointer text-xl font-medium"
             >
               &lt; Voltar
@@ -168,158 +373,511 @@ export default function CadastroUnificado() {
           )}
         </div>
 
-        {/* Bloco Central do Formulário */}
         <div className="w-full max-w-[420px] mx-auto my-auto py-4">
           <div className="text-center mb-6">
             <h1 className="text-[34px] font-bold text-[#1E293B] mb-1 tracking-tight">
               Crie sua conta
             </h1>
+
             <p className="text-gray-400 text-sm">
-              {passo === 1 ? "Comece preenchendo seus dados básicos" : "Preencha suas informações de trabalho"}
+              {passo === 1
+                ? "Comece preenchendo seus dados básicos"
+                : "Preencha suas informações de trabalho"}
             </p>
+
+            {tipoConta === "prestador" && (
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <div
+                  className={`h-1.5 w-12 rounded-full transition-colors ${
+                    passo >= 1 ? "bg-blue-500" : "bg-gray-200"
+                  }`}
+                />
+                <div
+                  className={`h-1.5 w-12 rounded-full transition-colors ${
+                    passo >= 2 ? "bg-blue-500" : "bg-gray-200"
+                  }`}
+                />
+              </div>
+            )}
           </div>
 
-          {/* ==================== FORMULÁRIO DO PASSO 1 ==================== */}
           {passo === 1 && (
-            <form onSubmit={handlePasso1} className="flex flex-col gap-4">
-              
-              {/* Botões seletores de Tipo de Conta */}
-              <div className="grid grid-cols-2 gap-3 mb-2 w-full">
-                <button
-                  type="button"
-                  onClick={() => setTipoConta("cliente")}
-                  className={`py-3 rounded-xl text-sm font-semibold border transition-all cursor-pointer ${
-                    tipoConta === "cliente" 
-                      ? "bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-blue-500/10" 
-                      : "bg-[#EFEFEF] text-gray-500 border-transparent hover:bg-gray-200"
-                  }`}
-                >
-                  Sou cliente
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTipoConta("prestador")}
-                  className={`py-3 rounded-xl text-sm font-semibold border transition-all cursor-pointer ${
-                    tipoConta === "prestador" 
-                      ? "bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-blue-500/10" 
-                      : "bg-[#EFEFEF] text-gray-500 border-transparent hover:bg-gray-200"
-                  }`}
-                >
-                  Sou prestador
-                </button>
+            <form onSubmit={handlePasso1} className="flex flex-col gap-3" noValidate>
+              <div className="grid grid-cols-2 gap-3 mb-1 w-full">
+                {(["cliente", "prestador"] as const).map((tipo) => (
+                  <button
+                    key={tipo}
+                    type="button"
+                    onClick={() => setTipoConta(tipo)}
+                    className={`py-3 rounded-xl text-sm font-semibold border transition-all cursor-pointer capitalize ${
+                      tipoConta === tipo
+                        ? "bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-blue-500/10"
+                        : "bg-[#EFEFEF] text-gray-500 border-transparent hover:bg-gray-200"
+                    }`}
+                  >
+                    Sou {tipo}
+                  </button>
+                ))}
               </div>
 
-              {/* Inputs Básicos */}
-              <div className="relative">
-                <Image src={iconPessoa} alt="Nome" width={20} height={20} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
-                <input value={nome} onChange={e => setNome(e.target.value)} type="text" placeholder="Seu nome completo" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 text-sm" />
+              <div>
+                <div className="relative">
+                  <Image
+                    src={iconPessoa}
+                    alt="Nome"
+                    width={20}
+                    height={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  />
+                  <input
+                    value={nome}
+                    onChange={(e) => {
+                      setNome(e.target.value);
+                      setErros((p) => ({ ...p, nome: "" }));
+                    }}
+                    type="text"
+                    placeholder="Seu nome completo"
+                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
+                      erros.nome ? "ring-2 ring-red-400" : "focus:ring-orange-500"
+                    }`}
+                  />
+                </div>
+                {erros.nome && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">{erros.nome}</p>
+                )}
               </div>
 
-              <div className="relative">
-                <Image src={iconCarta} alt="Email" width={20} height={20} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
-                <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="seuemail@gmail.com" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 text-sm" />
+              <div>
+                <div className="relative">
+                  <Image
+                    src={iconCarta}
+                    alt="Email"
+                    width={20}
+                    height={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  />
+                  <input
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setErros((p) => ({ ...p, email: "" }));
+                    }}
+                    type="email"
+                    placeholder="seuemail@gmail.com"
+                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
+                      erros.email ? "ring-2 ring-red-400" : "focus:ring-orange-500"
+                    }`}
+                  />
+                </div>
+                {erros.email && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">{erros.email}</p>
+                )}
               </div>
 
-              <div className="relative">
-                <Image src={iconCpf} alt="CPF" width={20} height={20} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
-                <input value={cpf} onChange={e => setCpf(e.target.value)} type="text" placeholder="CPF: 000.000.000-00" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 text-sm" />
+              <div>
+                <div className="relative">
+                  <Image
+                    src={iconCpf}
+                    alt="CPF"
+                    width={20}
+                    height={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  />
+                  <input
+                    value={cpf}
+                    onChange={(e) => {
+                      setCpf(mascaraCPF(e.target.value));
+                      setErros((p) => ({ ...p, cpf: "" }));
+                    }}
+                    type="text"
+                    placeholder="000.000.000-00"
+                    inputMode="numeric"
+                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
+                      erros.cpf ? "ring-2 ring-red-400" : "focus:ring-orange-500"
+                    }`}
+                  />
+                </div>
+                {erros.cpf && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">{erros.cpf}</p>
+                )}
               </div>
 
-              <div className="relative">
-                <Image src={iconCpf} alt="Nascimento" width={20} height={20} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
-                <input value={dataNascimento} onChange={e => setDataNascimento(e.target.value)} type="date" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm text-gray-400" />
+              <div>
+                <div className="relative">
+                  <Image
+                    src={iconCpf}
+                    alt="Nascimento"
+                    width={20}
+                    height={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  />
+                  <input
+                    value={dataNascimento}
+                    onChange={(e) => {
+                      setDataNascimento(e.target.value);
+                      setErros((p) => ({ ...p, dataNascimento: "" }));
+                    }}
+                    type="date"
+                    className={`bg-[#EFEFEF] rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all text-sm text-gray-500 ${
+                      erros.dataNascimento
+                        ? "ring-2 ring-red-400"
+                        : "focus:ring-orange-500"
+                    }`}
+                  />
+                </div>
+                {erros.dataNascimento && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">
+                    {erros.dataNascimento}
+                  </p>
+                )}
               </div>
 
-              <div className="relative">
-                <Image src={iconTelefone} alt="Telefone" width={20} height={20} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
-                <input value={telefone} onChange={e => setTelefone(e.target.value)} type="text" placeholder="(00) 00000-0000" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 text-sm" />
+              <div>
+                <div className="relative">
+                  <Image
+                    src={iconTelefone}
+                    alt="Telefone"
+                    width={20}
+                    height={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  />
+                  <input
+                    value={telefone}
+                    onChange={(e) => {
+                      setTelefone(mascaraTelefone(e.target.value));
+                      setErros((p) => ({ ...p, telefone: "" }));
+                    }}
+                    type="text"
+                    placeholder="(00) 00000-0000"
+                    inputMode="numeric"
+                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
+                      erros.telefone
+                        ? "ring-2 ring-red-400"
+                        : "focus:ring-orange-500"
+                    }`}
+                  />
+                </div>
+                {erros.telefone && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">
+                    {erros.telefone}
+                  </p>
+                )}
               </div>
 
-              <div className="relative">
-                <Image src={iconCadeado} alt="Senha" width={20} height={20} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
-                <input value={senha} onChange={e => setSenha(e.target.value)} type="password" placeholder="Senha segura" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 text-sm" />
+              <div>
+                <div className="relative">
+                  <Image
+                    src={iconCadeado}
+                    alt="Senha"
+                    width={20}
+                    height={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  />
+                  <input
+                    value={senha}
+                    onChange={(e) => {
+                      setSenha(e.target.value);
+                      setErros((p) => ({ ...p, senha: "" }));
+                    }}
+                    type={verSenha ? "text" : "password"}
+                    placeholder="Senha segura"
+                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-10 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
+                      erros.senha ? "ring-2 ring-red-400" : "focus:ring-orange-500"
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setVerSenha(!verSenha)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {verSenha ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  </button>
+                </div>
+
+                {senha.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex gap-1">
+                      {[1, 2, 3].map((n) => (
+                        <div
+                          key={n}
+                          className={`h-1 flex-1 rounded-full transition-colors ${
+                            forcaTotal >= n
+                              ? forcaTotal === 1
+                                ? "bg-red-400"
+                                : forcaTotal === 2
+                                  ? "bg-yellow-400"
+                                  : "bg-green-500"
+                              : "bg-gray-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col gap-0.5 pl-0.5">
+                      {[
+                        {
+                          ok: forcaSenha.tamanho,
+                          label: "Mínimo 8 caracteres",
+                        },
+                        {
+                          ok: forcaSenha.maiuscula,
+                          label: "Uma letra maiúscula",
+                        },
+                        {
+                          ok: forcaSenha.numero,
+                          label: "Um número",
+                        },
+                      ].map(({ ok, label }) => (
+                        <p
+                          key={label}
+                          className={`text-[10px] font-medium ${
+                            ok ? "text-green-600" : "text-gray-400"
+                          }`}
+                        >
+                          {ok ? "✓" : "·"} {label}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {erros.senha && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">{erros.senha}</p>
+                )}
               </div>
 
-              {erro && <p className="text-red-500 text-xs font-semibold pl-1 text-left">{erro}</p>}
+              <div>
+                <div className="relative">
+                  <Image
+                    src={iconCadeado}
+                    alt="Confirmar senha"
+                    width={20}
+                    height={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40"
+                  />
+                  <input
+                    value={confirmarSenha}
+                    onChange={(e) => {
+                      setConfirmarSenha(e.target.value);
+                      setErros((p) => ({ ...p, confirmarSenha: "" }));
+                    }}
+                    type={verConfirmar ? "text" : "password"}
+                    placeholder="Confirme sua senha"
+                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-10 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
+                      erros.confirmarSenha
+                        ? "ring-2 ring-red-400"
+                        : "focus:ring-orange-500"
+                    }`}
+                  />
 
-              <button 
-                type="submit" 
+                  <button
+                    type="button"
+                    onClick={() => setVerConfirmar(!verConfirmar)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {verConfirmar ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  </button>
+                </div>
+
+                {erros.confirmarSenha && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">
+                    {erros.confirmarSenha}
+                  </p>
+                )}
+              </div>
+
+              {erros.geral && (
+                <p className="text-red-500 text-xs font-semibold pl-1 text-center bg-red-50 py-2 rounded-lg">
+                  {erros.geral}
+                </p>
+              )}
+
+              <button
+                type="submit"
                 disabled={carregando}
-                className="bg-[#F97316] text-white font-semibold rounded-xl py-4 mt-2 cursor-pointer hover:bg-[#EA580C] transition-colors text-base shadow-md shadow-orange-500/10 disabled:opacity-60"
+                className="bg-[#F97316] text-white font-semibold rounded-xl py-4 mt-1 cursor-pointer hover:bg-[#EA580C] transition-colors text-base shadow-md shadow-orange-500/10 disabled:opacity-60"
               >
-                {carregando ? "Processando..." : tipoConta === "prestador" ? "Próximo Passo" : "Cadastrar"}
+                {carregando
+                  ? "Processando..."
+                  : tipoConta === "prestador"
+                    ? "Próximo passo →"
+                    : "Cadastrar"}
               </button>
 
               <div className="flex items-center gap-4 my-1">
-                <div className="flex-1 h-px bg-gray-200"></div>
+                <div className="flex-1 h-px bg-gray-200" />
                 <span className="text-gray-400 text-sm">ou</span>
-                <div className="flex-1 h-px bg-gray-200"></div>
+                <div className="flex-1 h-px bg-gray-200" />
               </div>
 
-              <button type="button" className="bg-[#EFEFEF] text-gray-700 font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-200 transition-colors text-sm">
+              <button
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+                className="bg-[#EFEFEF] text-gray-700 font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-200 transition-colors text-sm"
+              >
                 <Image src={googleicon} alt="Google" width={18} height={18} />
                 Cadastrar com Google
               </button>
             </form>
           )}
 
-          {/* ==================== FORMULÁRIO DO PASSO 2 ==================== */}
           {passo === 2 && (
-            <form onSubmit={handlePasso2} className="flex flex-col gap-4">
-              
-              {/* Botões seletores desativados no Passo 2 para consistência visual */}
-              <div className="grid grid-cols-2 gap-3 mb-2 w-full opacity-60 pointer-events-none">
-                <button type="button" className="py-3 rounded-xl text-sm font-semibold border bg-[#EFEFEF] text-gray-500 border-transparent">
+            <form onSubmit={handlePasso2} className="flex flex-col gap-3" noValidate>
+              <div className="grid grid-cols-2 gap-3 mb-1 w-full opacity-50 pointer-events-none">
+                <button
+                  type="button"
+                  className="py-3 rounded-xl text-sm font-semibold border bg-[#EFEFEF] text-gray-500 border-transparent"
+                >
                   Sou cliente
                 </button>
-                <button type="button" className="py-3 rounded-xl text-sm font-semibold border bg-[#3B82F6] text-white border-[#3B82F6]">
+                <button
+                  type="button"
+                  className="py-3 rounded-xl text-sm font-semibold border bg-[#3B82F6] text-white border-[#3B82F6]"
+                >
                   Sou prestador
                 </button>
               </div>
 
-              {/* Inputs Profissionais */}
-              <div className="relative">
-                <FaWrench className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input value={categoria} onChange={e => setCategoria(e.target.value)} type="text" placeholder="Categoria de Serviço:" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 text-sm" required />
+              <div>
+                <div className="relative">
+                  <FaWrench
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    size={16}
+                  />
+
+                  <select
+                    value={categoria}
+                    onChange={(e) => {
+                      setCategoria(e.target.value);
+                      setErros((p) => ({ ...p, categoria: "" }));
+                    }}
+                    className={`bg-[#EFEFEF] text-gray-700 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all text-sm appearance-none cursor-pointer ${
+                      erros.categoria
+                        ? "ring-2 ring-red-400"
+                        : "focus:ring-orange-500"
+                    }`}
+                  >
+                    <option value="">Selecione sua categoria</option>
+                    {CATEGORIAS.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xs">
+                    ▼
+                  </span>
+                </div>
+
+                {erros.categoria && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">
+                    {erros.categoria}
+                  </p>
+                )}
               </div>
 
-              <div className="relative">
-                <FaBriefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input value={descricao} onChange={e => setDescricao(e.target.value)} type="text" placeholder="Descrição" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 text-sm" required />
+              <div>
+                <div className="relative">
+                  <FaAward
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={16}
+                  />
+
+                  <input
+                    value={especialidade}
+                    onChange={(e) => {
+                      setEspecialidade(e.target.value);
+                      setErros((p) => ({ ...p, especialidade: "" }));
+                    }}
+                    type="text"
+                    placeholder="Ex: Elétrica residencial, colorimetria..."
+                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
+                      erros.especialidade
+                        ? "ring-2 ring-red-400"
+                        : "focus:ring-orange-500"
+                    }`}
+                  />
+                </div>
+
+                {erros.especialidade && (
+                  <p className="text-red-500 text-xs mt-1 pl-1">
+                    {erros.especialidade}
+                  </p>
+                )}
               </div>
 
-              <div className="relative">
-                <FaAward className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input value={especialidade} onChange={e => setEspecialidade(e.target.value)} type="text" placeholder="Especialidade Principal:" className="bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400 text-sm" required />
+              <div>
+                <div className="relative">
+                  <FaBriefcase className="absolute left-4 top-4 text-gray-400" size={16} />
+
+                  <textarea
+                    value={descricao}
+                    onChange={(e) => {
+                      setDescricao(e.target.value);
+                      setErros((p) => ({ ...p, descricao: "" }));
+                    }}
+                    placeholder="Descreva seus serviços, experiência e diferenciais..."
+                    rows={4}
+                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm resize-none ${
+                      erros.descricao
+                        ? "ring-2 ring-red-400"
+                        : "focus:ring-orange-500"
+                    }`}
+                  />
+                </div>
+
+                <div className="flex justify-between items-center mt-1 pl-1">
+                  {erros.descricao ? (
+                    <p className="text-red-500 text-xs">{erros.descricao}</p>
+                  ) : (
+                    <span />
+                  )}
+
+                  <p
+                    className={`text-xs ml-auto ${
+                      descricao.length < 20 ? "text-gray-400" : "text-green-500"
+                    }`}
+                  >
+                    {descricao.length}/20 mín.
+                  </p>
+                </div>
               </div>
 
-              {erro && <p className="text-red-500 text-xs font-semibold pl-1 text-left">{erro}</p>}
+              {erros.geral && (
+                <p className="text-red-500 text-xs font-semibold text-center bg-red-50 py-2 rounded-lg">
+                  {erros.geral}
+                </p>
+              )}
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={carregando}
-                className="bg-[#F97316] text-white font-semibold rounded-xl py-4 mt-2 cursor-pointer hover:bg-[#EA580C] transition-colors text-base shadow-md shadow-orange-500/10 disabled:opacity-60"
+                className="bg-[#F97316] text-white font-semibold rounded-xl py-4 mt-1 cursor-pointer hover:bg-[#EA580C] transition-colors text-base shadow-md shadow-orange-500/10 disabled:opacity-60"
               >
-                {carregando ? "Cadastrando..." : "Cadastrar"}
+                {carregando ? "Cadastrando..." : "Finalizar cadastro"}
               </button>
             </form>
           )}
 
-          {/* Link para alternar para o Login */}
-          <div className="text-center mt-6 text-sm text-gray-500">
+          <div className="text-center mt-5 text-sm text-gray-500">
             <span>Já tem sua conta? </span>
-            <Link href="/login" className="text-[#3B82F6] font-semibold hover:underline">
+            <Link
+              href="/login"
+              className="text-[#3B82F6] font-semibold hover:underline"
+            >
               Entrar
             </Link>
           </div>
         </div>
 
-        {/* Rodapé Fixo */}
         <div className="text-center text-[11px] text-gray-400 space-y-1 pb-2 pt-4">
-          <p className="hover:underline cursor-pointer">Política de Privacidade - Termos</p>
+          <p className="hover:underline cursor-pointer">
+            Política de Privacidade - Termos
+          </p>
           <p>© 2026 Benvi</p>
         </div>
-
       </div>
     </section>
   );
