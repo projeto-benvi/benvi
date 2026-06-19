@@ -1,5 +1,5 @@
 import { usuarioController } from '@/controller/usuarioController';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET  /api/usuario                                    → lista todos (público)
 // GET  /api/usuario?admin=contagem&id_solicitante=1    → contagem admin

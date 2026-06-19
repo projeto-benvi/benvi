@@ -306,7 +306,7 @@ export const adminService = {
       valores
     );
   },
-
+  
   async desativarUsuario(id_solicitante: number, id_alvo: number): Promise<void> {
     await this._verificarAdmin(id_solicitante);
 

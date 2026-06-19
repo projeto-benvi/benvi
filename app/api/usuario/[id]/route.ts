@@ -1,7 +1,5 @@
 import { usuarioController } from '@/controller/usuarioController';
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/app/lib/dataBase';
-import bcrypt from 'bcryptjs';
 
 // GET    /api/usuario/[id]                                  → busca por id (público)
 // PUT    /api/usuario/[id]                                  → atualiza (próprio usuário)

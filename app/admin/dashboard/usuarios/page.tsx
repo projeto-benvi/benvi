@@ -22,7 +22,7 @@ interface RecentUser {
 }
 
 export default function Usuarios() {
-  const id_solicitante = 1; // ID padrão do administrador para autorização da rota
+  const id_solicitante = 3; // ID padrão do administrador para autorização da rota
 
   const [metrics, setMetrics] = useState<DashboardData | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
