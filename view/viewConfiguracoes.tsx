@@ -28,6 +28,7 @@ export default function ConfiguracoesView() {
   const [sucesso, setSucesso] = useState(false);
   const [erroMensagem, setErroMensagem] = useState("");
   
+  // Estados do Perfil
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -38,6 +39,13 @@ export default function ConfiguracoesView() {
   
   const [avatarUrl, setAvatarUrl] = useState(""); 
   const [arquivoFoto, setArquivoFoto] = useState<File | null>(null);
+
+  // Estados das Notificações
+  const [notifEmailPedidos, setNotifEmailPedidos] = useState(true);
+  const [notifEmailMensagens, setNotifEmailMensagens] = useState(true);
+  const [notifEmailNovidades, setNotifEmailNovidades] = useState(false);
+  const [notifPushMensagens, setNotifPushMensagens] = useState(true);
+  const [notifPushStatus, setNotifPushStatus] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -107,6 +115,25 @@ export default function ConfiguracoesView() {
     }
   };
 
+  const handleSalvarNotificacoes = async () => {
+    setCarregando(true);
+    setSucesso(false);
+    setErroMensagem("");
+
+    try {
+      // Aqui você pode criar uma rota posterior se quiser salvar no banco de dados
+      // const res = await fetch(`/api/usuario/${user?.id}/notificacoes`, { ... })
+      
+      // Simulando resposta de sucesso
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setSucesso(true);
+    } catch (error) {
+      setErroMensagem("Erro ao salvar preferências de alertas.");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
   if (!logado) {
     return (
       <div className="flex items-center justify-center h-[60vh] text-gray-500">
@@ -140,7 +167,11 @@ export default function ConfiguracoesView() {
             <button
               key={id}
               type="button"
-              onClick={() => setAbaAtiva(id)}
+              onClick={() => {
+                setAbaAtiva(id);
+                setSucesso(false);
+                setErroMensagem("");
+              }}
               className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-semibold transition text-left ${
                 abaAtiva === id ? "bg-blue-50 text-blue-600" : "text-gray-500 hover:bg-gray-50"
               }`}
@@ -155,6 +186,7 @@ export default function ConfiguracoesView() {
         </div>
 
         <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl p-8 shadow-sm">
+          {/* ABA EDITAR PERFIL */}
           {abaAtiva === "perfil" && (
             <form onSubmit={handleSalvarAlteracoes} className="space-y-6">
               <div className="flex items-center gap-5 pb-4 border-b border-gray-50">
@@ -198,6 +230,10 @@ export default function ConfiguracoesView() {
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                <div>
+                  {sucesso && <span className="text-xs text-green-600 font-bold">✓ Alterações salvas com sucesso!</span>}
+                  {erroMensagem && <span className="text-xs text-red-500 font-bold">✗ {erroMensagem}</span>}
+                </div>
                 <button type="submit" disabled={carregando} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2">
                   {carregando && <Loader2 size={16} className="animate-spin" />}
                   Salvar alterações
@@ -206,6 +242,7 @@ export default function ConfiguracoesView() {
             </form>
           )}
 
+          {/* ABA CONTA E SEGURANÇA */}
           {abaAtiva === "seguranca" && (
             <div className="space-y-6">
               <div>
@@ -214,30 +251,33 @@ export default function ConfiguracoesView() {
               </div>
 
               <div className="space-y-4">
-                {/* Senha Atual */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-gray-700">Senha atual</label>
                   <div className="relative">
                     <input type={verSenhaAtual ? "text" : "password"} placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition pr-10" />
-                    <button type="button" onClick={() => setVerSenhaAtual(!verSenhaAtual)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><EyeOff size={18} /></button>
+                    <button type="button" onClick={() => setVerSenhaAtual(!verSenhaAtual)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      {verSenhaAtual ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Nova Senha */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-700">Nova senha</label>
                     <div className="relative">
                       <input type={verNovaSenha ? "text" : "password"} placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition pr-10" />
-                      <button type="button" onClick={() => setVerNovaSenha(!verNovaSenha)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><EyeOff size={18} /></button>
+                      <button type="button" onClick={() => setVerNovaSenha(!verNovaSenha)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {verNovaSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
                     </div>
                   </div>
-                  {/* Confirmar */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-700">Confirmar nova senha</label>
                     <div className="relative">
                       <input type={verConfirmaSenha ? "text" : "password"} placeholder="••••••••" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition pr-10" />
-                      <button type="button" onClick={() => setVerConfirmaSenha(!verConfirmaSenha)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><EyeOff size={18} /></button>
+                      <button type="button" onClick={() => setVerConfirmaSenha(!verConfirmaSenha)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {verConfirmaSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -251,7 +291,114 @@ export default function ConfiguracoesView() {
             </div>
           )}
 
-          {abaAtiva !== "perfil" && abaAtiva !== "seguranca" && (
+          {/* ABA NOTIFICAÇÕES */}
+          {abaAtiva === "notificacoes" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Preferências de Notificações</h2>
+                <p className="text-sm text-gray-500">Escolha como e quando deseja ser alertado pelo Benvi.</p>
+              </div>
+
+              <div className="divide-y divide-gray-100">
+                {/* Grupo: E-mails */}
+                <div className="py-4 space-y-4">
+                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Alertas por E-mail</h3>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Atualizações de pedidos</p>
+                      <p className="text-xs text-gray-400">Receba avisos sobre novos orçamentos, aprovações e finalizações.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setNotifEmailPedidos(!notifEmailPedidos)} 
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifEmailPedidos ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifEmailPedidos ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Novas mensagens</p>
+                      <p className="text-xs text-gray-400">Avisar por e-mail quando um cliente ou prestador enviar uma mensagem no chat.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setNotifEmailMensagens(!notifEmailMensagens)} 
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifEmailMensagens ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifEmailMensagens ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Novidades e Promoções</p>
+                      <p className="text-xs text-gray-400">Receba novidades do Benvi, dicas profissionais e ofertas especiais.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setNotifEmailNovidades(!notifEmailNovidades)} 
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifEmailNovidades ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifEmailNovidades ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grupo: Notificações Push */}
+                <div className="py-4 space-y-4">
+                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Alertas no Navegador (Push)</h3>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Chat em tempo real</p>
+                      <p className="text-xs text-gray-400">Exibir balões de notificação na tela sempre que receber novas mensagens.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setNotifPushMensagens(!notifPushMensagens)} 
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifPushMensagens ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifPushMensagens ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Mudanças de status</p>
+                      <p className="text-xs text-gray-400">Notificar imediatamente na tela quando um pedido mudar de andamento.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setNotifPushStatus(!notifPushStatus)} 
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 focus:outline-none ${notifPushStatus ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${notifPushStatus ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                <div>
+                  {sucesso && <span className="text-xs text-green-600 font-bold">✓ Preferências salvas!</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSalvarNotificacoes}
+                  disabled={carregando}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
+                >
+                  {carregando && <Loader2 size={16} className="animate-spin" />}
+                  Salvar preferências
+                </button>
+              </div>
+            </div>
+          )}
+
+          {abaAtiva !== "perfil" && abaAtiva !== "seguranca" && abaAtiva !== "notificacoes" && (
             <div className="text-center py-12 text-gray-400 text-sm">
               Esta seção de <strong className="capitalize">{abaAtiva}</strong> está integrada e aguardando as regras do banco de dados.
             </div>
