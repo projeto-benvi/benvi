@@ -63,6 +63,7 @@ export default function ConfiguracoesView() {
   const [carregandoProfissional, setCarregandoProfissional] = useState(false);
   const [sucessoProfissional, setSucessoProfissional] = useState(false);
   const [erroProfissional, setErroProfissional] = useState("");
+  const [tagsSelecionadas, setTagsSelecionadas] = useState<string[]>([]);
 
   // Estados das Notificações
   const [notifEmailPedidos, setNotifEmailPedidos] = useState(true);
@@ -363,64 +364,127 @@ export default function ConfiguracoesView() {
             </form>
           )}
 
-          {abaAtiva === "profissional" && user?.isPrestador && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">Informações Profissionais</h2>
-                <p className="text-sm text-gray-500">Configure como seu perfil de prestador aparece para os clientes.</p>
-              </div>
+       {abaAtiva === "profissional" && (
+  <div className="space-y-6">
+    <div>
+      <h2 className="text-lg font-bold text-gray-900">Informações Profissionais</h2>
+      <p className="text-sm text-gray-500">Configure como seu perfil de prestador aparece para os clientes.</p>
+    </div>
 
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-gray-700">Categoria principal</label>
-                  <select
-                    value={categoriaPrincipal}
-                    onChange={(e) => setCategoriaPrincipal(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
-                  >
-                    <option value="">Selecione uma categoria</option>
-                    <option value="Elétrica">Elétrica</option>
-                    <option value="Encanamento">Encanamento</option>
-                    <option value="Pintura">Pintura</option>
-                    <option value="Marcenaria">Marcenaria</option>
-                    <option value="Limpeza">Limpeza</option>
-                    <option value="Jardinagem">Jardinagem</option>
-                    <option value="Informática">Informática</option>
-                    <option value="Reformas">Reformas</option>
-                    <option value="Outro">Outro</option>
-                  </select>
-                </div>
+    <div className="space-y-5">
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-gray-700">Descrição profissional</label>
-                  <textarea
-                    rows={5}
-                    value={descricaoProfissional}
-                    onChange={(e) => setDescricaoProfissional(e.target.value)}
-                    placeholder="Fale sobre sua experiência, especialidades e diferenciais..."
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition resize-none"
-                  />
-                  <p className="text-[10px] text-gray-400">{descricaoProfissional.length}/500 caracteres</p>
-                </div>
-              </div>
+      {/* Categoria Principal */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold text-gray-700">Categoria principal</label>
+        <select
+          value={categoriaPrincipal}
+          onChange={(e) => setCategoriaPrincipal(e.target.value)}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
+        >
+          <option value="">Selecione uma categoria</option>
+          <option value="Eletricista">Eletricista</option>
+          <option value="Encanador">Encanador</option>
+          <option value="Pedreiro">Pedreiro</option>
+          <option value="Pintor">Pintor</option>
+          <option value="Diarista">Diarista</option>
+          <option value="Faxineira">Faxineira</option>
+          <option value="Jardineiro">Jardineiro</option>
+          <option value="Marceneiro">Marceneiro</option>
+          <option value="Serralheiro">Serralheiro</option>
+          <option value="Técnico em Ar-condicionado">Técnico em Ar-condicionado</option>
+          <option value="Técnico em Informática">Técnico em Informática</option>
+          <option value="Montador de Móveis">Montador de Móveis</option>
+          <option value="Chaveiro">Chaveiro</option>
+          <option value="Gesseiro">Gesseiro</option>
+          <option value="Instalador de Câmeras">Instalador de Câmeras</option>
+          <option value="Manicure e Pedicure">Manicure e Pedicure</option>
+          <option value="Cabeleireiro">Cabeleireiro</option>
+          <option value="Maquiador(a)">Maquiador(a)</option>
+          <option value="Designer Gráfico">Designer Gráfico</option>
+          <option value="Fotógrafo">Fotógrafo</option>
+          <option value="Personal Trainer">Personal Trainer</option>
+          <option value="Professor Particular / Reforço Escolar">Professor Particular / Reforço Escolar</option>
+          <option value="Cuidador de Idosos">Cuidador de Idosos</option>
+          <option value="Babá">Babá</option>
+          <option value="Lavador de Carros / Estética Automotiva">Lavador de Carros / Estética Automotiva</option>
+          <option value="Motoboy / Entregador Particular">Motoboy / Entregador Particular</option>
+          <option value="Costureira / Ajustes de Roupas">Costureira / Ajustes de Roupas</option>
+          <option value="Confeiteira / Bolos e Doces">Confeiteira / Bolos e Doces</option>
+          <option value="Decorador(a) de Eventos">Decorador(a) de Eventos</option>
+          <option value="Social Media / Gestor de Redes Sociais">Social Media / Gestor de Redes Sociais</option>
+        </select>
+      </div>
 
-              <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                <div>
-                  {sucessoProfissional && <span className="text-xs text-green-600 font-bold">✓ Informações salvas com sucesso!</span>}
-                  {erroProfissional && <span className="text-xs text-red-500 font-bold">✗ {erroProfissional}</span>}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSalvarProfissional}
-                  disabled={carregandoProfissional}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
-                >
-                  {carregandoProfissional && <Loader2 size={16} className="animate-spin" />}
-                  Salvar informações
-                </button>
-              </div>
-            </div>
-          )}
+      {/* Tags / Outras especialidades */}
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-bold text-gray-700">Outras especialidades</label>
+        <p className="text-[11px] text-gray-400">Selecione todas as áreas em que você também atua.</p>
+        <div className="flex flex-wrap gap-2 mt-1">
+          {[
+            'Eletricista','Encanador','Pedreiro','Pintor','Diarista','Faxineira',
+            'Jardineiro','Marceneiro','Serralheiro','Técnico em Ar-condicionado',
+            'Técnico em Informática','Montador de Móveis','Chaveiro','Gesseiro',
+            'Instalador de Câmeras','Manicure e Pedicure','Cabeleireiro','Maquiador(a)',
+            'Designer Gráfico','Fotógrafo','Personal Trainer',
+            'Professor Particular / Reforço Escolar','Cuidador de Idosos','Babá',
+            'Lavador de Carros / Estética Automotiva','Motoboy / Entregador Particular',
+            'Costureira / Ajustes de Roupas','Confeiteira / Bolos e Doces',
+            'Decorador(a) de Eventos','Social Media / Gestor de Redes Sociais'
+          ].filter(c => c !== categoriaPrincipal).map((cat) => {
+            const selecionado = tagsSelecionadas.includes(cat);
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => {
+                  setTagsSelecionadas(prev =>
+                    selecionado ? prev.filter(t => t !== cat) : [...prev, cat]
+                  );
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer ${
+                  selecionado
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Descrição profissional */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-bold text-gray-700">Descrição profissional</label>
+        <textarea
+          rows={5}
+          value={descricaoProfissional}
+          onChange={(e) => setDescricaoProfissional(e.target.value)}
+          placeholder="Fale sobre sua experiência, especialidades e diferenciais..."
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition resize-none"
+        />
+        <p className="text-[10px] text-gray-400">{descricaoProfissional.length}/500 caracteres</p>
+      </div>
+    </div>
+
+    <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+      <div>
+        {sucessoProfissional && <span className="text-xs text-green-600 font-bold">✓ Informações salvas com sucesso!</span>}
+        {erroProfissional && <span className="text-xs text-red-500 font-bold">✗ {erroProfissional}</span>}
+      </div>
+      <button
+        type="button"
+        onClick={handleSalvarProfissional}
+        disabled={carregandoProfissional}
+        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2"
+      >
+        {carregandoProfissional && <Loader2 size={16} className="animate-spin" />}
+        Salvar informações
+      </button>
+    </div>
+  </div>
+)}*
 
           {/* ABA CONTA E SEGURANÇA */}
           {abaAtiva === "seguranca" && (
