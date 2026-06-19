@@ -1,10 +1,9 @@
-
 import pool from '@/app/lib/dataBase';
 import { up as createUsuario } from './001_create_usuario';
 import { up as createPrestador } from './002_create_prestador';
 import { up as createCategoria } from './003_create_categoria';
 import { up as createServico } from './004_create_servico';
-import { up as createTag} from './006_create_tag';
+import { up as createTag } from './006_create_tag'; // 
 import { up as createSolicitacaoServico } from './008_create_solicitacaoServico';
 import { up as createAgenda } from './009_create_agenda';
 import { up as createAvaliacao } from './010_create_avaliacao';
@@ -19,13 +18,13 @@ import { up as createAssinaturaPlano } from './018_create_assinaturaPlano';
 import { up as createParceria } from './019_create_parceria';
 import { up as createCidadeAtendida } from './020_create_cidadeAtendida';
 
-//A ordem de criação importa, então prestem atenção nas FK's
+
 const migrations = [
   { name: '001_create_usuario', fn: createUsuario },
   { name: '002_create_prestador', fn: createPrestador },
   { name: '003_create_categoria', fn: createCategoria },
   { name: '004_create_servico', fn: createServico },
-  { name: '006_create_tag', fn: createTag},
+  { name: '006_create_tag', fn: createTag },
   { name: '008_create_SolicitacaoServico', fn: createSolicitacaoServico },
   { name: '009_create_agenda', fn: createAgenda },
   { name: '010_create_avaliacao', fn: createAvaliacao },
@@ -40,9 +39,8 @@ const migrations = [
   { name: '019_create_parceria', fn: createParceria },
   { name: '017_create_reporte', fn: createReporte },
   { name: '018_create_assinaturaPlano', fn: createAssinaturaPlano },
-  { name: '019_create_parceria', fn: createParceria },
-  { name: '020_create_cidadeAtendida', fn: createCidadeAtendida },
-
+  { name: '019_create_parceria', fn: createParceria }, 
+  { name: '020_create_cidadeAtendida', fn: createCidadeAtendida }
 ];
 
 export async function runMigrations(): Promise<void> {
