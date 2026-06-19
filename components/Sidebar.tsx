@@ -44,7 +44,7 @@ export default function Sidebar() {
       { label: "Buscar serviços", icon: Search, href: "/buscar" },
       { label: "Mensagens", icon: MessageCircle, href: "/mensagens" },
       { label: "Favoritos", icon: Heart, href: "/favoritos" },
-      { label: "Meus pedidos", icon: Briefcase, href: "/pedidos" },
+      { label: "Meus pedidos", icon: Briefcase, href: "/meusPedidos" },
     ];
   };
 
