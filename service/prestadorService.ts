@@ -12,7 +12,6 @@ export const prestadorService = {
     return rows;
   },
 
-  
   async listarDestaques() {
     const [rows] = await pool.query(
       `SELECT 
@@ -37,7 +36,6 @@ export const prestadorService = {
   },
 
   async buscarPorId(id: number) {
-    
     const [rows]: any = await pool.query(
       `SELECT p.*, u.nome, u.email, u.telefone, u.foto_perfil, u.cidade, u.status_conta
        FROM prestador p
@@ -46,7 +44,6 @@ export const prestadorService = {
     );
 
     const prestador = rows[0];
-
     if (!prestador) return null;
 
     const [categorias]: any = await pool.query(
@@ -56,10 +53,7 @@ export const prestadorService = {
        WHERE t.id_prestador = ?`, [id]
     );
 
-    return {
-      ...prestador,
-      categorias_vinculadas: categorias
-    };
+    return { ...prestador, categorias_vinculadas: categorias };
   },
 
   async buscarPorIdUsuario(id_usuario: number) {
@@ -76,7 +70,7 @@ export const prestadorService = {
     await pool.query(
       `INSERT INTO prestador 
       (id_usuario, descricao_profissional, status_verificado, status_social, impulsiona_perfil, categoria_principal) 
-      VALUES (?, ?, ?, ?, ?, ?)` ,
+      VALUES (?, ?, ?, ?, ?, ?)`,
       [
         dados.id_usuario,
         dados.descricao_profissional ?? null,
@@ -86,11 +80,10 @@ export const prestadorService = {
         dados.categoria_principal ?? null
       ]
     );
-    return dados.id_usuario!
+    return dados.id_usuario!;
   },
 
   async atualizar(id: number, dados: Partial<Prestador>): Promise<void> {
-   
     const camposPermitidos = [
       'descricao_profissional',
       'status_verificado',
@@ -99,7 +92,6 @@ export const prestadorService = {
       'categoria_principal'
     ];
 
-    
     const camposParaAtualizar: string[] = [];
     const valores: any[] = [];
 
@@ -110,15 +102,39 @@ export const prestadorService = {
       }
     });
 
-    
     if (camposParaAtualizar.length === 0) return;
 
-   
     valores.push(id);
+    await pool.query(
+      `UPDATE prestador SET ${camposParaAtualizar.join(', ')} WHERE id_prestador = ?`, valores
+    );
+  },
 
-    const sql = `UPDATE prestador SET ${camposParaAtualizar.join(', ')} WHERE id_usuario = ?`;
-    
-    await pool.query(sql, valores);
+  async atualizarPorIdUsuario(id_usuario: number, dados: Partial<Prestador>): Promise<void> {
+    const camposPermitidos = [
+      'descricao_profissional',
+      'status_verificado',
+      'status_social',
+      'impulsiona_perfil',
+      'categoria_principal'
+    ];
+
+    const camposParaAtualizar: string[] = [];
+    const valores: any[] = [];
+
+    camposPermitidos.forEach(campo => {
+      if (dados[campo as keyof Partial<Prestador>] !== undefined) {
+        camposParaAtualizar.push(`${campo} = ?`);
+        valores.push(dados[campo as keyof Partial<Prestador>]);
+      }
+    });
+
+    if (camposParaAtualizar.length === 0) return;
+
+    valores.push(id_usuario);
+    await pool.query(
+      `UPDATE prestador SET ${camposParaAtualizar.join(', ')} WHERE id_usuario = ?`, valores
+    );
   },
 
   async deletar(id: number): Promise<void> {
