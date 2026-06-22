@@ -75,7 +75,7 @@ export default function Sidebar() {
       )}
 
       {/* Sidebar Principal */}
-      <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 px-5 py-6 flex flex-col justify-between select-none z-50 w-[250px] transition-transform duration-300 ease-in-out lg:sticky lg:translate-x-0 ${menuAberto ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 px-5 py-6 flex flex-col justify-between select-none z-50 .w-[250px] transition-transform duration-300 ease-in-out lg:sticky lg:translate-x-0 ${menuAberto ? "translate-x-0" : "-translate-x-full"}`}>
         <div>
           <div className="flex items-center justify-between mb-10">
             <Image src={logo} alt="Logo Benvi" width={135} height={45} priority />

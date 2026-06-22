@@ -109,7 +109,7 @@ export default function SuporteTickets() {
                                 className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex gap-4 transition-all hover:border-blue-100 relative group"
                             >
                                 {/* Ícone Lateral Identificador */}
-                                <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center flex-shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center .flex-shrink-0">
                                     <Ticket size={20} />
                                 </div>
 
@@ -127,7 +127,7 @@ export default function SuporteTickets() {
                                         </div>
                                     </div>
 
-                                    <p className="text-xs text-slate-600 leading-relaxed break-words bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 mr-20">
+                                    <p className="text-xs text-slate-600 leading-relaxed .break-words bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 mr-20">
                                         {ticket.descricao}
                                     </p>
 

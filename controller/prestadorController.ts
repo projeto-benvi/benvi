@@ -62,6 +62,7 @@ export const prestadorController = {
   async atualizar(id: number, req: NextRequest) {
     try {
       const body = await req.json();
+
       await prestadorService.atualizar(id, body);
       return NextResponse.json({ mensagem: 'Atualizado com sucesso' });
     } catch (e) {
