@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,7 +8,7 @@ import logo from "@/assets/benvi colorido 2.svg";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Home, Search, MessageCircle, Heart, Star, Settings, LogOut,
-  X, Check, Menu, Briefcase, CalendarDays, ShoppingBag,
+  X, Menu, Briefcase, CalendarDays, ShoppingBag,
   LayoutDashboard, Users, Wrench, HandHeart, Ticket, Bell, Handshake,
 } from "lucide-react";
 
@@ -19,17 +19,19 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const obterItensMenu = () => {
-    if (user?.isAdmin) {
+
+    if (user?.isAdmin || pathname.startsWith("/admin")) {
       return [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-        { label: "Usuários", icon: Users, href: "/usuarios" },
-        { label: "Prestadores", icon: Wrench, href: "/prestadores" },
-        { label: "Vulnerab. social", icon: HandHeart, href: "/vulnerabilidade" },
-        { label: "Tickets", icon: Ticket, href: "/tickets" },
-        { label: "Alertas", icon: Bell, href: "/alertas" },
-        { label: "Parcerias", icon: Handshake, href: "/parcerias" },
+        { label: "Usuários", icon: Users, href: "/admin/usuarios" },
+        { label: "Prestadores", icon: Wrench, href: "/admin/prestadores" },
+        { label: "Vulnerab. social", icon: HandHeart, href: "/admin/vulnerabilidade" },
+        { label: "Tickets", icon: Ticket, href: "/admin/tickets" },
+        { label: "Alertas", icon: Bell, href: "/admin/alertas" },
+        { label: "Parcerias", icon: Handshake, href: "/admin/parcerias" },
       ];
     }
+    
     if (user?.isPrestador) {
       return [
         { label: "Início", icon: Home, href: "/" },
@@ -39,6 +41,8 @@ export default function Sidebar() {
         { label: "Avaliações", icon: Star, href: "/avaliacoes" },
       ];
     }
+
+    // Menu Padrão Comercial
     return [
       { label: "Início", icon: Home, href: "/" },
       { label: "Buscar serviços", icon: Search, href: "/buscar" },
@@ -50,8 +54,14 @@ export default function Sidebar() {
 
   const menuItems = obterItensMenu();
 
+  // Fecha o menu mobile automaticamente ao mudar de página
+  useEffect(() => {
+    setMenuAberto(false);
+  }, [pathname]);
+
   return (
     <>
+      {/* Botão Hambúrguer para Mobile */}
       <button
         onClick={() => setMenuAberto(true)}
         className="lg:hidden fixed top-5 left-5 z-40 bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 transition cursor-pointer flex items-center justify-center text-gray-700"
@@ -59,10 +69,12 @@ export default function Sidebar() {
         <Menu size={22} />
       </button>
 
+      {/* Backdrop do menu mobile */}
       {menuAberto && (
         <div onClick={() => setMenuAberto(false)} className="lg:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm transition-opacity" />
       )}
 
+      {/* Sidebar Principal */}
       <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 px-5 py-6 flex flex-col justify-between select-none z-50 w-[250px] transition-transform duration-300 ease-in-out lg:sticky lg:translate-x-0 ${menuAberto ? "translate-x-0" : "-translate-x-full"}`}>
         <div>
           <div className="flex items-center justify-between mb-10">
@@ -72,15 +84,20 @@ export default function Sidebar() {
             </button>
           </div>
 
+          {/* Navegação Dinâmica baseada nos itens filtrados */}
           <nav className="flex flex-col gap-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              
+              // Validação de rota ativa precisa cobrir rotas exatas ou subcaminhos
+              const isActive = item.href === "/" 
+                ? pathname === "/" 
+                : pathname.startsWith(item.href);
+
               return (
                 <Link
                   key={item.label}
                   href={item.href}
-                  onClick={() => setMenuAberto(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition cursor-pointer ${
                     isActive ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -93,6 +110,7 @@ export default function Sidebar() {
           </nav>
         </div>
 
+        {/* Rodapé da Sidebar */}
         <div className="flex flex-col gap-2">
           {logado && user && (
             <div className="flex items-center gap-3 px-4 py-3 mb-2 border-b border-gray-100 pb-4">
@@ -105,7 +123,9 @@ export default function Sidebar() {
               )}
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-semibold text-gray-700 truncate">{user.nome}</span>
-                <span className="text-xs text-gray-400 truncate">{user.email}</span>
+                <span className="text-xs text-gray-400 truncate">
+                  {user.isAdmin || pathname.startsWith("/admin") ? "Administrador" : user.email}
+                </span>
               </div>
             </div>
           )}
@@ -113,7 +133,7 @@ export default function Sidebar() {
           <Link
             href="/tela-configuracoes"
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition cursor-pointer ${
-              pathname === "/configuracoes" ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"
+              pathname === "/tela-configuracoes" ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"
             }`}
           >
             <Settings size={18} />
