@@ -25,6 +25,7 @@ export default function Sidebar() {
         { label: "Usuários", icon: Users, href: "/usuarios" },
         { label: "Prestadores", icon: Wrench, href: "/prestadores" },
         { label: "Vulnerab. social", icon: HandHeart, href: "/vulnerabilidade" },
+        { label: "Mensagens", icon: MessageCircle, href: "/mensagens" },
         { label: "Tickets", icon: Ticket, href: "/tickets" },
         { label: "Alertas", icon: Bell, href: "/alertas" },
         { label: "Parcerias", icon: Handshake, href: "/parcerias" },
