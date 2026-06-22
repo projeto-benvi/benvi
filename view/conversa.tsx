@@ -92,7 +92,10 @@ export default function Conversa() {
   const [chatSelecionado, setChatSelecionado] = useState<Chat | null>(null);
 
   const idUsuarioLogado = Number((session?.user as any)?.id ?? 0);
-  const tipoParticipanteLogado: "usuario" | "prestador" = (session?.user as any)?.isPrestador
+  const isAdmin = (session?.user as any)?.isAdmin ?? false;
+  const tipoParticipanteLogado: "usuario" | "prestador" | "admin" = isAdmin
+    ? "admin"
+    : (session?.user as any)?.isPrestador
     ? "prestador"
     : "usuario";
 

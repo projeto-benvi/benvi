@@ -23,12 +23,13 @@ export default function Sidebar() {
     if (user?.isAdmin || pathname.startsWith("/admin")) {
       return [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-        { label: "Usuários", icon: Users, href: "/admin/usuarios" },
-        { label: "Prestadores", icon: Wrench, href: "/admin/prestadores" },
-        { label: "Vulnerab. social", icon: HandHeart, href: "/admin/vulnerabilidade" },
-        { label: "Tickets", icon: Ticket, href: "/admin/tickets" },
-        { label: "Alertas", icon: Bell, href: "/admin/alertas" },
-        { label: "Parcerias", icon: Handshake, href: "/admin/parcerias" },
+        { label: "Usuários", icon: Users, href: "/usuarios" },
+        { label: "Prestadores", icon: Wrench, href: "/prestadores" },
+        { label: "Vulnerab. social", icon: HandHeart, href: "/vulnerabilidade" },
+        { label: "Mensagens", icon: MessageCircle, href: "/mensagens" },
+        { label: "Tickets", icon: Ticket, href: "/tickets" },
+        { label: "Alertas", icon: Bell, href: "/alertas" },
+        { label: "Parcerias", icon: Handshake, href: "/parcerias" },
       ];
     }
     

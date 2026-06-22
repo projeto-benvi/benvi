@@ -21,13 +21,13 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const idParticipante = searchParams.get('idParticipante');
-    const tipoParticipante = searchParams.get('tipoParticipante') as 'usuario' | 'prestador';
+    const tipoParticipante = searchParams.get('tipoParticipante') as 'usuario' | 'prestador' | 'admin';
 
-    if (!idParticipante || !tipoParticipante) {
+    if (!tipoParticipante || (tipoParticipante !== 'admin' && !idParticipante)) {
       return NextResponse.json({ erro: 'Parâmetros ausentes' }, { status: 400 });
     }
 
-    const resultado = await conversaController.listarConversas(idParticipante, tipoParticipante);
+    const resultado = await conversaController.listarConversas(idParticipante || 0, tipoParticipante);
     return NextResponse.json(resultado, { status: 200 });
   } catch (erro: any) {
     return NextResponse.json({ erro: erro.message }, { status: 400 });

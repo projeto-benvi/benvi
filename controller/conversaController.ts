@@ -16,8 +16,8 @@ export class ConversaController {
     });
   }
 
-  async listarConversas(idParticipante: string | number, tipoParticipante: 'usuario' | 'prestador') {
-    if (!idParticipante || !tipoParticipante) {
+  async listarConversas(idParticipante: string | number, tipoParticipante: 'usuario' | 'prestador' | 'admin') {
+    if (!tipoParticipante || (tipoParticipante !== 'admin' && !idParticipante)) {
       throw new Error('idParticipante e tipoParticipante são obrigatórios.');
     }
 
