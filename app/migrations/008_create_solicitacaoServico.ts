@@ -1,4 +1,4 @@
-// app/migrations/003_create_avaliacao.ts
+
 import pool from '@/app/lib/dataBase';
 
 export async function up(): Promise<void> {
