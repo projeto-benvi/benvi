@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { NotificacaoServico } from '@/model/notificacaoServico';
-// 1. AJUSTADO: Importando também o listarNotificacoes do seu service
 import { criarNotificacaoServico, listarNotificacoes } from '@/service/notificacaoServicoService';
+import { notificacaoService } from '@/service/notificacaoService';
 
 export class NotificacaoServicoController {
   
-  // Seu método de criar atual (continua igual)
   async handleCriar(request: Request) {
     try {
       const body = await request.json();
@@ -27,6 +26,13 @@ export class NotificacaoServicoController {
 
       const resultado = await criarNotificacaoServico(novaNotificacao);
 
+      // Gera notificação automática para o usuário
+      await notificacaoService.criar({
+        id_usuario,
+        titulo: 'Solicitação de serviço recebida',
+        descricao: `Sua solicitação foi registrada: "${descricao}"`,
+      });
+
       return NextResponse.json(
         { message: 'Notificação de serviço cadastrada com sucesso!', data: resultado },
         { status: 201 }
@@ -41,7 +47,6 @@ export class NotificacaoServicoController {
     }
   }
 
-  // 2. ADICIONADO: O método que estava faltando para sua rota GET funcionar!
   async handleListar() {
     try {
       const notificacoes = await listarNotificacoes();
