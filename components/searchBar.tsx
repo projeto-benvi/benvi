@@ -86,7 +86,6 @@ export default function SearchBar() {
 
         <div className="flex items-center gap-4">
           
-          {/* Notificações */}
           <div className="relative flex items-center"> 
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none p-2 hover:bg-gray-50 rounded-full transition-colors relative">
@@ -139,7 +138,6 @@ export default function SearchBar() {
             </details>
           </div>
 
-          {/* Nome do usuário */}
           <div className="flex flex-col text-right select-none">
             <span className="text-sm font-semibold text-gray-800 leading-tight">
               Olá, <span className="font-bold">{nomeUsuario}</span>
@@ -147,7 +145,6 @@ export default function SearchBar() {
             <span className="text-xs text-gray-400 font-medium">{subTitulo}</span>
           </div>
 
-          {/* Avatar */}
           <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 relative shrink-0">
             {usuarioLogado?.image || usuarioLogado?.foto_perfil ? (
               <Image
@@ -164,7 +161,6 @@ export default function SearchBar() {
             )}
           </div>
 
-          {/* Dropdown de perfil */}
           <div className="relative flex items-center">
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none text-xs text-gray-400 hover:text-gray-600 transition-colors">

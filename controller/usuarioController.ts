@@ -32,14 +32,17 @@ export const usuarioController = {
   },
 
   async criar(req: NextRequest) {
-    try {
-      const body = await req.json();
-      const id = await usuarioService.criar(body);
-      return NextResponse.json({ id_usuario: id }, { status: 201 });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao criar usuário', detalhes: String(e) }, { status: 500 });
-    }
-  },
+  try {
+    const body = await req.json();
+    const id = await usuarioService.criar(body);
+    return NextResponse.json({ id_usuario: id }, { status: 201 });
+  } catch (e: any) {
+    return NextResponse.json({ 
+      erro: 'Erro ao criar usuário', 
+      detalhes: e?.message || String(e)  // ← manda mensagem limpa
+    }, { status: 500 });
+  }
+},
 
   async buscarPorId(id: number) {
     try {
