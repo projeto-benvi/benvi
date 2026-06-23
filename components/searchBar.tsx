@@ -2,23 +2,30 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation"; 
-import { useSession } from "next-auth/react"; // Mudamos para o hook oficial do NextAuth
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
-// Importações de assets
 import iconSearch from "@/assets/icons/search.svg";
 import iconFilter from "@/assets/icons/filter-alt-2.svg";
 import iconNotification from "@/assets/icons/notification.svg";
 import iconPerfil from "@/assets/comSearchBar/nft-profile.svg";
 import iconConfig from "@/assets/comSearchBar/iconConfig.svg";
 
+interface Notificacao {
+  id_notificacao: number;
+  titulo: string;
+  descricao: string;
+  visualizada: boolean;
+  data_envio: string;
+}
+
 export default function SearchBar() {
-  const { data: session, status } = useSession(); // Puxa os dados da sessão do NextAuth diretamente
+  const { data: session } = useSession();
   const router = useRouter();
-    
- 
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+
   const usuarioLogado = session?.user as any;
   const nomeUsuario = usuarioLogado?.name || usuarioLogado?.nome || "Visitante";
-  
   
   const subTitulo = usuarioLogado?.isAdmin 
     ? "Administrador 🛡️" 
@@ -26,17 +33,29 @@ export default function SearchBar() {
       ? "Prestador 🛠️" 
       : "Cliente";
 
-  const notificacoes: string[] = [];
+  useEffect(() => {
+    if (!usuarioLogado?.id) return;
+    fetch(`/api/notificacao?id_usuario=${usuarioLogado.id}`)
+      .then(res => res.json())
+      .then(dados => setNotificacoes(Array.isArray(dados) ? dados.slice(0, 5) : []))
+      .catch(() => setNotificacoes([]));
+  }, [usuarioLogado?.id]);
+
+  const totalNaoLidas = notificacoes.filter(n => !n.visualizada).length;
+
+  const marcarComoLida = async (id: number) => {
+    await fetch(`/api/notificacao/${id}`, { method: "PATCH" });
+    setNotificacoes(prev =>
+      prev.map(n => n.id_notificacao === id ? { ...n, visualizada: true } : n)
+    );
+  };
 
   const lidarComRedirecionamentoPerfil = (e: React.MouseEvent) => {
     e.preventDefault();
-
     if (!session || !usuarioLogado) {
       router.push("/login");
       return;
     }
-
-    // Se o NextAuth marcou como prestador, redireciona para a rota dinâmica corretiva
     if (usuarioLogado.isPrestador) {
       router.push(`/perfil/prestador/${usuarioLogado.id}`);
     } else {
@@ -52,13 +71,11 @@ export default function SearchBar() {
           <div className="pl-3 pr-2 flex items-center justify-center text-gray-400">
             <Image src={iconSearch} alt="Buscar" width={18} height={18} />
           </div>
-          
           <input 
             type="text" 
             placeholder="Buscar serviços..."
             className="flex-1 h-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
           />
-          
           <button 
             type="button" 
             className="px-3 border-l border-gray-200 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
@@ -67,28 +84,28 @@ export default function SearchBar() {
           </button>
         </div>
 
-        {/* Lado Direito: Notificações + Info Usuário */}
         <div className="flex items-center gap-4">
           
-          {/* Menu Dropdown de Notificações */}
           <div className="relative flex items-center"> 
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none p-2 hover:bg-gray-50 rounded-full transition-colors relative">
-                <Image
-                  src={iconNotification}
-                  alt="Notificações"
-                  width={22}
-                  height={22}
-                />
-                {notificacoes.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <Image src={iconNotification} alt="Notificações" width={22} height={22} />
+                {totalNaoLidas > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                    {totalNaoLidas}
+                  </span>
                 )} 
               </summary>
 
-              <div className="absolute right-0 mt-3 w-64 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden p-4 animate-in fade-in slide-in-from-top-1 duration-200">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                  Notificações
-                </h4>
+              <div className="absolute right-0 mt-3 w-72 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Notificações
+                  </h4>
+                  <a href="/notificacoes" className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition">
+                    Ver todas
+                  </a>
+                </div>
                 
                 {notificacoes.length === 0 ? (
                   <div className="py-6 flex flex-col items-center justify-center text-center">
@@ -97,10 +114,22 @@ export default function SearchBar() {
                     </p>
                   </div>
                 ) : (
-                  <ul className="flex flex-col gap-2 max-h-48 overflow-y-auto">
-                    {notificacoes.map((notif, index) => (
-                      <li key={index} className="text-sm text-gray-600 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                        {notif}
+                  <ul className="flex flex-col divide-y divide-gray-50">
+                    {notificacoes.map((notif) => (
+                      <li
+                        key={notif.id_notificacao}
+                        onClick={() => marcarComoLida(notif.id_notificacao)}
+                        className={`flex items-start gap-3 py-3 px-1 cursor-pointer hover:bg-gray-50 rounded-lg transition ${!notif.visualizada ? "bg-blue-50/40" : ""}`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs text-gray-800 truncate ${!notif.visualizada ? "font-bold" : "font-medium"}`}>
+                            {notif.titulo}
+                          </p>
+                          <p className="text-[11px] text-gray-400 truncate mt-0.5">{notif.descricao}</p>
+                        </div>
+                        {!notif.visualizada && (
+                          <div className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1" />
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -109,17 +138,13 @@ export default function SearchBar() {
             </details>
           </div>
 
-          {/* Textos Informativos */}
           <div className="flex flex-col text-right select-none">
             <span className="text-sm font-semibold text-gray-800 leading-tight">
               Olá, <span className="font-bold">{nomeUsuario}</span>
             </span>
-            <span className="text-xs text-gray-400 font-medium">
-              {subTitulo}
-            </span>
+            <span className="text-xs text-gray-400 font-medium">{subTitulo}</span>
           </div>
 
-          {/* FOTO DE PERFIL DINÂMICA */}
           <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 relative shrink-0">
             {usuarioLogado?.image || usuarioLogado?.foto_perfil ? (
               <Image
@@ -136,13 +161,10 @@ export default function SearchBar() {
             )}
           </div>
 
-          {/* Menu Dropdown de Perfil */}
           <div className="relative flex items-center">
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none text-xs text-gray-400 hover:text-gray-600 transition-colors">
-                <span className="text-[10px] transform group-open:rotate-180 transition-transform block">
-                  ▼
-                </span>
+                <span className="text-[10px] transform group-open:rotate-180 transition-transform block">▼</span>
               </summary>
 
               <ul className="absolute right-0 mt-3 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden py-1">
