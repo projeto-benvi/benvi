@@ -426,7 +426,7 @@ export default function Conversa() {
       await carregarMensagens(chatSelecionado.idConversa);
 
       setNovaMensagem("");
-      exibirNotificacao("Mensagem enviada", "Sua mensagem foi publicada na conversa.", "sucesso");
+      
 
     } catch (error) {
       console.error(error);
@@ -941,8 +941,12 @@ export default function Conversa() {
                 </h2>
 
                 <p className="text-sm text-gray-500">
-                  {suporteAtivo ? "Administrador" : "Prestador"}
-                </p>
+  {suporteAtivo
+    ? "Administrador"
+    : tipoParticipanteLogado === "prestador"
+    ? "Cliente"
+    : "Prestador"}
+</p>
               </div>
 
               {!suporteAtivo && (
