@@ -2,8 +2,6 @@ import { ArrowLeft, Star } from "lucide-react";
 import SearchBar from "@/components/searchBar"; 
 import { servicoService } from "@/service/servicoService";
 import { usuarioService } from "@/service/usuarioService"; 
-import { getServerSession } from "next-auth/next"; 
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 import BotaoVoltarDinamico from "@/components/BotaoVoltarDinamico";
 import * as avaliacaoModulo from "@/service/avaliacaoService";
 const AvaliacaoService = (avaliacaoModulo as any).AvaliacaoService || (avaliacaoModulo as any).avaliacaoService;
@@ -19,12 +17,8 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
   console.log("ID recebido para o perfil do prestador:", id); 
   const idPrestador = id ? parseInt(id) : 1;
 
-  // 1. Busca os dados da sessão logada
-  const session = await getServerSession(authOptions);
-  const usuarioLogadoId = session?.user?.id ? parseInt(session.user.id) : null;
-
-  // O dono do perfil é quem possui o ID da rota
-  const ehDonoDoPerfil = usuarioLogadoId === idPrestador;
+  // Perfil público: não depende de sessão para abrir.
+  const ehDonoDoPerfil = false;
 
   // 2. BUSCA CORRETA: Buscar os dados REAIS do usuário/prestador diretamente do banco
   let dadosUsuario = null;

@@ -6,8 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Prefixos de rotas que exigem login
 // Ajuste conforme as pastas do seu projeto
 const ROTAS_PRIVADAS = [
-  '/perfil',
-  '/perfilPrestador',
+  '/perfil/usuario',
   '/agenda',
   '/conversas',
   '/mensagens',
@@ -19,7 +18,10 @@ const ROTAS_PRIVADAS = [
 const ROTAS_SO_DESLOGADO = ['/login', '/cadastro'];
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  });
   const { pathname } = req.nextUrl;
 
   const ePrivada = ROTAS_PRIVADAS.some((r) => pathname.startsWith(r));
