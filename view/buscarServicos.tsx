@@ -1,22 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, MapPin, Star, Clock, ChevronDown, X } from "lucide-react";
+import { Search, Filter, MapPin, X } from "lucide-react";
+import Link from "next/link"; // Adicionado para navegação
 
-interface Servico {
-  id_servico: number;
-  id_prestador: number;
-  titulo: string;
-  descricao: string;
-  status_servico: string;
-  imagens: string[];
-  nome_prestador: string;
-  foto_prestador: string;
-  cidade_prestador: string;
-  nome_categoria: string;
+interface Prestador {
+  id_usuario: number;
+  nome: string;
+  foto_perfil: string;
+  cidade: string;
+  email: string;
+  telefone: string;
+  descricao_profissional: string;
   categoria_principal: string;
   status_verificado: boolean;
-  descricao_profissional: string;
+  status_social: string;
 }
 
 const CATEGORIAS = [
@@ -34,7 +32,7 @@ const CATEGORIAS = [
 ];
 
 export default function BuscarServicosView() {
-  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [termo, setTermo] = useState("");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
@@ -42,28 +40,27 @@ export default function BuscarServicosView() {
   const [apenasVerificados, setApenasVerificados] = useState(false);
 
   useEffect(() => {
-  fetch("/api/servico")
+    fetch("/api/prestador")
       .then(res => res.json())
-      .then(dados => setServicos(Array.isArray(dados) ? dados : []))
-      .catch(() => setServicos([]))
+      .then(dados => setPrestadores(Array.isArray(dados) ? dados : []))
+      .catch(() => setPrestadores([]))
       .finally(() => setCarregando(false));
   }, []);
 
-  const servicosFiltrados = servicos.filter(s => {
+  const prestadoresFiltrados = prestadores.filter(p => {
     const termoLower = termo.toLowerCase();
     const bateTermos =
       !termo ||
-      s.titulo?.toLowerCase().includes(termoLower) ||
-      s.descricao?.toLowerCase().includes(termoLower) ||
-      s.nome_prestador?.toLowerCase().includes(termoLower) ||
-      s.nome_categoria?.toLowerCase().includes(termoLower);
+      p.nome?.toLowerCase().includes(termoLower) ||
+      p.categoria_principal?.toLowerCase().includes(termoLower) ||
+      p.descricao_profissional?.toLowerCase().includes(termoLower) ||
+      p.cidade?.toLowerCase().includes(termoLower);
 
     const bateCategoria =
       categoriaSelecionada === "Todas" ||
-      s.nome_categoria === categoriaSelecionada ||
-      s.categoria_principal === categoriaSelecionada;
+      p.categoria_principal === categoriaSelecionada;
 
-    const bateVerificado = !apenasVerificados || s.status_verificado;
+    const bateVerificado = !apenasVerificados || Boolean(p.status_verificado);
 
     return bateTermos && bateCategoria && bateVerificado;
   });
@@ -79,9 +76,8 @@ export default function BuscarServicosView() {
   return (
     <div className="p-8 max-w-7xl mx-auto font-sans">
 
-      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Buscar Serviços</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Buscar Profissionais</h1>
         <p className="text-sm text-gray-500 mt-1">Encontre profissionais de confiança para o que você precisa</p>
       </div>
 
@@ -93,7 +89,7 @@ export default function BuscarServicosView() {
             type="text"
             value={termo}
             onChange={e => setTermo(e.target.value)}
-            placeholder="Buscar por serviço, profissional ou categoria..."
+            placeholder="Buscar por nome, categoria ou cidade..."
             className="flex-1 ml-3 text-sm text-gray-700 outline-none placeholder:text-gray-400"
           />
           {termo && (
@@ -132,7 +128,6 @@ export default function BuscarServicosView() {
             )}
           </div>
 
-          {/* Categorias */}
           <div>
             <label className="text-xs font-bold text-gray-600 mb-2 block">Categoria</label>
             <div className="flex flex-wrap gap-2">
@@ -152,7 +147,6 @@ export default function BuscarServicosView() {
             </div>
           </div>
 
-          {/* Apenas verificados */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setApenasVerificados(!apenasVerificados)}
@@ -169,10 +163,10 @@ export default function BuscarServicosView() {
         </div>
       )}
 
-      {/* Resultado */}
-      <div className="flex items-center justify-between mb-4">
+      {/* Contador */}
+      <div className="mb-4">
         <p className="text-sm text-gray-500">
-          {carregando ? "Buscando..." : `${servicosFiltrados.length} serviço${servicosFiltrados.length !== 1 ? "s" : ""} encontrado${servicosFiltrados.length !== 1 ? "s" : ""}`}
+          {carregando ? "Buscando..." : `${prestadoresFiltrados.length} profissional${prestadoresFiltrados.length !== 1 ? "is" : ""} encontrado${prestadoresFiltrados.length !== 1 ? "s" : ""}`}
         </p>
       </div>
 
@@ -181,18 +175,24 @@ export default function BuscarServicosView() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-white border border-gray-100 rounded-2xl p-5 animate-pulse">
-              <div className="w-full h-36 bg-gray-100 rounded-xl mb-4" />
-              <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
-              <div className="h-3 bg-gray-100 rounded w-1/2" />
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full bg-gray-100" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-100 rounded w-3/4" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                </div>
+              </div>
+              <div className="h-3 bg-gray-100 rounded w-full mb-2" />
+              <div className="h-3 bg-gray-100 rounded w-2/3" />
             </div>
           ))}
         </div>
-      ) : servicosFiltrados.length === 0 ? (
+      ) : prestadoresFiltrados.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
             <Search size={28} className="text-gray-300" />
           </div>
-          <p className="text-sm font-semibold text-gray-400">Nenhum serviço encontrado</p>
+          <p className="text-sm font-semibold text-gray-400">Nenhum profissional encontrado</p>
           {temFiltrosAtivos && (
             <button onClick={limparFiltros} className="text-xs text-blue-600 font-bold hover:text-blue-700 cursor-pointer">
               Limpar filtros
@@ -201,74 +201,61 @@ export default function BuscarServicosView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {servicosFiltrados.map(servico => {
-            const imagens = typeof servico.imagens === "string"
-              ? JSON.parse(servico.imagens)
-              : servico.imagens ?? [];
-
-            return (
-              <div key={servico.id_servico} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition group cursor-pointer">
-                
-                {/* Imagem */}
-                <div className="w-full h-40 bg-gray-100 overflow-hidden">
-                  {imagens.length > 0 ? (
-                    <img
-                      src={imagens[0]}
-                      alt={servico.titulo}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs font-medium">
-                      Sem foto
-                    </div>
+          {prestadoresFiltrados.map(prestador => (
+            <Link
+  key={prestador.id_usuario}
+  href={`/perfil/prestador/${prestador.id_usuario}`} 
+  className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition group block"
+>
+              {/* Header do card */}
+              <div className="flex items-center gap-4 mb-4">
+                {prestador.foto_perfil ? (
+                  <img
+                    src={prestador.foto_perfil}
+                    alt={prestador.nome}
+                    className="w-14 h-14 rounded-full object-cover border border-gray-200 shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-bold shrink-0">
+                    {prestador.nome?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-sm font-bold text-gray-900 truncate">{prestador.nome}</p>
+                    {Boolean(prestador.status_verificado) && (
+                      <span className="text-[9px] bg-green-50 text-green-600 font-bold px-1.5 py-0.5 rounded-full shrink-0">✓ Verificado</span>
+                    )}
+                  </div>
+                  {prestador.categoria_principal && (
+                    <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1 inline-block">
+                      {prestador.categoria_principal}
+                    </span>
                   )}
                 </div>
-
-                {/* Conteúdo */}
-                <div className="p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-bold text-gray-900 leading-snug">{servico.titulo}</h3>
-                    {servico.nome_categoria && (
-                      <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full shrink-0">
-                        {servico.nome_categoria}
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-xs text-gray-500 line-clamp-2">{servico.descricao}</p>
-
-                  {/* Prestador */}
-                  <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
-                    {servico.foto_prestador ? (
-                      <img
-                        src={servico.foto_prestador}
-                        alt={servico.nome_prestador}
-                        className="w-7 h-7 rounded-full object-cover border border-gray-200"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                        {servico.nome_prestador?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1">
-                        <p className="text-xs font-semibold text-gray-700 truncate">{servico.nome_prestador}</p>
-                       {Boolean(servico.status_verificado) && (
-                          <span className="text-[9px] bg-green-50 text-green-600 font-bold px-1.5 py-0.5 rounded-full shrink-0">✓ Verificado</span>
-                        )}
-                      </div>
-                      {servico.cidade_prestador && (
-                        <div className="flex items-center gap-1 text-[11px] text-gray-400 mt-0.5">
-                          <MapPin size={10} />
-                          {servico.cidade_prestador}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
-            );
-          })}
+
+              {/* Descrição */}
+              {prestador.descricao_profissional && (
+                <p className="text-xs text-gray-500 line-clamp-2 mb-3">
+                  {prestador.descricao_profissional}
+                </p>
+              )}
+
+              {/* Rodapé */}
+              <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                {prestador.cidade ? (
+                  <div className="flex items-center gap-1 text-[11px] text-gray-400">
+                    <MapPin size={11} />
+                    {prestador.cidade}
+                  </div>
+                ) : <div />}
+                <span className="text-xs font-bold text-blue-600 group-hover:text-blue-700 transition">
+                  Ver perfil →
+                </span>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </div>
