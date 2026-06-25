@@ -1,6 +1,40 @@
 import { NextResponse } from 'next/server';
 import { AvaliacaoController } from '@/controller/avaliacaoController';
 
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const idAvaliacao = await AvaliacaoController.criar(
+      Number(body.id_usuario ?? id),
+      Number(body.id_prestador ?? body.idPrestador ?? body.prestadorId),
+      Number(body.id_servico),
+      Number(body.nota_geral ?? body.nota ?? 5),
+      body.comentario || '',
+      Number(body.comunicacao ?? 5),
+      Number(body.respeito ?? 5),
+      Number(body.pontualidade ?? 5),
+      Number(body.acordo ?? 5)
+    );
+
+    return NextResponse.json(
+      { id_avaliacao: idAvaliacao, message: 'Avaliação criada com sucesso' },
+      { status: 201 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Erro interno'
+      },
+      { status: 400 }
+    );
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

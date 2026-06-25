@@ -14,8 +14,13 @@ export const AvaliacaoService = {
         id_avaliacao,
         id_usuario,
         id_prestador,
+        id_servico,
         nota,
         comentario,
+        comunicacao,
+        respeito,
+        pontualidade,
+        acordo,
         data_avaliacao
       FROM avaliacao
       `
@@ -25,10 +30,15 @@ export const AvaliacaoService = {
             row => new AvaliacaoModel(
                 row.id_usuario,
                 row.id_prestador,
+                row.id_servico,
                 row.nota,
                 row.comentario,
                 row.data_avaliacao,
-                row.id_avaliacao
+                row.id_avaliacao,
+                row.comunicacao,
+                row.respeito,
+                row.pontualidade,
+                row.acordo
             )
         );
     },
@@ -136,13 +146,35 @@ export const AvaliacaoService = {
         const [rows] = await pool.query<RowDataPacket[]>(
             `
         SELECT
-            a.*,
+            a.id_avaliacao,
+            a.id_usuario,
+            a.id_prestador,
+            a.id_servico,
+            a.nota,
+            a.comentario,
+            a.comunicacao,
+            a.respeito,
+            a.pontualidade,
+            a.acordo,
+            a.data_avaliacao,
             u.nome,
-            u.foto_perfil
+            u.foto_perfil,
+            COALESCE(s.titulo, c.nome_categoria, 'Serviço avaliado') AS titulo,
+            s.descricao AS descricao_servico,
+            c.nome_categoria AS categoria_servico
         FROM avaliacao a
 
         INNER JOIN usuario u
             ON a.id_usuario = u.id_usuario
+
+        LEFT JOIN servico s
+            ON a.id_servico = s.id_servico
+
+        LEFT JOIN prestador p
+            ON a.id_prestador = p.id_usuario
+
+        LEFT JOIN categoria c
+            ON p.categoria_principal = c.id_categoria
 
         WHERE a.id_prestador = ?
 
@@ -158,11 +190,13 @@ export const AvaliacaoService = {
     async criar(
         id_usuario: number,
         id_prestador: number,
+        id_servico: number,
         nota: number,
-        comentario: string
-
-
-
+        comentario: string,
+        comunicacao: number = 5,
+        respeito: number = 5,
+        pontualidade: number = 5,
+        acordo: number = 5
     ): Promise<number> {
 
         if (id_usuario === id_prestador) {
@@ -200,8 +234,15 @@ export const AvaliacaoService = {
         const avaliacao = new AvaliacaoModel(
             id_usuario,
             id_prestador,
+            id_servico,
             nota,
-            comentario
+            comentario,
+            new Date(),
+            undefined,
+            comunicacao,
+            respeito,
+            pontualidade,
+            acordo
         );
 
         if (!avaliacao.validarNota()) {
@@ -210,23 +251,39 @@ export const AvaliacaoService = {
             );
         }
 
+        const subAvaliacoes = [avaliacao.comunicacao, avaliacao.respeito, avaliacao.pontualidade, avaliacao.acordo];
+
+        if (subAvaliacoes.some((valor) => valor < 0 || valor > 5)) {
+            throw new Error('As subavaliações devem estar entre 0 e 5');
+        }
+
         const [result] = await pool.query<ResultSetHeader>(
             `
       INSERT INTO avaliacao
       (
         id_usuario,
         id_prestador,
+        id_servico,
         nota,
         comentario,
+        comunicacao,
+        respeito,
+        pontualidade,
+        acordo,
         data_avaliacao
       )
-      VALUES (?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
             [
                 avaliacao.id_usuario,
                 avaliacao.id_prestador,
+                avaliacao.id_servico,
                 avaliacao.nota,
                 avaliacao.comentario,
+                avaliacao.comunicacao,
+                avaliacao.respeito,
+                avaliacao.pontualidade,
+                avaliacao.acordo,
                 avaliacao.data_avaliacao
             ]
         );

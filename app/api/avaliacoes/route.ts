@@ -28,12 +28,29 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
+    const dadosAvaliacao = {
+      id_usuario: body.id_usuario,
+      id_prestador: body.id_prestador,
+      id_servico: body.id_servico,
+      nota: body.nota_geral ?? body.nota ?? 5,
+      comentario: body.comentario || '',
+      comunicacao: body.comunicacao ?? body.custo_beneficio ?? 5,
+      respeito: body.respeito ?? body.atendimento ?? 5,
+      pontualidade: body.pontualidade ?? 5,
+      acordo: body.acordo ?? body.qualidade_servico ?? 5,
+    };
+
     const id =
       await AvaliacaoController.criar(
-        body.id_usuario,
-        body.id_prestador,
-        body.nota,
-        body.comentario || ''
+        dadosAvaliacao.id_usuario,
+        dadosAvaliacao.id_prestador,
+        dadosAvaliacao.id_servico,
+        dadosAvaliacao.nota,
+        dadosAvaliacao.comentario,
+        dadosAvaliacao.comunicacao,
+        dadosAvaliacao.respeito,
+        dadosAvaliacao.pontualidade,
+        dadosAvaliacao.acordo
       );
 
     return NextResponse.json(

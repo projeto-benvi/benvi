@@ -10,19 +10,32 @@ export const AvaliacaoController = {
         return await AvaliacaoService.buscarPorId(id);
     },
 
+    async listarPorPrestador(id_prestador: number) {
+    return await AvaliacaoService.listarPorPrestador(id_prestador);
+    },
 
     async criar(
         id_usuario: number,
         id_prestador: number,
+        id_servico: number,
         nota: number,
-        comentario: string
+        comentario: string,
+        comunicacao: number = 5,
+        respeito: number = 5,
+        pontualidade: number = 5,
+        acordo: number = 5
     ) {
 
         return await AvaliacaoService.criar(
             id_usuario,
             id_prestador,
+            id_servico,
             nota,
-            comentario
+            comentario,
+            comunicacao,
+            respeito,
+            pontualidade,
+            acordo
         );
     },
 
