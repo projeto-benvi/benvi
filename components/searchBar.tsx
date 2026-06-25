@@ -23,6 +23,9 @@ export default function SearchBar() {
   const { data: session } = useSession();
   const router = useRouter();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  
+  // 1. Estado criado para controlar o texto da busca
+  const [busca, setBusca] = useState("");
 
   const usuarioLogado = session?.user as any;
   const nomeUsuario = usuarioLogado?.name || usuarioLogado?.nome || "Visitante";
@@ -42,6 +45,18 @@ export default function SearchBar() {
   }, [usuarioLogado?.id]);
 
   const totalNaoLidas = notificacoes.filter(n => !n.visualizada).length;
+
+  // 2. Função para lidar com o redirecionamento ao apertar Enter
+  const lidarComPesquisa = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      // Se houver texto, envia o termo na query "?q=". Se estiver vazio, vai apenas para /buscar
+      const URLDestino = busca.trim() 
+        ? `/buscar?q=${encodeURIComponent(busca.trim())}` 
+        : "/buscar";
+      
+      router.push(URLDestino);
+    }
+  };
 
   const marcarComoLida = async (id: number) => {
     await fetch(`/api/notificacao/${id}`, { method: "PATCH" });
@@ -71,11 +86,17 @@ export default function SearchBar() {
           <div className="pl-3 pr-2 flex items-center justify-center text-gray-400">
             <Image src={iconSearch} alt="Buscar" width={18} height={18} />
           </div>
+          
+          {/* 3. Input atualizado com value, onChange e onKeyDown */}
           <input 
             type="text" 
             placeholder="Buscar serviços..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            onKeyDown={lidarComPesquisa}
             className="flex-1 h-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
           />
+
           <button 
             type="button" 
             className="px-3 border-l border-gray-200 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
@@ -85,7 +106,6 @@ export default function SearchBar() {
         </div>
 
         <div className="flex items-center gap-4">
-          
           <div className="relative flex items-center"> 
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none p-2 hover:bg-gray-50 rounded-full transition-colors relative">

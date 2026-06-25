@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Search, Filter, MapPin, X } from "lucide-react";
-import Link from "next/link"; // Adicionado para navegação
+import Link from "next/link";
+import { useSearchParams } from "next/navigation"; // 1. Importar o hook para ler parâmetros da URL
 
 interface Prestador {
   id_usuario: number;
@@ -32,12 +33,24 @@ const CATEGORIAS = [
 ];
 
 export default function BuscarServicosView() {
+  const searchParams = useSearchParams(); // 2. Inicializar os parâmetros de busca
+  const qParam = searchParams.get("q") || ""; // Pega o valor do "?q=" se ele existir
+
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [termo, setTermo] = useState("");
+  
+  // 3. Inicializar o estado "termo" com o valor vindo da URL (da SearchBar)
+  const [termo, setTermo] = useState(qParam); 
+  
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [apenasVerificados, setApenasVerificados] = useState(false);
+
+  // 4. Se o usuário digitar algo na SearchBar enquanto JÁ está na página de busca, 
+  // esse useEffect atualiza o input local instantaneamente.
+  useEffect(() => {
+    setTermo(qParam);
+  }, [qParam]);
 
   useEffect(() => {
     fetch("/api/prestador")
@@ -203,10 +216,10 @@ export default function BuscarServicosView() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {prestadoresFiltrados.map(prestador => (
             <Link
-  key={prestador.id_usuario}
-  href={`/perfil/prestador/${prestador.id_usuario}`} 
-  className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition group block"
->
+              key={prestador.id_usuario}
+              href={`/perfil/prestador/${prestador.id_usuario}`} 
+              className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition group block"
+            >
               {/* Header do card */}
               <div className="flex items-center gap-4 mb-4">
                 {prestador.foto_perfil ? (
