@@ -47,7 +47,10 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
   // 5. Busca as avaliações
   let avaliacoesDoPrestador: any[] = [];
   try {
-    if (AvaliacaoService && typeof AvaliacaoService.listar === "function") {
+    if (AvaliacaoService && typeof AvaliacaoService.listarPorPrestador === "function") {
+      const resultadoAvaliacoes = await AvaliacaoService.listarPorPrestador(idPrestador);
+      avaliacoesDoPrestador = Array.isArray(resultadoAvaliacoes) ? resultadoAvaliacoes : [];
+    } else if (AvaliacaoService && typeof AvaliacaoService.listar === "function") {
       const resultadoAvaliacoes = await AvaliacaoService.listar();
       const todasAvaliacoes = Array.isArray(resultadoAvaliacoes) ? resultadoAvaliacoes : [];
       avaliacoesDoPrestador = todasAvaliacoes.filter((a: any) => a && Number(a.id_prestador) === idPrestador);
@@ -65,7 +68,7 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
       <SearchBar />
 
       <div className="text-[#1F2937] p-6 w-full max-w-[1200px] mx-auto flex flex-col gap-5">
-        
+      
         <BotaoVoltarDinamico />
 
         <h1 className="text-2xl font-bold -mt-1">Perfil Profissional</h1>
@@ -207,26 +210,41 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
                 {avaliacoesDoPrestador.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">Nenhuma avaliação encontrada.</p>
                 ) : (
-                  avaliacoesDoPrestador.map((avaliacao: any, index: number) => (
-                    <div key={avaliacao.id_avaliacao} className="flex flex-col gap-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" alt="Avatar" className="w-full h-full object-cover" />
+                  avaliacoesDoPrestador.map((avaliacao: any, index: number) => {
+                    const nomeAvaliador = avaliacao.nome || avaliacao.nome_usuario || avaliacao.usuario?.nome || "Cliente";
+                    const inicialAvaliador = nomeAvaliador?.charAt(0).toUpperCase() || "C";
+
+                    return (
+                      <div key={avaliacao.id_avaliacao} className="flex flex-col gap-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
+                              {avaliacao.foto_perfil ? (
+                                <img
+                                  src={avaliacao.foto_perfil}
+                                  alt={nomeAvaliador}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                                  {inicialAvaliador}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-bold text-gray-800">{nomeAvaliador}</h3>
+                              <span className="text-xs text-amber-500 font-bold">★ {Number(avaliacao.nota || 0).toFixed(1)}</span>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="text-sm font-bold text-gray-800">Cliente</h3>
-                            <span className="text-xs text-amber-500 font-bold">★ {Number(avaliacao.nota || 0).toFixed(1)}</span>
-                          </div>
+                          <span className="text-[10px] text-gray-400">
+                            {avaliacao.data_avaliacao ? new Date(avaliacao.data_avaliacao).toLocaleDateString("pt-BR") : ""}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-gray-400">
-                          {avaliacao.data_avaliacao ? new Date(avaliacao.data_avaliacao).toLocaleDateString("pt-BR") : ""}
-                        </span>
+                        <p className="text-xs italic text-gray-500 pl-1">"{avaliacao.comentario}"</p>
+                        {index < avaliacoesDoPrestador.length - 1 && <div className="w-full h-px bg-gray-100 mt-2" />}
                       </div>
-                      <p className="text-xs italic text-gray-500 pl-1">"{avaliacao.comentario}"</p>
-                      {index < avaliacoesDoPrestador.length - 1 && <div className="w-full h-px bg-gray-100 mt-2" />}
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </section>
