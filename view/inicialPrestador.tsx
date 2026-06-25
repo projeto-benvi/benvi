@@ -36,24 +36,23 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
   };
 
   const [servicosDoBanco, setServicosDoBanco] = useState<ItemServico[]>([]);
-
   useEffect(() => {
-    // Espera o AuthContext carregar o usuário antes de buscar — evita
-    // disparar o fetch com id_prestador=undefined na primeira renderização
-    if (!user?.id) return;
+  // Espera o AuthContext carregar o usuário antes de buscar
+  if (!user?.id) return;
 
-    async function carregarServicos() {
-      try {
-        const response = await fetch(`/api/servico?id_prestador=${user.id}`);
-        const dados = await response.json();
-        setServicosDoBanco(dados);
-      } catch (error) {
-        console.error("Erro ao carregar serviços recentes do banco:", error);
-      }
+  async function carregarServicos() {
+    try {
+      // USANDO 'user?.id' com fallback para string vazia para o TypeScript não reclamar
+      const response = await fetch(`/api/servico?id_prestador=${user?.id ?? ''}`);
+      const dados = await response.json();
+      setServicosDoBanco(dados);
+    } catch (error) {
+      console.error("Erro ao carregar serviços recentes do banco:", error);
     }
+  }
 
-    carregarServicos();
-  }, [user?.id]);
+  carregarServicos();
+}, [user]); // Lembre-se de adicionar o 'user' como dependência aqui embaixo
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen antialiased text-gray-800 w-full">

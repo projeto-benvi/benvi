@@ -20,16 +20,16 @@ export default function Sidebar() {
 
   const obterItensMenu = () => {
 
-    if (user?.isAdmin || pathname.startsWith("/admin")) {
+    if (user?.isAdmin ) {
       return [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-        { label: "Usuários", icon: Users, href: "/usuarios" },
-        { label: "Prestadores", icon: Wrench, href: "/prestadores" },
-        { label: "Vulnerab. social", icon: HandHeart, href: "/vulnerabilidade" },
+        { label: "Usuários", icon: Users, href: "/admin/dashboard/usuarios" },
+        { label: "Prestadores", icon: Wrench, href: "/admin/prestadores" },
+        { label: "Vulnerab. social", icon: HandHeart, href: "/admin/vulnerabilidade" },
         { label: "Mensagens", icon: MessageCircle, href: "/mensagens" },
-        { label: "Tickets", icon: Ticket, href: "/tickets" },
-        { label: "Alertas", icon: Bell, href: "/alertas" },
-        { label: "Parcerias", icon: Handshake, href: "/parcerias" },
+        { label: "Tickets", icon: Ticket, href: "/admin/tickets" },
+        { label: "Alertas", icon: Bell, href: "/alerta" },
+        { label: "Parcerias", icon: Handshake, href: "/admin/parcerias" },
       ];
     }
     
@@ -55,7 +55,7 @@ export default function Sidebar() {
 
   const menuItems = obterItensMenu();
 
-  // Fecha o menu mobile automaticamente ao mudar de página
+  
   useEffect(() => {
     setMenuAberto(false);
   }, [pathname]);
@@ -85,12 +85,12 @@ export default function Sidebar() {
             </button>
           </div>
 
-          {/* Navegação Dinâmica baseada nos itens filtrados */}
+        
           <nav className="flex flex-col gap-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
               
-              // Validação de rota ativa precisa cobrir rotas exatas ou subcaminhos
+             
               const isActive = item.href === "/" 
                 ? pathname === "/" 
                 : pathname.startsWith(item.href);
