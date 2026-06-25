@@ -3,6 +3,7 @@ import SearchBar from "@/components/searchBar";
 import { servicoService } from "@/service/servicoService";
 import { usuarioService } from "@/service/usuarioService"; 
 import BotaoVoltarDinamico from "@/components/BotaoVoltarDinamico";
+import FavoritarPrestadorButton from "@/components/FavoritarPrestadorButton";
 import * as avaliacaoModulo from "@/service/avaliacaoService";
 const AvaliacaoService = (avaliacaoModulo as any).AvaliacaoService || (avaliacaoModulo as any).avaliacaoService;
 
@@ -74,9 +75,10 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
           
           {/* Banner Colorido Superior */}
           <div 
-            className="w-full h-32 rounded-t-2xl flex justify-end items-start p-5"
+            className="w-full h-32 rounded-t-2xl flex justify-end items-start gap-3 p-5"
             style={{ background: "linear-gradient(135deg, #83A5EE 0%, #76DA94 100%)" }}
           >
+            <FavoritarPrestadorButton idPrestador={idPrestador} />
             {ehDonoDoPerfil && (
               <button className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer">
                 Editar perfil
