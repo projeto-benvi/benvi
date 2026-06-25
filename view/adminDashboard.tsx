@@ -218,7 +218,7 @@ export default function AdminDashboard() {
                                         <tr key={user.id_usuario} className="hover:bg-slate-50/50 transition">
                                             <td className="p-3 flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-full bg-slate-200" />
-                                                <div className="truncate max-w-[140px]">
+                                                <div className="truncate .max-w-[140px]">
                                                     <p className="font-semibold text-slate-800 truncate">{user.nome}</p>
                                                     <p className="text-xs text-slate-400 truncate">{user.email}</p>
                                                 </div>
@@ -265,10 +265,10 @@ export default function AdminDashboard() {
                                 <tbody className="text-sm divide-y divide-slate-100">
                                     {tickets.length > 0 ? tickets.map((ticket) => (
                                         <tr key={ticket.id_ticket} className="hover:bg-slate-50/50 transition">
-                                            <td className="p-3 font-semibold text-slate-800 max-w-[120px] truncate">
+                                            <td className="p-3 font-semibold text-slate-800 .max-w-[120px] truncate">
                                                 {recentUsers.find(u => u.id_usuario === ticket.id_usuario)?.nome || `ID ${ticket.id_usuario}`}
                                             </td>
-                                            <td className="p-3 text-slate-500 max-w-[180px] truncate">
+                                            <td className="p-3 text-slate-500 .max-w-[180px] truncate">
                                                 {ticket.descricao}
                                             </td>
                                             <td className="p-3">
@@ -386,12 +386,12 @@ export default function AdminDashboard() {
                                     parcerias
                                         .slice(currentPartnerPage * itemsPerPage, (currentPartnerPage + 1) * itemsPerPage)
                                         .map((item) => (
-                                            <div key={item.id_cidade || item.id_parceria} className="bg-slate-50 border border-slate-100 p-3 rounded-2xl flex flex-col items-center text-center justify-between min-h-[140px]">
+                                            <div key={item.id_cidade || item.id_parceria} className="bg-slate-50 border border-slate-100 p-3 rounded-2xl flex flex-col items-center text-center justify-between .min-h-[140px]">
                                                 <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xs text-indigo-600 font-bold">
                                                     🏛️
                                                 </div>
                                                 <div className="my-2">
-                                                    <p className="text-[11px] font-bold text-slate-800 leading-tight truncate max-w-[100px]">
+                                                    <p className="text-[11px] font-bold text-slate-800 leading-tight truncate .max-w-[100px]">
                                                         Prefeitura de {item.cidade}
                                                     </p>
                                                     <p className="text-[9px] text-slate-400 uppercase">

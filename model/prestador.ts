@@ -7,6 +7,7 @@ export class Prestador extends Usuario {
   status_social: string;
   impulsiona_perfil: boolean;
   categoria_principal?: string;
+  is_vulneravel: boolean;
  
   constructor(dados: {
     // Dados obrigatórios herdados do Usuário
@@ -18,6 +19,7 @@ export class Prestador extends Usuario {
     status_social?: string;
     impulsiona_perfil?: boolean;
     categoria_principal?: string;
+    is_vulneravel?: boolean;
   }) {
     // 1. Envia os dados do usuário para o construtor da classe Pai (Usuario)
     super(dados); 
@@ -26,8 +28,9 @@ export class Prestador extends Usuario {
     this.descricao_profissional = dados.descricao_profissional;
     this.status_verificado = dados.status_verificado ?? false;
     this.status_social = dados.status_social ?? 'ativo';
-    this.impulsiona_perfil = dados.impulsiona_perfil ?? false;
+    this.impulsiona_perfil = (dados.is_vulneravel ?? false) ? true : (dados.impulsiona_perfil ?? false);
     this.categoria_principal = dados.categoria_principal;
+    this.is_vulneravel = dados.is_vulneravel ?? false;
   }
 
 }

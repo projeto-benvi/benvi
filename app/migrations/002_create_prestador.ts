@@ -10,6 +10,7 @@ export async function up(): Promise<void> {
         status_social VARCHAR(50) DEFAULT 'ativo',
         impulsiona_perfil BOOLEAN DEFAULT FALSE,
         categoria_principal VARCHAR(100),
+        is_vulneravel BOOLEAN DEFAULT FALSE,
         CONSTRAINT fk_prestador_usuario 
           FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) 
           ON DELETE CASCADE ON UPDATE CASCADE

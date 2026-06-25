@@ -29,7 +29,7 @@ interface MetricsPrestadores {
 }
 
 export default function PrestadoresPage() {
-  const id_solicitante = 3;
+  const id_solicitante = 1;
   const router = useRouter();
 
   const [prestadores, setPrestadores] = useState<UsuarioPlataforma[]>([]);
@@ -389,7 +389,7 @@ export default function PrestadoresPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-600 uppercase text-xs">
+                          <div className="w-9 h-9 bg-slate-200 rounded-full .flex-shrink-0 flex items-center justify-center font-bold text-slate-600 uppercase text-xs">
                             {usuario.nome.slice(0, 2)}
                           </div>
                           <span className="font-medium text-slate-800">{usuario.nome}</span>

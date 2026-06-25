@@ -67,17 +67,20 @@ export const prestadorService = {
   },
 
   async criar(dados: Prestador): Promise<number> {
+    const impulsiona_valor = (dados.is_vulneravel ?? true) ? true : (dados.impulsiona_perfil ?? false);
+    
     await pool.query(
       `INSERT INTO prestador 
-      (id_usuario, descricao_profissional, status_verificado, status_social, impulsiona_perfil, categoria_principal) 
-      VALUES (?, ?, ?, ?, ?, ?)`,
+      (id_usuario, descricao_profissional, status_verificado, status_social, impulsiona_perfil, categoria_principal, is_vulneravel) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         dados.id_usuario,
         dados.descricao_profissional ?? null,
         dados.status_verificado ?? false,
         dados.status_social ?? 'ativo',
-        dados.impulsiona_perfil ?? false,
-        dados.categoria_principal ?? null
+        impulsiona_valor,
+        dados.categoria_principal ?? null,
+        dados.is_vulneravel ?? false
       ]
     );
     return dados.id_usuario!;
@@ -89,7 +92,8 @@ export const prestadorService = {
       'status_verificado',
       'status_social',
       'impulsiona_perfil',
-      'categoria_principal'
+      'categoria_principal',
+      'is_vulneravel'
     ];
 
     const camposParaAtualizar: string[] = [];
@@ -101,22 +105,30 @@ export const prestadorService = {
         valores.push(dados[campo as keyof Partial<Prestador>]);
       }
     });
+
+    // Se is_vulneravel for true, garantir que impulsiona_perfil seja atualizado para true
+    if (dados.is_vulneravel === true && !camposParaAtualizar.includes('impulsiona_perfil = ?')) {
+      camposParaAtualizar.push('impulsiona_perfil = ?');
+      valores.push(true);
+    }
 
     if (camposParaAtualizar.length === 0) return;
 
     valores.push(id);
     await pool.query(
-      `UPDATE prestador SET ${camposParaAtualizar.join(', ')} WHERE id_prestador = ?`, valores
+      `UPDATE prestador SET ${camposParaAtualizar.join(', ')} WHERE id_usuario = ?`, valores
     );
   },
 
   async atualizarPorIdUsuario(id_usuario: number, dados: Partial<Prestador>): Promise<void> {
+    console.log("chegueiii", dados);
     const camposPermitidos = [
       'descricao_profissional',
       'status_verificado',
       'status_social',
       'impulsiona_perfil',
-      'categoria_principal'
+      'categoria_principal',
+      'is_vulneravel'
     ];
 
     const camposParaAtualizar: string[] = [];
@@ -128,6 +140,12 @@ export const prestadorService = {
         valores.push(dados[campo as keyof Partial<Prestador>]);
       }
     });
+
+    // Se is_vulneravel for true, garantir que impulsiona_perfil seja atualizado para true
+    if (dados.is_vulneravel === true && !camposParaAtualizar.includes('impulsiona_perfil = ?')) {
+      camposParaAtualizar.push('impulsiona_perfil = ?');
+      valores.push(true);
+    }
 
     if (camposParaAtualizar.length === 0) return;
 
