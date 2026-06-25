@@ -8,7 +8,6 @@ import SearchBar from "@/components/searchBar";
 
 import {
   Plus,
-  MoreVertical,
   Clock,
   Users,
   Check,
@@ -32,6 +31,8 @@ interface ServicoRetorno {
   titulo: string;
   descricao: string;
   status_servico: string;
+  data_inicio?: string | Date;
+  data_fim?: string | Date;
   tempo_execucao?: string;
   imagens?: string | string[];
 }
@@ -127,8 +128,12 @@ export default function ServicoPrestador() {
 
   const [solicitacaoParaRecusar, setSolicitacaoParaRecusar] =
     useState<SolicitacaoRetorno | null>(null);
+  const [solicitacaoEmDetalhe, setSolicitacaoEmDetalhe] =
+    useState<SolicitacaoRetorno | null>(null);
 
   const [servicoParaAvaliar, setServicoParaAvaliar] =
+    useState<ServicoRetorno | null>(null);
+  const [servicoEmDetalhe, setServicoEmDetalhe] =
     useState<ServicoRetorno | null>(null);
 
   const [notaGeral, setNotaGeral] = useState(5);
@@ -192,7 +197,7 @@ export default function ServicoPrestador() {
         fetch("/api/categoria", {
           cache: "no-store",
         }),
-        fetch("/api/solicitacaoservico", {
+        fetch(`/api/solicitacaoservico?id_prestador=${idUsuarioLogado}`, {
           cache: "no-store",
         }),
       ]);
@@ -224,17 +229,7 @@ export default function ServicoPrestador() {
         const dadosSolicitacoes = await resSolicitacoes.json();
 
         if (Array.isArray(dadosSolicitacoes)) {
-          const listaFiltrada = dadosSolicitacoes.filter(
-            (solicitacao: SolicitacaoRetorno) => {
-              if (!solicitacao.id_prestador) return true;
-
-              return (
-                Number(solicitacao.id_prestador) === Number(idUsuarioLogado)
-              );
-            }
-          );
-
-          setSolicitacoes(listaFiltrada);
+          setSolicitacoes(dadosSolicitacoes);
         }
       }
     } catch (error) {
@@ -639,6 +634,107 @@ export default function ServicoPrestador() {
     }).length;
   }
 
+  function formatarData(valor?: string | Date, incluirHora = false) {
+    if (!valor) return "Não informado";
+
+    const data = new Date(valor);
+
+    if (Number.isNaN(data.getTime())) return "Não informado";
+
+    if (incluirHora) {
+      return data.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    return data.toLocaleDateString("pt-BR");
+  }
+
+  function statusSolicitacaoLabel(statusSolicitacao: SolicitacaoRetorno["status"]) {
+    const normalizado = String(statusSolicitacao).toLowerCase();
+
+    if (
+      statusSolicitacao === false ||
+      statusSolicitacao === 0 ||
+      normalizado === "pendente"
+    ) {
+      return "Pendente";
+    }
+
+    if (statusSolicitacao === true || statusSolicitacao === 1 || normalizado === "aceito") {
+      return "Aceito";
+    }
+
+    return "Atualizado";
+  }
+
+  function obterPrimeiraImagemServico(service: ServicoRetorno): string | null {
+    const valor = service.imagens;
+
+    if (!valor) return null;
+
+    if (Array.isArray(valor)) {
+      return (valor.find((item) => typeof item === "string" && item.trim()) as string) || null;
+    }
+
+    if (typeof valor === "string") {
+      const valorLimpo = valor.trim();
+      if (!valorLimpo) return null;
+
+      try {
+        const parsed = JSON.parse(valorLimpo);
+        if (Array.isArray(parsed)) {
+          return (parsed.find((item) => typeof item === "string" && item.trim()) as string) || null;
+        }
+
+        if (typeof parsed === "string" && parsed.trim()) {
+          return parsed;
+        }
+      } catch {
+        return valorLimpo;
+      }
+
+      return null;
+    }
+
+    return null;
+  }
+
+  function obterImagensServico(service: ServicoRetorno): string[] {
+    const valor = service.imagens;
+
+    if (!valor) return [];
+
+    if (Array.isArray(valor)) {
+      return valor.filter((item): item is string => typeof item === "string" && Boolean(item.trim()));
+    }
+
+    if (typeof valor === "string") {
+      const valorLimpo = valor.trim();
+      if (!valorLimpo) return [];
+
+      try {
+        const parsed = JSON.parse(valorLimpo);
+
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item): item is string => typeof item === "string" && Boolean(item.trim()));
+        }
+
+        if (typeof parsed === "string" && parsed.trim()) {
+          return [parsed];
+        }
+      } catch {
+        return [valorLimpo];
+      }
+    }
+
+    return [];
+  }
+
   if (status === "loading") {
     return (
       <div className="h-screen bg-[#F8FAFC] flex items-center justify-center">
@@ -742,7 +838,8 @@ export default function ServicoPrestador() {
                   {solicitacoesPendentes.map((solicitacao) => (
                     <div
                       key={solicitacao.id_solicitacao}
-                      className="p-4 flex gap-4 items-center justify-between bg-white hover:bg-[#F8FAFC] transition"
+                      onClick={() => setSolicitacaoEmDetalhe(solicitacao)}
+                      className="p-4 flex gap-4 items-center justify-between bg-white hover:bg-[#F8FAFC] transition cursor-pointer"
                     >
                       <div className="flex gap-4 items-center flex-1">
                         <div className="w-[104px] h-[82px] bg-[#EAF2FF] text-[#2563EB] rounded-xl flex items-center justify-center font-bold text-xl uppercase">
@@ -761,20 +858,26 @@ export default function ServicoPrestador() {
                               "Solicitação sem descrição."}
                           </p>
 
+                          <p className="text-[11px] text-gray-500 max-w-xl line-clamp-1">
+                            Endereço: {solicitacao.endereco || "Não informado"}
+                          </p>
+
                           <div className="flex gap-5 pt-2 text-[11px] text-gray-500">
                             <span className="flex items-center gap-1">
                               <Clock size={13} />
-                              Agendamento solicitado
+                              Agendado para {formatarData(solicitacao.data_agendamento)}
                             </span>
+                            <span>{statusSolicitacaoLabel(solicitacao.status)}</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex gap-2 min-w-[210px] justify-end">
                         <button
-                          onClick={() =>
-                            setSolicitacaoParaRecusar(solicitacao)
-                          }
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSolicitacaoParaRecusar(solicitacao);
+                          }}
                           className="flex items-center gap-1 px-3 py-2 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold rounded-xl cursor-pointer"
                         >
                           <Trash2 size={14} />
@@ -782,7 +885,10 @@ export default function ServicoPrestador() {
                         </button>
 
                         <button
-                          onClick={() => aceitarSolicitacao(solicitacao)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            aceitarSolicitacao(solicitacao);
+                          }}
                           className="flex items-center gap-1 px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-xl cursor-pointer"
                         >
                           <Check size={14} />
@@ -803,6 +909,7 @@ export default function ServicoPrestador() {
                   const statusLower = String(
                     service.status_servico || ""
                   ).toLowerCase();
+                  const imagemCapa = obterPrimeiraImagemServico(service);
 
                   const isPendente =
                     statusLower === "pendente" ||
@@ -816,11 +923,20 @@ export default function ServicoPrestador() {
                   return (
                     <div
                       key={service.id_servico}
-                      className="px-4 py-3 flex gap-4 items-center justify-between bg-white hover:bg-[#F8FAFC] transition"
+                      onClick={() => setServicoEmDetalhe(service)}
+                      className="px-4 py-3 flex gap-4 items-center justify-between bg-white hover:bg-[#F8FAFC] transition cursor-pointer"
                     >
                       <div className="flex gap-4 items-center flex-1 min-w-0">
-                        <div className="w-[104px] h-[82px] bg-[#E5E7EB] rounded-xl shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-semibold">
-                          Foto
+                        <div className="w-[104px] h-[82px] bg-[#E5E7EB] rounded-xl shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-semibold overflow-hidden">
+                          {imagemCapa ? (
+                            <img
+                              src={imagemCapa}
+                              alt={service.titulo}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span>Foto</span>
+                          )}
                         </div>
 
                         <div className="space-y-1 flex-1 min-w-0">
@@ -860,16 +976,20 @@ export default function ServicoPrestador() {
 
                           {isPendente ? (
                             <button
-                              onClick={() =>
-                                concluirServico(service.id_servico)
-                              }
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                concluirServico(service.id_servico);
+                              }}
                               className="bg-[#2563EB] text-white text-xs font-bold px-6 py-2 rounded-xl w-full text-center cursor-pointer"
                             >
                               Concluir
                             </button>
                           ) : (
                             <button
-                              onClick={() => setServicoParaAvaliar(service)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setServicoParaAvaliar(service);
+                              }}
                               className="bg-[#F97316] text-white text-xs font-bold px-6 py-2 rounded-xl w-full text-center cursor-pointer hover:bg-[#EA580C] transition"
                             >
                               Avaliar
@@ -882,10 +1002,6 @@ export default function ServicoPrestador() {
                             </div>
                           )}
                         </div>
-
-                        <button className="text-gray-400 hover:text-gray-700 transition">
-                          <MoreVertical size={18} />
-                        </button>
                       </div>
                     </div>
                   );
@@ -1245,6 +1361,165 @@ export default function ServicoPrestador() {
               >
                 Sim, recusar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {solicitacaoEmDetalhe && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 relative flex flex-col gap-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button
+              onClick={() => setSolicitacaoEmDetalhe(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div>
+              <h3 className="text-lg font-bold text-[#0B1B4D]">
+                Detalhes da solicitação #{solicitacaoEmDetalhe.id_solicitacao}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Solicitado por <strong>{solicitacaoEmDetalhe.nome_usuario || "Cliente"}</strong>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-[11px] font-bold text-gray-500">Status</p>
+                <p className="text-sm text-gray-800 mt-1">{statusSolicitacaoLabel(solicitacaoEmDetalhe.status)}</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-[11px] font-bold text-gray-500">Data da solicitação</p>
+                <p className="text-sm text-gray-800 mt-1">{formatarData(solicitacaoEmDetalhe.data_solicitacao, true)}</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-[11px] font-bold text-gray-500">Data de agendamento</p>
+                <p className="text-sm text-gray-800 mt-1">{formatarData(solicitacaoEmDetalhe.data_agendamento, true)}</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-[11px] font-bold text-gray-500">Endereço</p>
+                <p className="text-sm text-gray-800 mt-1">{solicitacaoEmDetalhe.endereco || "Não informado"}</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-3">
+              <div>
+                <p className="text-[11px] font-bold text-gray-500">Descrição do serviço</p>
+                <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                  {solicitacaoEmDetalhe.descricao_servico || "Não informado"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold text-gray-500">Complemento</p>
+                <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                  {solicitacaoEmDetalhe.complemento || "Não informado"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                onClick={() => {
+                  setSolicitacaoParaRecusar(solicitacaoEmDetalhe);
+                  setSolicitacaoEmDetalhe(null);
+                }}
+                className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Recusar
+              </button>
+
+              <button
+                onClick={async () => {
+                  await aceitarSolicitacao(solicitacaoEmDetalhe);
+                  setSolicitacaoEmDetalhe(null);
+                }}
+                className="px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Aceitar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {servicoEmDetalhe && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 relative flex flex-col gap-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button
+              onClick={() => setServicoEmDetalhe(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div>
+              <h3 className="text-lg font-bold text-[#0B1B4D]">
+                Detalhes do serviço #{servicoEmDetalhe.id_servico}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                {servicoEmDetalhe.titulo}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-[11px] font-bold text-gray-500">Status</p>
+                <p className="text-sm text-gray-800 mt-1 capitalize">{servicoEmDetalhe.status_servico || "Não informado"}</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-[11px] font-bold text-gray-500">Categoria</p>
+                <p className="text-sm text-gray-800 mt-1">
+                  {servicoEmDetalhe.nome_categoria || buscarNomeCategoriaPorId(servicoEmDetalhe.id_categoria) || "Não informado"}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-[11px] font-bold text-gray-500">Data de início</p>
+                <p className="text-sm text-gray-800 mt-1">{formatarData(servicoEmDetalhe.data_inicio, true)}</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <p className="text-[11px] font-bold text-gray-500">Data de fim</p>
+                <p className="text-sm text-gray-800 mt-1">{formatarData(servicoEmDetalhe.data_fim, true)}</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-3">
+              <div>
+                <p className="text-[11px] font-bold text-gray-500">Descrição</p>
+                <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                  {servicoEmDetalhe.descricao || "Não informado"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold text-gray-500">Tempo estimado</p>
+                <p className="text-sm text-gray-700 mt-1">{servicoEmDetalhe.tempo_execucao || "Não informado"}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-gray-500">Imagens do serviço</p>
+              {obterImagensServico(servicoEmDetalhe).length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-200 p-5 text-xs text-gray-400 text-center">
+                  Este serviço não possui imagens.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {obterImagensServico(servicoEmDetalhe).map((imagem, index) => (
+                    <div key={`${imagem}-${index}`} className="rounded-xl overflow-hidden border border-gray-100 bg-gray-50 aspect-[4/3]">
+                      <img src={imagem} alt={`${servicoEmDetalhe.titulo} ${index + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
