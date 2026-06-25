@@ -78,6 +78,12 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
             className="w-full h-32 rounded-t-2xl flex justify-end items-start gap-3 p-5"
             style={{ background: "linear-gradient(135deg, #83A5EE 0%, #76DA94 100%)" }}
           >
+            <a
+              href={`/mensagens?idPrestador=${idPrestador}`}
+              className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer"
+            >
+              Conversar no chat
+            </a>
             <FavoritarPrestadorButton idPrestador={idPrestador} />
             {ehDonoDoPerfil && (
               <button className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer">

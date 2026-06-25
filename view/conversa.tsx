@@ -4,10 +4,12 @@ import { Search, Plus, Mic, ThumbsUp, SmilePlus, AlertTriangle, X, EllipsisVerti
 import SearchBar from "@/components/searchBar";
 import { useRef, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 
 export default function Conversa() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
 
    const [fotos, setFotos] = useState<File[]>([]);
   const [categoria, setCategoria] = useState("");
@@ -38,6 +40,7 @@ export default function Conversa() {
   const [carregandoSuporte, setCarregandoSuporte] = useState(false);
   const [enviandoSuporte, setEnviandoSuporte] = useState(false);
   const [erro, setErro] = useState("");
+  const [chatDiretoProcessado, setChatDiretoProcessado] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const inputMensagemRef = useRef<HTMLInputElement>(null);
@@ -92,6 +95,7 @@ export default function Conversa() {
   const [chatSelecionado, setChatSelecionado] = useState<Chat | null>(null);
 
   const idUsuarioLogado = Number((session?.user as any)?.id ?? 0);
+  const idPrestadorDireto = Number(searchParams.get("idPrestador") ?? 0);
   const isAdmin = (session?.user as any)?.isAdmin ?? false;
   const tipoParticipanteLogado: "usuario" | "prestador" | "admin" = isAdmin
     ? "admin"
@@ -223,6 +227,63 @@ export default function Conversa() {
   useEffect(() => {
     carregarConversas();
   }, [idUsuarioLogado, tipoParticipanteLogado]);
+
+  useEffect(() => {
+    const abrirConversaDireta = async () => {
+      if (chatDiretoProcessado) return;
+      if (!idPrestadorDireto || idPrestadorDireto <= 0) return;
+      if (!idUsuarioLogado || tipoParticipanteLogado !== "usuario") return;
+      if (idPrestadorDireto === idUsuarioLogado) {
+        setChatDiretoProcessado(true);
+        return;
+      }
+
+      try {
+        const criarResponse = await fetch("/api/conversas", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            idUsuario: idUsuarioLogado,
+            idPrestador: idPrestadorDireto,
+          }),
+        });
+
+        const conversaCriada = await criarResponse.json();
+
+        if (!criarResponse.ok) {
+          throw new Error(conversaCriada?.erro || "Não foi possível abrir a conversa.");
+        }
+
+        const listaResponse = await fetch(
+          `/api/conversas?idParticipante=${idUsuarioLogado}&tipoParticipante=${tipoParticipanteLogado}`
+        );
+        const lista = await listaResponse.json();
+        const chats = Array.isArray(lista) ? lista : [];
+
+        setListaChats(chats);
+
+        const idConversaAlvo = Number(conversaCriada?.idConversa ?? 0);
+        const conversaAlvo =
+          chats.find((chat: Chat) => Number(chat.idConversa) === idConversaAlvo) ||
+          chats.find((chat: Chat) => Number(chat.idPrestador) === idPrestadorDireto);
+
+        if (conversaAlvo) {
+          setSuporteAtivo(false);
+          setChatSelecionado(conversaAlvo);
+          await carregarMensagens(conversaAlvo.idConversa);
+        }
+
+        setChatDiretoProcessado(true);
+      } catch (error) {
+        console.error(error);
+        setChatDiretoProcessado(true);
+      }
+    };
+
+    abrirConversaDireta();
+  }, [chatDiretoProcessado, idPrestadorDireto, idUsuarioLogado, tipoParticipanteLogado]);
 
   const carregarSuporte = async () => {
     if (!idUsuarioLogado) return;
