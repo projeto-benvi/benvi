@@ -3,10 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const servicoController = {
 
-  // Lista todos os serviços
-  async listar() {
+  // Lista os serviços de um prestador específico
+  async listar(req: NextRequest) {
     try {
-      const servicos = await servicoService.listarTodos();
+      const { searchParams } = new URL(req.url);
+      const idPrestador = searchParams.get('id_prestador');
+
+      if (!idPrestador) {
+        return NextResponse.json(
+          { erro: 'id_prestador é obrigatório' },
+          { status: 400 }
+        );
+      }
+
+      const servicos = await servicoService.buscarPorPrestador(Number(idPrestador));
       return NextResponse.json(servicos);
     } catch (e) {
       return NextResponse.json(
@@ -16,7 +26,7 @@ export const servicoController = {
     }
   },
 
-  // Cria um novo serviço
+  // criar, buscarPorId, atualizar, deletar continuam exatamente iguais
   async criar(req: NextRequest) {
     try {
       const body = await req.json();
@@ -30,15 +40,11 @@ export const servicoController = {
     }
   },
 
-  // Busca um serviço pelo ID
   async buscarPorId(id: number) {
     try {
       const servico = await servicoService.buscarPorId(id);
       if (!servico) {
-        return NextResponse.json(
-          { erro: 'Serviço não encontrado' },
-          { status: 404 }
-        );
+        return NextResponse.json({ erro: 'Serviço não encontrado' }, { status: 404 });
       }
       return NextResponse.json(servico);
     } catch (e) {
@@ -49,7 +55,6 @@ export const servicoController = {
     }
   },
 
-  // Atualiza um serviço por ID
   async atualizar(id: number, req: NextRequest) {
     try {
       const body = await req.json();
@@ -57,25 +62,19 @@ export const servicoController = {
       return NextResponse.json({ mensagem: 'Atualizado com sucesso' });
     } catch (e) {
       return NextResponse.json(
-        { erro: 'Erro ao atualizar serviço', 
-          detalhes: String(e) 
-        },
+        { erro: 'Erro ao atualizar serviço', detalhes: String(e) },
         { status: 500 }
       );
     }
   },
 
-  // Deleta um serviço por ID
   async deletar(id: number) {
     try {
       await servicoService.deletar(id);
       return NextResponse.json({ mensagem: 'Deletado com sucesso' });
     } catch (e: any) {
       return NextResponse.json(
-        { 
-          erro: 'Erro ao deletar serviço',
-          detalhes: e.message || String(e) 
-        },
+        { erro: 'Erro ao deletar serviço', detalhes: e.message || String(e) },
         { status: 500 }
       );
     }

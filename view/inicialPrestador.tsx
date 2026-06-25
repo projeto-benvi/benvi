@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import SearchBar from "@/components/searchBar";
-
+import { AuthContext } from "@/app/context/AuthContext";
 
 // 1. Definição estrita das Interfaces
 interface AgendaItem {
@@ -20,12 +20,13 @@ interface ItemServico {
   status_servico: string;
 }
 
-
 interface InicialPrestadorProps {
   agendaHoje: AgendaItem[];
 }
 
 export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) {
+  const { user, carregando } = useContext(AuthContext);
+
   // Mapeamento visual das cores baseado no status
   const statusColors = {
     Concluido: "bg-[#4ADE80]",
@@ -33,36 +34,17 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
     Pendente: "bg-[#F97316]",
     Cancelado: "bg-red-500",
   };
+
   const [servicosDoBanco, setServicosDoBanco] = useState<ItemServico[]>([]);
 
-  // Seus dados estáticos de Serviços Recentes para manter o layout da esquerda
-  const servicosRecentes = [
-    {
-      titulo: "Instalação de torneira",
-      cliente: "Maria Aparecida",
-      data: "12/05/2026",
-      status: "Pendente",
-      statusBg: "bg-[#FDF4E9] text-[#F97316]"
-    },
-    {
-      titulo: "Cano estourado",
-      cliente: "João Pereira",
-      data: "28/04/2026",
-      status: "Concluido",
-      statusBg: "bg-[#ECFDF5] text-[#10B981]"
-    },
-    {
-      titulo: "Troca de tomadas",
-      cliente: "Lucas Borges",
-      data: "15/03/2024",
-      status: "",
-      statusBg: ""
-    }
-  ];
   useEffect(() => {
+    // Espera o AuthContext carregar o usuário antes de buscar — evita
+    // disparar o fetch com id_prestador=undefined na primeira renderização
+    if (!user?.id) return;
+
     async function carregarServicos() {
       try {
-        const response = await fetch('/api/servico'); // Certifique-se de que sua rota de API usa o servicoController
+        const response = await fetch(`/api/servico?id_prestador=${user.id}`);
         const dados = await response.json();
         setServicosDoBanco(dados);
       } catch (error) {
@@ -71,19 +53,22 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
     }
 
     carregarServicos();
-  }, []);
+  }, [user?.id]);
+
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen antialiased text-gray-800 w-full">
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         <SearchBar />
 
         <main className="flex-1 p-8 flex gap-8 overflow-y-auto">
-          
+
           {/* Coluna da Esquerda */}
           <div className="flex-1 flex flex-col gap-6 min-w-0">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Olá, Carlos</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Olá, {carregando ? "..." : user?.nome || "Prestador"}
+              </h1>
               <p className="text-sm text-gray-500 mt-1">Aqui está um resumo de suas atividades</p>
             </div>
 
@@ -126,7 +111,7 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
                 <h2 className="text-base font-bold text-gray-900">Serviços recentes</h2>
                 <button type="button" className="cursor-pointer text-xs text-blue-600 font-bold hover:underline">Ver todos</button>
               </div>
-              
+
               <div className="flex flex-col gap-3">
                 {servicosDoBanco.length === 0 ? (
                     <div className="text-xs text-gray-400 text-center py-4">Nenhum serviço recente.</div>
@@ -170,16 +155,16 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
               <div className="flex-1 overflow-y-auto pr-1 relative flex flex-col gap-6 pl-4 before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-100 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {agendaHoje.map((item) => (
                   <div key={item.id} className="flex gap-4 relative items-start">
-                    
+
                     <span className={`w-2.5 h-2.5 rounded-full ${statusColors[item.status] || "bg-gray-300"} mt-1.5 z-10 ring-4 ring-white shrink-0`} />
-                    
+
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-gray-900 shrink-0">{item.hora}</span>
                         <h3 className="text-xs font-bold text-gray-800 truncate">{item.evento}</h3>
                       </div>
                       <p className="text-[11px] text-gray-400 truncate">{item.local}</p>
-                      
+
                       <div className="mt-1">
                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md text-white shadow-xs
                           ${item.status === 'Concluido' ? 'bg-[#4ADE80]' : ''}
