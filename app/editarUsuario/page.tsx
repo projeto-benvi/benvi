@@ -2,26 +2,36 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 export default function EditarUsuarioPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    
-    console.log("Rota geral acessada. Redirecionando para um ID válido se necessário.");
-  }, []);
+    // 1. Aguarda o NextAuth carregar as informações da sessão
+    if (status === "loading") return;
 
+    // 2. Se o usuário não estiver autenticado, redireciona para a tela de login
+    if (status === "unauthenticated") {
+      router.push('/login');
+      return;
+    }
+
+    // 3. Se estiver logado, pega o ID da sessão e redireciona para a URL correta com o ID
+    const idDoUsuarioLogado = session?.user && (session.user as any).id;
+    
+    if (idDoUsuarioLogado) {
+      router.push(`/editarUsuario/${idDoUsuarioLogado}`);
+    }
+  }, [status, session, router]);
+
+  // Exibe uma tela de carregamento amigável enquanto o NextAuth decide para onde enviar o usuário
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 max-w-md text-center space-y-4">
-        <span className="text-4xl">🔍</span>
-        <h1 className="text-xl font-bold text-gray-900">Nenhum usuário selecionado</h1>
-        <p className="text-sm text-gray-500">
-          Para editar um perfil, você precisa informar o ID diretamente na URL.
-        </p>
-        <div className="bg-blue-50 text-blue-700 text-xs font-mono p-3 rounded-xl border border-blue-100">
-          Exemplo: localhost:3000/editarUsuario/1
-        </div>
+      <div className="text-center space-y-3">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p className="text-sm text-gray-500 font-medium">Redirecionando para o seu perfil...</p>
       </div>
     </div>
   );
