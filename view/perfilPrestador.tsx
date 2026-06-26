@@ -34,6 +34,12 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
 
   // 3. Busca a lista de serviços desse prestador
   const todosServicos = await servicoService.buscarPorPrestador(idPrestador) || [];
+  
+  // 3.5 Filtra apenas serviços concluídos para a seção "Serviços concluídos"
+  const servicosConcluidos = todosServicos.filter((servico: any) => {
+    const status = String(servico.status_servico || "").toLowerCase();
+    return status === "concluido" || status === "concluído";
+  });
 
   // 4. Monta o objeto do prestador tratando chaves legadas e novas sem quebrar o TypeScript
   const prestador = {
@@ -137,7 +143,7 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
 
             {/* Serviços Concluídos */}
             <div className="flex flex-col items-center justify-center py-2">
-              <span className="text-xl font-bold text-gray-800">{todosServicos.length}</span>
+              <span className="text-xl font-bold text-gray-800">{servicosConcluidos.length}</span>
               <span className="text-xs text-gray-400 font-semibold mt-1">Serviços concluídos</span>
             </div>
 
@@ -166,10 +172,10 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
               </div>
 
               <div className="flex flex-col gap-4">
-                {todosServicos.length === 0 ? (
-                  <p className="text-sm text-gray-400 italic">Nenhum serviço registrado para este profissional.</p>
+                {servicosConcluidos.length === 0 ? (
+                  <p className="text-sm text-gray-400 italic">Nenhum serviço concluído encontrado.</p>
                 ) : (
-                  todosServicos.map((servico: any) => {
+                  servicosConcluidos.map((servico: any) => {
                     let listaImagens: string[] = [];
                     try {
                       if (servico.imagens) {

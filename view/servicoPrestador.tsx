@@ -191,7 +191,7 @@ export default function ServicoPrestador() {
       setLoading(true);
 
       const [resServicos, resCategorias, resSolicitacoes] = await Promise.all([
-        fetch("/api/servico", {
+        fetch(`/api/servico?id_prestador=${idUsuarioLogado}`, {
           cache: "no-store",
         }),
         fetch("/api/categoria", {
@@ -412,50 +412,69 @@ export default function ServicoPrestador() {
 
   async function aceitarSolicitacao(solicitacao: SolicitacaoRetorno) {
     try {
-      const response = await fetch(
+      // 1. Atualiza o status da solicitação para aceito (1)
+      const responseSolicitacao = await fetch(
         `/api/solicitacaoservico/${solicitacao.id_solicitacao}`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: 1,
-            id_usuario: solicitacao.id_usuario,
-            id_prestador: solicitacao.id_prestador || Number(idUsuarioLogado),
-            complemento: solicitacao.complemento || "Sem complemento",
           }),
         }
       );
 
-      if (response.ok) {
-        setSolicitacoes((prev) =>
-          prev.filter(
-            (item) => item.id_solicitacao !== solicitacao.id_solicitacao
-          )
-        );
-
-        const novoServicoPendente: ServicoRetorno = {
-          id_servico: solicitacao.id_solicitacao,
-          id_prestador: Number(idUsuarioLogado),
-          titulo: solicitacao.nome_usuario
-            ? `Serviço para ${solicitacao.nome_usuario}`
-            : "Novo Serviço Aceito",
-          descricao:
-            solicitacao.descricao_servico || "Sem descrição fornecida",
-          status_servico: "pendente",
-          tempo_execucao: "30 a 60 min",
-        };
-
-        setServices((prev) => [novoServicoPendente, ...prev]);
-
-        dispararAlerta(
-          "Solicitação aceita e movida para serviços pendentes!",
-          "success"
-        );
-      } else {
+      if (!responseSolicitacao.ok) {
         dispararAlerta("Não foi possível aceitar esta solicitação.", "error");
+        return;
       }
+
+      // 2. Persiste o serviço no banco para que sobreviva ao reload
+      const tituloServico = solicitacao.nome_usuario
+        ? `Serviço para ${solicitacao.nome_usuario}`
+        : solicitacao.complemento || "Novo Serviço Aceito";
+
+      const resServico = await fetch("/api/servico", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_prestador: Number(idUsuarioLogado),
+          titulo: tituloServico,
+          descricao: solicitacao.descricao_servico || solicitacao.complemento || "Sem descrição fornecida",
+          status_servico: "pendente",
+          tempo_execucao: "A combinar",
+        }),
+      });
+
+      if (!resServico.ok) {
+        const erroServico = await resServico.json().catch(() => null);
+        dispararAlerta(
+          erroServico?.erro || erroServico?.error || "Solicitação aceita, mas o serviço não foi criado.",
+          "error"
+        );
+        return;
+      }
+
+      const dadosServico = await resServico.json().catch(() => null);
+
+      // 3. Remove a solicitação da lista local
+      setSolicitacoes((prev) =>
+        prev.filter((item) => item.id_solicitacao !== solicitacao.id_solicitacao)
+      );
+
+      // 4. Adiciona o serviço criado ao estado local (usando o id real do banco)
+      const novoServicoPendente: ServicoRetorno = {
+        id_servico: dadosServico?.id_servico || dadosServico?.id || Date.now(),
+        id_prestador: Number(idUsuarioLogado),
+        titulo: tituloServico,
+        descricao: solicitacao.descricao_servico || solicitacao.complemento || "Sem descrição fornecida",
+        status_servico: "pendente",
+        tempo_execucao: "A combinar",
+      };
+
+      setServices((prev) => [novoServicoPendente, ...prev]);
+
+      dispararAlerta("Solicitação aceita e movida para serviços pendentes!", "success");
     } catch (error) {
       console.error(error);
       dispararAlerta("Erro de conexão ao aceitar solicitação.", "error");
