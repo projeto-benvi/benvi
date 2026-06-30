@@ -44,20 +44,7 @@ export class ConversaService {
     let queryListar: string;
 
     if (tipoParticipante === 'admin') {
-      // Admin vê todas as conversas
-      queryListar = `
-        SELECT
-          c.idConversa,
-          c.idUsuario,
-          c.idPrestador,
-          CONCAT(u.nome, ' & ', p.nome) AS nome,
-          u.foto_perfil AS fotoPerfil,
-          c.ultimaMensagemEm
-        FROM conversas c
-        INNER JOIN usuario u ON u.id_usuario = c.idUsuario
-        INNER JOIN usuario p ON p.id_usuario = c.idPrestador
-        ORDER BY c.ultimaMensagemEm DESC
-      `;
+      return [];
     } else if (tipoParticipante === 'usuario') {
       queryListar = `
         SELECT
@@ -79,17 +66,20 @@ export class ConversaService {
           c.idConversa,
           c.idUsuario,
           c.idPrestador,
-          u.nome AS nome,
-          u.foto_perfil AS fotoPerfil,
+          CASE WHEN c.idPrestador = ? THEN u_cliente.nome ELSE u_prestador.nome END AS nome,
+          CASE WHEN c.idPrestador = ? THEN u_cliente.foto_perfil ELSE u_prestador.foto_perfil END AS fotoPerfil,
           c.ultimaMensagemEm
         FROM conversas c
-        INNER JOIN usuario u ON u.id_usuario = c.idUsuario
-        WHERE c.idPrestador = ?
+        INNER JOIN usuario u_cliente ON u_cliente.id_usuario = c.idUsuario
+        INNER JOIN usuario u_prestador ON u_prestador.id_usuario = c.idPrestador
+        WHERE c.idPrestador = ? OR c.idUsuario = ?
         ORDER BY c.ultimaMensagemEm DESC
       `;
     }
 
-    const params = tipoParticipante === 'admin' ? [] : [idParticipante];
+    const params = tipoParticipante === 'prestador'
+      ? [idParticipante, idParticipante, idParticipante, idParticipante]
+      : [idParticipante];
     const [conversas] = await pool.execute<RowDataPacket[]>(queryListar, params);
     return conversas;
   }

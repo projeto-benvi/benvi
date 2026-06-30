@@ -18,6 +18,7 @@ import {
   Eye,
   X,
   Search,
+  Star,
 } from "lucide-react";
 
 interface Pedido {
@@ -67,6 +68,18 @@ export default function MeusPedidos() {
   const [busca, setBusca] = useState("");
   const [pedidoDetalhes, setPedidoDetalhes] = useState<Pedido | null>(null);
 
+  const [pedidoParaAvaliar, setPedidoParaAvaliar] = useState<Pedido | null>(null);
+  const [notaGeral, setNotaGeral] = useState(5);
+  const [comentarioAvaliacao, setComentarioAvaliacao] = useState("");
+  const [notasCriterios, setNotasCriterios] = useState({
+    comunicacao: 5,
+    respeito: 5,
+    pontualidade: 5,
+    acordo: 5,
+  });
+  const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
+  const [avaliacoesEnviadas, setAvaliacoesEnviadas] = useState<number[]>([]);
+
   const carregarPedidos = useCallback(async () => {
     if (!user?.id) return;
     setCarregando(true);
@@ -90,6 +103,74 @@ export default function MeusPedidos() {
       setCarregando(false);
     }
   }, [logado, user?.id, carregarPedidos]);
+
+  const abrirModalAvaliar = (pedido: Pedido) => {
+    setPedidoParaAvaliar(pedido);
+    setNotaGeral(5);
+    setComentarioAvaliacao("");
+    setNotasCriterios({ comunicacao: 5, respeito: 5, pontualidade: 5, acordo: 5 });
+  };
+
+  const enviarAvaliacao = async () => {
+    if (!pedidoParaAvaliar || !user?.id) return;
+
+    setEnviandoAvaliacao(true);
+    try {
+      const res = await fetch("/api/avaliacoes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_usuario: Number(user.id),
+          id_prestador: pedidoParaAvaliar.id_prestador,
+          id_servico: pedidoParaAvaliar.id_solicitacao,
+          nota_geral: notaGeral,
+          comentario: comentarioAvaliacao.trim(),
+          comunicacao: notasCriterios.comunicacao,
+          respeito: notasCriterios.respeito,
+          pontualidade: notasCriterios.pontualidade,
+          acordo: notasCriterios.acordo,
+        }),
+      });
+
+      const dados = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(dados?.error || "Não foi possível enviar a avaliação.");
+      }
+
+      setAvaliacoesEnviadas((prev) => [...prev, pedidoParaAvaliar.id_solicitacao]);
+      setPedidoParaAvaliar(null);
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Erro ao enviar avaliação.");
+    } finally {
+      setEnviandoAvaliacao(false);
+    }
+  };
+
+  const RenderEstrelas = ({
+    valorAtual,
+    onChange,
+  }: {
+    valorAtual: number;
+    onChange: (v: number) => void;
+  }) => (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((estrela) => (
+        <button
+          key={estrela}
+          type="button"
+          onClick={() => onChange(estrela)}
+          className="cursor-pointer transition-transform hover:scale-110"
+        >
+          <Star
+            size={20}
+            className={estrela <= valorAtual ? "fill-amber-400 text-amber-400" : "text-gray-300"}
+          />
+        </button>
+      ))}
+    </div>
+  );
 
   const pedidosFiltrados = pedidos.filter((p) => {
     const matchFiltro =
@@ -143,11 +224,9 @@ export default function MeusPedidos() {
 
   return (
     <div className="flex-1 min-h-screen bg-gray-50">
-      {/* SearchBar padrão do site */}
       <SearchBar />
 
       <div className="max-w-5xl mx-auto px-6 py-6">
-        {/* Título + botão atualizar + input de busca */}
         <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
@@ -209,7 +288,6 @@ export default function MeusPedidos() {
           </div>
         </div>
 
-        {/* Filtros */}
         <div className="flex items-center gap-2 mb-5">
           {(["todos", "pendente", "concluido"] as FiltroStatus[]).map((f) => {
             const labels: Record<FiltroStatus, string> = {
@@ -238,7 +316,6 @@ export default function MeusPedidos() {
           })}
         </div>
 
-        {/* Lista */}
         {carregando ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 size={32} className="text-blue-400 animate-spin" />
@@ -271,7 +348,6 @@ export default function MeusPedidos() {
                 className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                  {/* Info do prestador */}
                   <div className="flex items-center gap-3">
                     {pedido.foto_prestador ? (
                       <img
@@ -295,7 +371,6 @@ export default function MeusPedidos() {
                     </div>
                   </div>
 
-                  {/* Status + ações */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={pedido.status} />
                     <button
@@ -310,10 +385,22 @@ export default function MeusPedidos() {
                     >
                       <MessageCircle size={13} /> Mensagem
                     </button>
+                    {pedido.status && !avaliacoesEnviadas.includes(pedido.id_solicitacao) && (
+                      <button
+                        onClick={() => abrirModalAvaliar(pedido)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-600 hover:bg-amber-100 transition cursor-pointer"
+                      >
+                        <Star size={13} /> Avaliar
+                      </button>
+                    )}
+                    {pedido.status && avaliacoesEnviadas.includes(pedido.id_solicitacao) && (
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-green-50 text-green-600">
+                        <Star size={13} className="fill-green-600" /> Avaliado
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Detalhes */}
                 <div className="mt-4 pt-4 border-t border-gray-50 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <div className="flex items-start gap-2">
                     <CalendarDays size={14} className="text-blue-400 mt-0.5 shrink-0" />
@@ -365,7 +452,6 @@ export default function MeusPedidos() {
             className="bg-white rounded-2xl shadow-2xl w-full max-w-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header modal */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <ClipboardList size={18} className="text-blue-600" />
@@ -381,9 +467,7 @@ export default function MeusPedidos() {
               </button>
             </div>
 
-            {/* Conteúdo */}
             <div className="px-6 py-5 flex flex-col gap-4">
-              {/* Prestador */}
               <div className="flex items-center gap-3">
                 {pedidoDetalhes.foto_prestador ? (
                   <img
@@ -407,7 +491,6 @@ export default function MeusPedidos() {
                 </div>
               </div>
 
-              {/* Campos */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Solicitado em</p>
@@ -442,7 +525,6 @@ export default function MeusPedidos() {
               )}
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex gap-2 justify-end">
               <button
                 onClick={() => { setPedidoDetalhes(null); router.push("/mensagens"); }}
@@ -455,6 +537,96 @@ export default function MeusPedidos() {
                 className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-200 transition cursor-pointer"
               >
                 Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Avaliar */}
+      {pedidoParaAvaliar && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={() => !enviandoAvaliacao && setPedidoParaAvaliar(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="font-bold text-gray-800 text-base">
+                Avaliar {pedidoParaAvaliar.nome_prestador}
+              </h2>
+              <button
+                onClick={() => setPedidoParaAvaliar(null)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700 block">
+                  Como você avalia esse serviço?
+                </label>
+                <div className="flex items-center gap-3">
+                  <RenderEstrelas valorAtual={notaGeral} onChange={setNotaGeral} />
+                  <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-md">
+                    {notaGeral === 5 ? "Excelente!" : notaGeral === 4 ? "Muito bom" : notaGeral === 3 ? "Regular" : notaGeral === 2 ? "Ruim" : "Péssimo"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="font-bold text-gray-500 text-xs">Comentário (opcional)</span>
+                <textarea
+                  value={comentarioAvaliacao}
+                  onChange={(e) => setComentarioAvaliacao(e.target.value.slice(0, 500))}
+                  placeholder="Conte como foi sua experiência com este prestador..."
+                  className="w-full min-h-[90px] bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs outline-none focus:border-amber-400 focus:bg-white transition resize-none"
+                />
+                <div className="text-right text-[10px] text-gray-400">{comentarioAvaliacao.length}/500</div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-gray-700">Avalie também os aspectos do serviço</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { chave: "comunicacao" as const, label: "Comunicação" },
+                    { chave: "respeito" as const, label: "Respeito" },
+                    { chave: "pontualidade" as const, label: "Pontualidade" },
+                    { chave: "acordo" as const, label: "Acordo" },
+                  ].map(({ chave, label }) => (
+                    <div key={chave} className="border border-gray-100 rounded-xl p-3 flex flex-col gap-1 bg-white shadow-sm">
+                      <span className="text-[11px] font-bold text-gray-600">{label}</span>
+                      <div className="flex items-center justify-between mt-1">
+                        <RenderEstrelas
+                          valorAtual={notasCriterios[chave]}
+                          onChange={(v) => setNotasCriterios((p) => ({ ...p, [chave]: v }))}
+                        />
+                        <span className="text-[11px] font-bold text-gray-500">{notasCriterios[chave].toFixed(1)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t border-gray-100">
+              <button
+                onClick={() => setPedidoParaAvaliar(null)}
+                disabled={enviandoAvaliacao}
+                className="px-5 py-2 border border-gray-300 bg-white text-gray-700 font-semibold text-xs rounded-xl hover:bg-gray-50 transition cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={enviarAvaliacao}
+                disabled={enviandoAvaliacao}
+                className="px-6 py-2 bg-amber-500 text-white font-semibold text-xs rounded-xl hover:bg-amber-600 shadow-md transition cursor-pointer disabled:opacity-60"
+              >
+                {enviandoAvaliacao ? "Enviando..." : "Enviar avaliação"}
               </button>
             </div>
           </div>

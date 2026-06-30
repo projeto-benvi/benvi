@@ -237,7 +237,7 @@ export const AgendaService = {
  
     async criar(dados: {
         id_prestador: number;
-        id_solicitacao: number;
+        id_solicitacao?: number | null;
         horario_inicio: Date;
         horario_fim: Date;
         status?: string;
@@ -253,17 +253,20 @@ export const AgendaService = {
             throw new Error('Prestador não encontrado');
         }
  
-        const [solicitacao] = await pool.query<RowDataPacket[]>(
-            `SELECT id_solicitacao FROM solicitacaoservico WHERE id_solicitacao = ?`,
-            [dados.id_solicitacao]
-        );
-        if (solicitacao.length === 0) {
-            throw new Error('Solicitação de serviço não encontrada');
+        if (dados.id_solicitacao) {
+            const [solicitacao] = await pool.query<RowDataPacket[]>(
+                `SELECT id_solicitacao FROM solicitacaoservico WHERE id_solicitacao = ?`,
+                [dados.id_solicitacao]
+            );
+            if (solicitacao.length === 0) {
+                throw new Error('Solicitação de serviço não encontrada');
+            }
         }
- 
-        const agenda = new AgendaModel(
+
+        await pool.query(`ALTER TABLE agenda MODIFY id_solicitacao INT NULL`).catch(() => null);
+const agenda = new AgendaModel(
             dados.id_prestador,
-            dados.id_solicitacao,
+            dados.id_solicitacao ?? null,
             new Date(dados.horario_inicio),
             new Date(dados.horario_fim),
             dados.status ?? 'pendente',

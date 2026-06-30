@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Eye, AlertTriangle, UserX, X, Star, CheckCircle, ChevronRight, UserCheck } from 'lucide-react';
+import { Search, Eye, AlertTriangle, UserX, X, Star, CheckCircle, UserCheck } from 'lucide-react';
 
-// --- Interfaces de Tipagem ---
 interface UsuarioPlataforma {
   id_usuario: number;
   nome: string;
@@ -13,7 +12,7 @@ interface UsuarioPlataforma {
   cidade?: string;
   estado?: string;
   data_cadastro?: string;
-  status_conta: string; // 'ativo', 'bloqueado', 'sinalizado'
+  status_conta: string;
   is_prestador: boolean;
   categoria?: string;
   avaliacao?: number;
@@ -28,7 +27,7 @@ interface MetricsPrestadores {
   bloqueados: number;
 }
 
-export default function PrestadoresPage() {
+export default function AdminPrestadores() {
   const id_solicitante = 1;
   const router = useRouter();
 
@@ -53,32 +52,49 @@ export default function PrestadoresPage() {
   const fetchPrestadores = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/usuario?admin=usuarios&id_solicitante=${id_solicitante}`);
-      const data = await res.json();
 
-      if (Array.isArray(data)) {
-        const apenasPrestadores = data.filter((u: UsuarioPlataforma) => u.is_prestador);
-        setPrestadores(apenasPrestadores);
+      // 1. Busca todos os prestadores (já vem com nome, email, cidade, status_conta via JOIN)
+      const resPrestadores = await fetch(`/api/prestador`);
+      const dataPrestadores = await resPrestadores.json();
+      const listaPrestadores = Array.isArray(dataPrestadores) ? dataPrestadores : [];
 
-        const total = apenasPrestadores.length;
-        const ativos = apenasPrestadores.filter(u => u.status_conta?.toLowerCase() === 'ativo').length;
-        const bloqueados = apenasPrestadores.filter(u => u.status_conta?.toLowerCase() === 'bloqueado').length;
+      const prestadoresFormatados: UsuarioPlataforma[] = listaPrestadores.map((p: any) => ({
+        id_usuario: p.id_usuario,
+        nome: p.nome,
+        email: p.email,
+        telefone: p.telefone,
+        cidade: p.cidade,
+        status_conta: p.status_conta,
+        is_prestador: true,
+        categoria: p.categoria_principal,
+        avaliacao: p.media_nota ?? 0,
+        avaliacoes_count: p.total_avaliacoes ?? 0,
+        servicos_realizados: p.servicos_realizados ?? 0,
+        data_cadastro: p.data_criacao,
+      }));
 
-        const novos = apenasPrestadores.filter(u => {
-          if (!u.data_cadastro) return false;
-          const dataCadastro = new Date(u.data_cadastro);
-          const trintaDiasAtras = new Date();
-          trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
-          return dataCadastro >= trintaDiasAtras;
-        }).length;
+      setPrestadores(prestadoresFormatados);
 
-        setMetrics({
-          total,
-          ativos,
-          novos_mes: novos || Math.ceil(total * 0.08),
-          bloqueados
-        });
-      }
+      const total = prestadoresFormatados.length;
+      const ativos = prestadoresFormatados.filter(u => u.status_conta?.toLowerCase() === 'ativo').length;
+      const bloqueados = prestadoresFormatados.filter(u =>
+        ['bloqueado', 'inativo', 'inativa', 'desativado', 'desativada'].includes(u.status_conta?.toLowerCase())
+      ).length;
+
+      const novos = prestadoresFormatados.filter(u => {
+        if (!u.data_cadastro) return false;
+        const dataCadastro = new Date(u.data_cadastro);
+        const trintaDiasAtras = new Date();
+        trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+        return dataCadastro >= trintaDiasAtras;
+      }).length;
+
+      setMetrics({
+        total,
+        ativos,
+        novos_mes: novos,
+        bloqueados
+      });
     } catch (error) {
       console.error("Erro ao carregar lista de prestadores do banco:", error);
     } finally {
@@ -90,7 +106,6 @@ export default function PrestadoresPage() {
     fetchPrestadores();
   }, []);
 
-  // --- Reativar usuário bloqueado ---
   const handleReativar = async (usuario: UsuarioPlataforma) => {
     if (!confirm(`Deseja reativar a conta de ${usuario.nome}?`)) return;
 
@@ -113,94 +128,89 @@ export default function PrestadoresPage() {
     }
   };
 
-  // --- Submeter Bloqueio ou Sinalização ---
   const handleConfirmarAcao = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!usuarioSelecionado || !tipoAcao) return;
+    e.preventDefault();
+    if (!usuarioSelecionado || !tipoAcao) return;
 
-        try {
-            setSubmittingAcao(true);
+    try {
+      setSubmittingAcao(true);
 
-            // ✅ Sinalizar: cria notificação + alerta, não usa PATCH no usuário
-            if (tipoAcao === 'sinalizar') {
-                const titulo    = 'Advertência Administrativa';
-                const descricao = motivoAcao.trim()
-                    ? motivoAcao.trim()
-                    : 'Sua conta recebeu uma advertência do administrador da plataforma.';
+      if (tipoAcao === 'sinalizar') {
+        const titulo    = 'Advertência Administrativa';
+        const descricao = motivoAcao.trim()
+          ? motivoAcao.trim()
+          : 'Sua conta recebeu uma advertência do administrador da plataforma.';
 
-                // 1. Cria a notificação para o usuário
-                const resNotif = await fetch('/api/notificacao', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_usuario: usuarioSelecionado.id_usuario,
-                        titulo,
-                        descricao,
-                    }),
-                });
+        const resNotif = await fetch('/api/notificacao', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_usuario: usuarioSelecionado.id_usuario,
+            titulo,
+            descricao,
+          }),
+        });
 
-                const notifData = await resNotif.json().catch(() => ({}));
+        const notifData = await resNotif.json().catch(() => ({}));
 
-                if (!resNotif.ok) {
-                    alert(`Erro ao criar notificação: ${notifData.erro || notifData.error || 'Erro interno.'}`);
-                    return;
-                }
-
-                // 2. Cria o alerta vinculado à notificação
-                const resAlerta = await fetch('/api/alerta', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_notificacao: notifData.id_notificacao,
-                        prioridade:     3,
-                        categoria:      'advertencia',
-                    }),
-                });
-
-                if (!resAlerta.ok) {
-                    const alertaData = await resAlerta.json().catch(() => ({}));
-                    alert(`Erro ao criar alerta: ${alertaData.erro || alertaData.error || 'Erro interno.'}`);
-                    return;
-                }
-
-                alert(`Advertência enviada com sucesso para ${usuarioSelecionado.nome}!`);
-                setUsuarioSelecionado(null);
-                setTipoAcao(null);
-                setMotivoAcao('');
-                return;
-            }
-
-            // ✅ Desativar / Reativar: usa PATCH com query param
-            const queryParam = tipoAcao === 'desativar' ? 'desativar' : 'reativar';
-
-            const response = await fetch(
-                `/api/usuario/${usuarioSelecionado.id_usuario}?admin=${queryParam}&id_solicitante=${id_solicitante}`,
-                {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(motivoAcao.trim() ? { motivo: motivoAcao.trim() } : {}),
-                }
-            );
-
-            const resData = await response.json().catch(() => ({}));
-
-            if (response.ok) {
-                const label = tipoAcao === 'desativar' ? 'desativado' : 'reativado';
-                alert(`Operação realizada com sucesso: Usuário ${label}!`);
-                setUsuarioSelecionado(null);
-                setTipoAcao(null);
-                setMotivoAcao('');
-                fetchPrestadores();
-            } else {
-                alert(`Aviso do Servidor: ${resData.erro || resData.error || 'Erro interno na rota do servidor.'}`);
-            }
-        } catch (error) {
-            console.error("Erro ao atualizar status:", error);
-            alert("Erro de conexão ao tentar salvar as alterações.");
-        } finally {
-            setSubmittingAcao(false);
+        if (!resNotif.ok) {
+          alert(`Erro ao criar notificação: ${notifData.erro || notifData.error || 'Erro interno.'}`);
+          return;
         }
-    };
+
+        const resAlerta = await fetch('/api/alerta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_notificacao: notifData.id_notificacao,
+            prioridade:     3,
+            categoria:      'advertencia',
+          }),
+        });
+
+        if (!resAlerta.ok) {
+          const alertaData = await resAlerta.json().catch(() => ({}));
+          alert(`Erro ao criar alerta: ${alertaData.erro || alertaData.error || 'Erro interno.'}`);
+          return;
+        }
+
+        alert(`Advertência enviada com sucesso para ${usuarioSelecionado.nome}!`);
+        setUsuarioSelecionado(null);
+        setTipoAcao(null);
+        setMotivoAcao('');
+        return;
+      }
+
+      const queryParam = tipoAcao === 'desativar' ? 'desativar' : 'reativar';
+
+      const response = await fetch(
+        `/api/usuario/${usuarioSelecionado.id_usuario}?admin=${queryParam}&id_solicitante=${id_solicitante}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(motivoAcao.trim() ? { motivo: motivoAcao.trim() } : {}),
+        }
+      );
+
+      const resData = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        const label = tipoAcao === 'desativar' ? 'desativado' : 'reativado';
+        alert(`Operação realizada com sucesso: Usuário ${label}!`);
+        setUsuarioSelecionado(null);
+        setTipoAcao(null);
+        setMotivoAcao('');
+        fetchPrestadores();
+      } else {
+        alert(`Aviso do Servidor: ${resData.erro || resData.error || 'Erro interno na rota do servidor.'}`);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      alert("Erro de conexão ao tentar salvar as alterações.");
+    } finally {
+      setSubmittingAcao(false);
+    }
+  };
 
   const prestadoresFiltrados = prestadores.filter(p => {
     const correspondeBusca =
@@ -254,12 +264,10 @@ export default function PrestadoresPage() {
   return (
     <div className="w-full min-h-screen bg-white font-sans text-slate-800 p-8">
 
-      {/* ─── CABEÇALHO DA PÁGINA ─── */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Prestadores</h1>
       </div>
 
-      {/* ─── CARDS DE MÉTRICAS SUPERIORES ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
         <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex items-center gap-5">
           <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -302,10 +310,8 @@ export default function PrestadoresPage() {
         </div>
       </div>
 
-      {/* ─── TABELA E FILTROS ─── */}
       <div className="bg-slate-50 rounded-3xl border border-slate-100 p-6 shadow-sm">
 
-        {/* FILTROS DE BUSCA */}
         <div className="flex flex-col sm:flex-row justify-start items-center gap-4 mb-6">
           <div className="relative w-full max-w-xs">
             <input
@@ -326,7 +332,9 @@ export default function PrestadoresPage() {
               className="w-full bg-white border border-slate-200 text-slate-600 text-sm rounded-2xl px-3 py-2.5 focus:outline-none"
             >
               <option value="todos">Todas</option>
-              <option value="eletrica">Elétrica</option>
+              {Array.from(new Set(prestadores.map(p => p.categoria).filter(Boolean))).map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
             </select>
           </div>
 
@@ -345,7 +353,6 @@ export default function PrestadoresPage() {
           </div>
         </div>
 
-        {/* LISTAGEM DOS PRESTADORES */}
         <div className="overflow-x-auto bg-white rounded-2xl border border-slate-100">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -372,7 +379,9 @@ export default function PrestadoresPage() {
               {prestadoresExibidos.length > 0 ? (
                 prestadoresExibidos.map((usuario) => {
                   const estaSelecionado = selecionados.includes(usuario.id_usuario);
-                  const estaBloqueado = usuario.status_conta?.toLowerCase() === 'bloqueado';
+                  const estaBloqueado = ['bloqueado', 'inativo', 'inativa', 'desativado', 'desativada'].includes(
+                    usuario.status_conta?.toLowerCase()
+                  );
 
                   return (
                     <tr
@@ -389,7 +398,7 @@ export default function PrestadoresPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-slate-200 rounded-full .flex-shrink-0 flex items-center justify-center font-bold text-slate-600 uppercase text-xs">
+                          <div className="w-9 h-9 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-600 uppercase text-xs">
                             {usuario.nome.slice(0, 2)}
                           </div>
                           <span className="font-medium text-slate-800">{usuario.nome}</span>
@@ -401,7 +410,7 @@ export default function PrestadoresPage() {
                         <div className="flex items-center gap-1 text-slate-700 font-medium">
                           <Star size={14} className="fill-blue-500 text-blue-500" />
                           <span>
-                            {usuario.avaliacao ? usuario.avaliacao.toFixed(1) : "0.0"}{' '}
+                            {usuario.avaliacao ? Number(usuario.avaliacao).toFixed(1) : "0.0"}{' '}
                             ({usuario.avaliacoes_count || 0})
                           </span>
                         </div>
@@ -436,7 +445,6 @@ export default function PrestadoresPage() {
                             <AlertTriangle size={18} />
                           </button>
 
-                          {/* Botão muda entre Reativar (verde ✓) e Bloquear (vermelho ✗) */}
                           {estaBloqueado ? (
                             <button
                               onClick={() => handleReativar(usuario)}
@@ -470,7 +478,6 @@ export default function PrestadoresPage() {
           </table>
         </div>
 
-        {/* ─── PAGINAÇÃO ─── */}
         <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
           <div>
             Mostrando <span className="font-medium text-slate-700">{totalItens > 0 ? indicePrimeiroItem + 1 : 0} a {Math.min(indiceUltimoItem, totalItens)}</span> de{' '}
@@ -518,80 +525,79 @@ export default function PrestadoresPage() {
         </div>
       </div>
 
-      {/* MODAL DE PENALIDADES (SINALIZAR / BLOQUEAR) */}
       {usuarioSelecionado && tipoAcao && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-xl p-6 relative">
-                        <button
-                            onClick={() => { setUsuarioSelecionado(null); setTipoAcao(null); setMotivoAcao(''); }}
-                            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-                        >
-                            <X size={18} />
-                        </button>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-xl p-6 relative">
+            <button
+              onClick={() => { setUsuarioSelecionado(null); setTipoAcao(null); setMotivoAcao(''); }}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+            >
+              <X size={18} />
+            </button>
 
-                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            {tipoAcao === 'desativar' && <><UserX className="text-rose-600" size={20} /> Desativar Usuário</>}
-                            {tipoAcao === 'reativar'  && <><UserCheck className="text-emerald-600" size={20} /> Reativar Usuário</>}
-                            {tipoAcao === 'sinalizar' && <><AlertTriangle className="text-amber-500" size={20} /> Enviar Advertência</>}
-                        </h3>
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              {tipoAcao === 'desativar' && <><UserX className="text-rose-600" size={20} /> Desativar Usuário</>}
+              {tipoAcao === 'reativar'  && <><UserCheck className="text-emerald-600" size={20} /> Reativar Usuário</>}
+              {tipoAcao === 'sinalizar' && <><AlertTriangle className="text-amber-500" size={20} /> Enviar Advertência</>}
+            </h3>
 
-                        <p className="text-sm text-slate-400 mt-1">
-                            {tipoAcao === 'sinalizar'
-                                ? <>Uma notificação de advertência será enviada para <strong className="text-slate-700">{usuarioSelecionado.nome}</strong>.</>
-                                : <>Você aplicará uma alteração na conta de <strong className="text-slate-700">{usuarioSelecionado.nome}</strong> (ID: {usuarioSelecionado.id_usuario}).</>
-                            }
-                        </p>
+            <p className="text-sm text-slate-400 mt-1">
+              {tipoAcao === 'sinalizar'
+                ? <>Uma notificação de advertência será enviada para <strong className="text-slate-700">{usuarioSelecionado.nome}</strong>.</>
+                : <>Você aplicará uma alteração na conta de <strong className="text-slate-700">{usuarioSelecionado.nome}</strong> (ID: {usuarioSelecionado.id_usuario}).</>
+              }
+            </p>
 
-                        <form onSubmit={handleConfirmarAcao} className="mt-4 space-y-4">
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                                    {tipoAcao === 'sinalizar' ? 'Mensagem da advertência' : 'Motivo / Justificativa'}{' '}
-                                    <span className="text-slate-400 font-normal lowercase">(opcional)</span>
-                                </label>
-                                <textarea
-                                    rows={3}
-                                    value={motivoAcao}
-                                    onChange={(e) => setMotivoAcao(e.target.value)}
-                                    placeholder={
-                                        tipoAcao === 'sinalizar'
-                                            ? 'Descreva o motivo da advertência (opcional)...'
-                                            : 'Descreva a justificativa para essa alteração (opcional)...'
-                                    }
-                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition resize-none"
-                                />
-                            </div>
+            <form onSubmit={handleConfirmarAcao} className="mt-4 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
+                  {tipoAcao === 'sinalizar' ? 'Mensagem da advertência' : 'Motivo / Justificativa'}{' '}
+                  <span className="text-slate-400 font-normal lowercase">(opcional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={motivoAcao}
+                  onChange={(e) => setMotivoAcao(e.target.value)}
+                  placeholder={
+                    tipoAcao === 'sinalizar'
+                      ? 'Descreva o motivo da advertência (opcional)...'
+                      : 'Descreva a justificativa para essa alteração (opcional)...'
+                  }
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition resize-none"
+                />
+              </div>
 
-                            <div className="flex gap-2 justify-end pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => { setUsuarioSelecionado(null); setTipoAcao(null); setMotivoAcao(''); }}
-                                    className="px-4 py-2 text-sm font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-xl transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submittingAcao}
-                                    className={`px-4 py-2 text-sm font-semibold text-white rounded-xl transition disabled:opacity-50 ${
-                                        tipoAcao === 'desativar'
-                                            ? 'bg-rose-600 hover:bg-rose-700'
-                                            : tipoAcao === 'reativar'
-                                                ? 'bg-emerald-600 hover:bg-emerald-700'
-                                                : 'bg-amber-500 hover:bg-amber-600'
-                                    }`}
-                                >
-                                    {submittingAcao
-                                        ? 'Salvando...'
-                                        : tipoAcao === 'desativar' ? 'Confirmar Desativação'
-                                        : tipoAcao === 'reativar'  ? 'Confirmar Reativação'
-                                        : 'Enviar Advertência'
-                                    }
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setUsuarioSelecionado(null); setTipoAcao(null); setMotivoAcao(''); }}
+                  className="px-4 py-2 text-sm font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingAcao}
+                  className={`px-4 py-2 text-sm font-semibold text-white rounded-xl transition disabled:opacity-50 ${
+                    tipoAcao === 'desativar'
+                      ? 'bg-rose-600 hover:bg-rose-700'
+                      : tipoAcao === 'reativar'
+                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                        : 'bg-amber-500 hover:bg-amber-600'
+                  }`}
+                >
+                  {submittingAcao
+                    ? 'Salvando...'
+                    : tipoAcao === 'desativar' ? 'Confirmar Desativação'
+                    : tipoAcao === 'reativar'  ? 'Confirmar Reativação'
+                    : 'Enviar Advertência'
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 }

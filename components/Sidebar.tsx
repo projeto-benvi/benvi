@@ -23,12 +23,12 @@ export default function Sidebar() {
     if (user?.isAdmin ) {
       return [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-        { label: "Usuários", icon: Users, href: "/admin/dashboard/usuarios" },
+        { label: "Usuários", icon: Users, href: "/admin/usuarios" },
         { label: "Prestadores", icon: Wrench, href: "/admin/prestadores" },
         { label: "Vulnerab. social", icon: HandHeart, href: "/admin/vulnerabilidade" },
         { label: "Mensagens", icon: MessageCircle, href: "/mensagens" },
         { label: "Tickets", icon: Ticket, href: "/admin/tickets" },
-        { label: "Alertas", icon: Bell, href: "/alerta" },
+        { label: "Alertas", icon: Bell, href: "/admin/alerta" },
         { label: "Parcerias", icon: Handshake, href: "/admin/parcerias" },
       ];
     }

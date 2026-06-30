@@ -20,7 +20,7 @@ export const AgendaController = {
  
     async criar(dados: {
         id_prestador: number;
-        id_solicitacao: number;
+        id_solicitacao?: number | null;
         horario_inicio: Date;
         horario_fim: Date;
         status?: string;

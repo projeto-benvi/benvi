@@ -32,16 +32,16 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        if (!body.id_prestador || !body.id_solicitacao || !body.horario_inicio || !body.horario_fim || !body.titulo) {
+        if (!body.id_prestador || !body.horario_inicio || !body.horario_fim || !body.titulo) {
             return NextResponse.json(
-                { error: 'Campos obrigatórios: id_prestador, id_solicitacao, horario_inicio, horario_fim, titulo' },
+                { error: 'Campos obrigatórios: id_prestador, horario_inicio, horario_fim, titulo' },
                 { status: 400 }
             );
         }
 
         const id = await AgendaController.criar({
             id_prestador:   body.id_prestador,
-            id_solicitacao: body.id_solicitacao,
+            id_solicitacao: body.id_solicitacao ?? null,
             horario_inicio: new Date(body.horario_inicio),
             horario_fim:    new Date(body.horario_fim),
             status:         body.status,

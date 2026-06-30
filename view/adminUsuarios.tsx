@@ -26,7 +26,7 @@ interface MetricsUsuarios {
     desativados: number;
 }
 
-export default function UsuariosPage() {
+export default function AdminUsuarios() {
     const id_solicitante = 1;
     const router = useRouter();
 
@@ -38,7 +38,7 @@ export default function UsuariosPage() {
 
     const [busca, setBusca] = useState('');
     const [filtroTipo, setFiltroTipo] = useState('todos');
-    const [filtroStatus, setFiltroStatus] = useState<'todos' | 'ativos' | 'inativos'>('todos'); // ✅ novo filtro
+    const [filtroStatus, setFiltroStatus] = useState<'todos' | 'ativos' | 'inativos'>('todos');
     const [paginaAtual, setPaginaAtual] = useState(1);
     const itensPorPagina = 6;
 
@@ -57,16 +57,29 @@ export default function UsuariosPage() {
     const fetchUsuarios = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`/api/usuario?admin=usuarios&id_solicitante=${id_solicitante}`);
-            const data = await res.json();
 
-            if (Array.isArray(data)) {
-                setUsuarios(data);
-                const total       = data.length;
-                const ativos      = data.filter(u => !estaDesativado(u.status_conta)).length;
-                const desativados = data.filter(u => estaDesativado(u.status_conta)).length;
-                setMetrics({ total, ativos, novos_mes: Math.ceil(total * 0.1), desativados });
-            }
+            const resUsuarios = await fetch(`/api/usuario`);
+            const dataUsuarios = await resUsuarios.json();
+            const listaUsuarios = Array.isArray(dataUsuarios) ? dataUsuarios : [];
+
+            const resPrestadores = await fetch(`/api/prestador`);
+            const dataPrestadores = await resPrestadores.json();
+            const idsPrestadores = Array.isArray(dataPrestadores)
+                ? dataPrestadores.map((p: any) => p.id_usuario)
+                : [];
+
+            const usuariosComTipo: UsuarioPlataforma[] = listaUsuarios.map((u: any) => ({
+                ...u,
+                is_prestador: idsPrestadores.includes(u.id_usuario),
+            }));
+
+            setUsuarios(usuariosComTipo);
+
+            const total       = usuariosComTipo.length;
+            const ativos      = usuariosComTipo.filter(u => !estaDesativado(u.status_conta)).length;
+            const desativados = usuariosComTipo.filter(u => estaDesativado(u.status_conta)).length;
+            setMetrics({ total, ativos, novos_mes: Math.ceil(total * 0.1), desativados });
+
         } catch (error) {
             console.error("Erro ao carregar lista de usuários:", error);
         } finally {
@@ -87,14 +100,12 @@ export default function UsuariosPage() {
         try {
             setSubmittingAcao(true);
 
-            // ✅ Sinalizar: cria notificação + alerta, não usa PATCH no usuário
             if (tipoAcao === 'sinalizar') {
                 const titulo    = 'Advertência Administrativa';
                 const descricao = motivoAcao.trim()
                     ? motivoAcao.trim()
                     : 'Sua conta recebeu uma advertência do administrador da plataforma.';
 
-                // 1. Cria a notificação para o usuário
                 const resNotif = await fetch('/api/notificacao', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -112,7 +123,6 @@ export default function UsuariosPage() {
                     return;
                 }
 
-                // 2. Cria o alerta vinculado à notificação
                 const resAlerta = await fetch('/api/alerta', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -136,7 +146,6 @@ export default function UsuariosPage() {
                 return;
             }
 
-            // ✅ Desativar / Reativar: usa PATCH com query param
             const queryParam = tipoAcao === 'desativar' ? 'desativar' : 'reativar';
 
             const response = await fetch(
@@ -168,7 +177,6 @@ export default function UsuariosPage() {
         }
     };
 
-    // ✅ Filtro de busca + tipo + status
     const usuariosFiltrados = usuarios.filter(usuario => {
         const correspondeBusca =
             usuario.nome?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -229,7 +237,6 @@ export default function UsuariosPage() {
                 <p className="text-sm text-slate-400 mt-0.5">Gerencie todos os usuários cadastrados na plataforma</p>
             </div>
 
-            {/* MÉTRICAS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
                 <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
                     <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -272,13 +279,11 @@ export default function UsuariosPage() {
                 </div>
             </div>
 
-            {/* TABELA */}
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
 
                 <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="flex flex-1 w-full sm:w-auto gap-3 items-center flex-wrap">
 
-                        {/* Busca */}
                         <div className="relative flex-1 max-w-md">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
@@ -290,7 +295,6 @@ export default function UsuariosPage() {
                             />
                         </div>
 
-                        {/* Filtro tipo */}
                         <select
                             value={filtroTipo}
                             onChange={(e) => { setFiltroTipo(e.target.value); setPaginaAtual(1); }}
@@ -301,7 +305,6 @@ export default function UsuariosPage() {
                             <option value="prestador">Prestador</option>
                         </select>
 
-                        {/* ✅ Filtro de status — botões */}
                         <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
                             {(['todos', 'ativos', 'inativos'] as const).map((opcao) => (
                                 <button
@@ -447,7 +450,6 @@ export default function UsuariosPage() {
                     </table>
                 </div>
 
-                {/* PAGINAÇÃO */}
                 <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-slate-50/50">
                     <div>
                         Mostrando <span className="font-bold text-slate-700">{totalItens > 0 ? indicePrimeiroItem + 1 : 0}</span> a{' '}
@@ -497,7 +499,6 @@ export default function UsuariosPage() {
                 </div>
             </div>
 
-            {/* MODAL */}
             {usuarioSelecionado && tipoAcao && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-xl p-6 relative">
