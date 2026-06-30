@@ -1,7 +1,29 @@
+"use client";
+
+import { FormEvent, useState } from "react";
 import { Search, MapPin } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function CardFundoAzul() {
+  const router = useRouter();
+  const [servico, setServico] = useState("");
+  const [localizacao, setLocalizacao] = useState("");
+
+  function handleBuscar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const params = new URLSearchParams();
+    const termoBusca = servico.trim();
+    const termoLocalizacao = localizacao.trim();
+
+    if (termoBusca) params.set("search", termoBusca);
+    if (termoLocalizacao) params.set("location", termoLocalizacao);
+
+    const query = params.toString();
+    router.push(query ? `/buscar-servicos?${query}` : "/buscar-servicos");
+  }
+
   return (
     <section
       className="w-full rounded-3xl px-8 py-10 md:px-14 md:py-14 relative overflow-hidden flex items-center justify-between min-h-[340px]"
@@ -22,11 +44,13 @@ export default function CardFundoAzul() {
         </p>
 
         {/* Barra de Pesquisa Ampliada */}
-        <div className="flex w-full items-center rounded-2xl bg-white p-2.5 shadow-lg border border-gray-100 transition-all">
+        <form onSubmit={handleBuscar} className="flex w-full items-center rounded-2xl bg-white p-2.5 shadow-lg border border-gray-100 transition-all">
           <div className="flex flex-1 items-center gap-3 px-3">
             <Search size={22} className="text-gray-400" />
             <input
               type="text"
+              value={servico}
+              onChange={(event) => setServico(event.target.value)}
               placeholder="O que você precisa? Ex: Eletricista, Encanador"
               className="w-full text-sm text-gray-700 outline-none placeholder:text-gray-400 font-medium"
             />
@@ -38,19 +62,21 @@ export default function CardFundoAzul() {
             <MapPin size={20} className="text-gray-400" />
             <input
               type="text"
+              value={localizacao}
+              onChange={(event) => setLocalizacao(event.target.value)}
               placeholder="Sua localização"
               className="w-full text-sm text-gray-700 outline-none placeholder:text-gray-400 font-medium"
             />
           </div>
 
           <button
-            type="button"
+            type="submit"
             className="rounded-xl px-10 py-3.5 text-sm font-bold text-white transition hover:bg-blue-700 active:scale-95 shadow-md flex-shrink-0"
             style={{ backgroundColor: "#2563EB" }}
           >
             Buscar
           </button>
-        </div>
+        </form>
       </div>
 
       {/* Lado Direito: ILUSTRAÇÃO AMPLIADA */}

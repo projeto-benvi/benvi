@@ -25,6 +25,8 @@ import {
 
 interface ServicoRetorno {
   id_servico: number;
+  id_usuario?: number;
+  id_solicitacao?: number;
   id_prestador?: number;
   id_categoria?: number;
   nome_categoria?: string;
@@ -483,6 +485,8 @@ export default function ServicoPrestador() {
           dadosServico?.id_servico ||
           dadosServico?.id ||
           solicitacao.id_solicitacao,
+        id_usuario: solicitacao.id_usuario,
+        id_solicitacao: solicitacao.id_solicitacao,
         id_prestador: idPrestadorServico,
         titulo: tituloServico,
         descricao: solicitacao.descricao_servico || "Sem descrição fornecida",
@@ -576,14 +580,23 @@ export default function ServicoPrestador() {
     if (!servicoParaAvaliar) return;
 
     try {
-      const solicitacaoCorrespondente = solicitacoes.find(
-        (sol) =>
-          Number(sol.id_solicitacao) === Number(servicoParaAvaliar.id_servico)
-      );
+      const solicitacaoCorrespondente = solicitacoes.find((sol) => {
+        const idSolicitacaoServico = Number(servicoParaAvaliar.id_solicitacao);
+        const idServico = Number(servicoParaAvaliar.id_servico);
+        const mesmaSolicitacao =
+          Number(sol.id_solicitacao) === idSolicitacaoServico ||
+          Number(sol.id_solicitacao) === idServico;
+        const mesmoTexto =
+          Boolean(servicoParaAvaliar.descricao) &&
+          (sol.descricao_servico === servicoParaAvaliar.descricao ||
+            sol.complemento === servicoParaAvaliar.descricao);
+
+        return mesmaSolicitacao || mesmoTexto;
+      });
 
       const idUsuarioCliente =
-        solicitacaoCorrespondente?.id_usuario ||
-        (servicoParaAvaliar as any).id_usuario;
+        servicoParaAvaliar.id_usuario ||
+        solicitacaoCorrespondente?.id_usuario;
 
       if (!idUsuarioCliente) {
         dispararAlerta(
@@ -594,6 +607,8 @@ export default function ServicoPrestador() {
       }
 
       const dadosParaEnviar = {
+        id_usuario: Number(idUsuarioCliente),
+        id_prestador: Number(idUsuarioLogado),
         id_servico: Number(servicoParaAvaliar.id_servico),
         nota_geral: Number(notaGeral),
         comentario: comentario.trim(),

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Search, Filter, MapPin, X } from "lucide-react";
 import Link from "next/link"; // Adicionado para navegação
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Prestador {
   id_usuario: number;
@@ -24,21 +25,41 @@ interface CategoriaBanco {
 }
 
 export default function BuscarServicosView() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [categorias, setCategorias] = useState<CategoriaBanco[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [termo, setTermo] = useState("");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
+  const [localizacao, setLocalizacao] = useState("");
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [apenasVerificados, setApenasVerificados] = useState(false);
 
   useEffect(() => {
+    const termoUrl = searchParams.get("search") || "";
+    const localizacaoUrl = searchParams.get("location") || searchParams.get("localizacao") || searchParams.get("cidade") || "";
+    const categoriaUrl = searchParams.get("categoria") || "Todas";
+    const verificadosUrl = searchParams.get("verificados") === "1";
+
+    setTermo(termoUrl);
+    setLocalizacao(localizacaoUrl);
+    setCategoriaSelecionada(categoriaUrl);
+    setApenasVerificados(verificadosUrl);
+
     async function carregarDados() {
       setCarregando(true);
 
       try {
+        const filtrosApi = new URLSearchParams();
+        if (termoUrl.trim()) filtrosApi.set("search", termoUrl.trim());
+        if (localizacaoUrl.trim()) filtrosApi.set("location", localizacaoUrl.trim());
+        if (categoriaUrl && categoriaUrl !== "Todas") filtrosApi.set("categoria", categoriaUrl);
+        if (verificadosUrl) filtrosApi.set("verificados", "1");
+
+        const urlPrestadores = filtrosApi.toString() ? `/api/prestador?${filtrosApi.toString()}` : "/api/prestador";
         const [resPrestadores, resCategorias] = await Promise.all([
-          fetch("/api/prestador"),
+          fetch(urlPrestadores),
           fetch("/api/categoria"),
         ]);
 
@@ -56,7 +77,20 @@ export default function BuscarServicosView() {
     }
 
     carregarDados();
-  }, []);
+  }, [searchParams]);
+
+  function executarPesquisa(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+
+    const params = new URLSearchParams();
+    if (termo.trim()) params.set("search", termo.trim());
+    if (localizacao.trim()) params.set("location", localizacao.trim());
+    if (categoriaSelecionada !== "Todas") params.set("categoria", categoriaSelecionada);
+    if (apenasVerificados) params.set("verificados", "1");
+
+    const query = params.toString();
+    router.push(query ? `/buscar-servicos?${query}` : "/buscar-servicos");
+  }
 
   const prestadoresFiltrados = prestadores.filter(p => {
     const termoLower = termo.toLowerCase();
@@ -68,6 +102,10 @@ export default function BuscarServicosView() {
       p.descricao_profissional?.toLowerCase().includes(termoLower) ||
       p.cidade?.toLowerCase().includes(termoLower);
 
+    const bateLocalizacao =
+      !localizacao ||
+      p.cidade?.toLowerCase().includes(localizacao.toLowerCase());
+
     const bateCategoria =
       categoriaSelecionada === "Todas" ||
       p.categoria_principal === categoriaSelecionada ||
@@ -75,16 +113,18 @@ export default function BuscarServicosView() {
 
     const bateVerificado = !apenasVerificados || Boolean(p.status_verificado);
 
-    return bateTermos && bateCategoria && bateVerificado;
+    return bateTermos && bateLocalizacao && bateCategoria && bateVerificado;
   });
 
   const limparFiltros = () => {
     setTermo("");
     setCategoriaSelecionada("Todas");
+    setLocalizacao("");
     setApenasVerificados(false);
+    router.push("/buscar-servicos");
   };
 
-  const temFiltrosAtivos = termo || categoriaSelecionada !== "Todas" || apenasVerificados;
+  const temFiltrosAtivos = termo || localizacao || categoriaSelecionada !== "Todas" || apenasVerificados;
 
   return (
     <div className="p-8 max-w-7xl mx-auto font-sans">
@@ -95,7 +135,7 @@ export default function BuscarServicosView() {
       </div>
 
       {/* Barra de busca */}
-      <div className="flex gap-3 mb-6">
+      <form onSubmit={executarPesquisa} className="flex gap-3 mb-6">
         <div className="flex-1 flex items-center border border-gray-200 rounded-xl px-4 h-12 bg-white shadow-sm focus-within:border-blue-500 transition">
           <Search size={18} className="text-gray-400 shrink-0" />
           <input
@@ -106,12 +146,13 @@ export default function BuscarServicosView() {
             className="flex-1 ml-3 text-sm text-gray-700 outline-none placeholder:text-gray-400"
           />
           {termo && (
-            <button onClick={() => setTermo("")} className="text-gray-400 hover:text-gray-600">
+            <button type="button" onClick={() => setTermo("")} className="text-gray-400 hover:text-gray-600">
               <X size={16} />
             </button>
           )}
         </div>
         <button
+          type="button"
           onClick={() => setMostrarFiltros(!mostrarFiltros)}
           className={`flex items-center gap-2 px-4 h-12 rounded-xl border text-sm font-semibold transition cursor-pointer ${
             mostrarFiltros || temFiltrosAtivos
@@ -123,11 +164,11 @@ export default function BuscarServicosView() {
           Filtros
           {temFiltrosAtivos && (
             <span className="bg-white text-blue-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              {[termo, categoriaSelecionada !== "Todas", apenasVerificados].filter(Boolean).length}
+              {[termo, localizacao, categoriaSelecionada !== "Todas", apenasVerificados].filter(Boolean).length}
             </span>
           )}
         </button>
-      </div>
+      </form>
 
       {/* Painel de filtros */}
       {mostrarFiltros && (

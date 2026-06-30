@@ -1,22 +1,17 @@
 import { alertaController } from '@/controller/alertaController';
 import { NextRequest } from 'next/server';
 
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
-
-export async function GET(
-  _: NextRequest,
-  context: RouteContext
-) {
-  const params = await context.params;
-  return alertaController.buscarPorId(Number(params.id));
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return alertaController.buscarPorId(Number(id));
 }
 
-export async function DELETE(
-  _: NextRequest,
-  context: RouteContext
-) {
-  const params = await context.params;
-  return alertaController.deletar(Number(params.id));
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return alertaController.atualizar(Number(id), req);
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return alertaController.deletar(Number(id));
 }

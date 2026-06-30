@@ -21,7 +21,7 @@ interface Avaliacao {
   id: number;
   nome: string;
   profissao: string;
-  nota: number;
+  nota: number | string;
   data: string;
   texto: string;
   avatarUrl?: string;
@@ -33,12 +33,14 @@ interface Estatisticas {
   sobre: string;
 }
 
-function StarRating({ nota }: { nota: number }) {
+function StarRating({ nota }: { nota: number | string }) {
+  const notaNumerica = Number(nota) || 0;
+
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => {
-        const filled = nota >= i;
-        const half = !filled && nota >= i - 0.5;
+        const filled = notaNumerica >= i;
+        const half = !filled && notaNumerica >= i - 0.5;
         return (
           <span key={i} className="relative w-3.5 h-3.5 inline-block">
             <Star className="w-3.5 h-3.5 text-amber-300 fill-amber-100 absolute inset-0" />
@@ -134,7 +136,11 @@ export default function PerfilUsuario() {
               background: "linear-gradient(135deg, #93C5FD 0%, #6EE7B7 100%)",
             }}
           >
-            <button className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer">
+            <button
+              type="button"
+              onClick={() => router.push("/tela-configuracoes?aba=perfil")}
+              className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer"
+            >
               Editar perfil
             </button>
           </div>
@@ -291,7 +297,7 @@ export default function PerfilUsuario() {
                           <div className="flex items-center gap-1 flex-shrink-0">
                             <StarRating nota={aval.nota} />
                             <span className="text-xs font-bold text-gray-700">
-                              {aval.nota.toFixed(1)}
+                              {(Number(aval.nota) || 0).toFixed(1)}
                             </span>
                           </div>
                         </div>

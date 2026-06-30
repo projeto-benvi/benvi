@@ -28,7 +28,7 @@ export default function Sidebar() {
         { label: "Vulnerab. social", icon: HandHeart, href: "/admin/vulnerabilidade" },
         { label: "Mensagens", icon: MessageCircle, href: "/mensagens" },
         { label: "Tickets", icon: Ticket, href: "/admin/tickets" },
-        { label: "Alertas", icon: Bell, href: "/admin/alerta" },
+        { label: "Alertas", icon: Bell, href: "/alerta" },
         { label: "Parcerias", icon: Handshake, href: "/admin/parcerias" },
       ];
     }
@@ -46,7 +46,7 @@ export default function Sidebar() {
     // Menu Padrão Comercial
     return [
       { label: "Início", icon: Home, href: "/" },
-      { label: "Buscar serviços", icon: Search, href: "/buscar" },
+      { label: "Buscar serviços", icon: Search, href: "/buscar-servicos" },
       { label: "Mensagens", icon: MessageCircle, href: "/mensagens" },
       { label: "Favoritos", icon: Heart, href: "/favoritos" },
       { label: "Meus pedidos", icon: Briefcase, href: "/meusPedidos" },

@@ -113,6 +113,7 @@ export default function Conversa() {
   const podeSolicitarServico = Boolean(
     !suporteAtivo &&
       chatSelecionado &&
+      tipoParticipanteLogado === "usuario" &&
       !isAdmin &&
       Number(chatSelecionado.idPrestador) !== Number(idUsuarioLogado)
   );
@@ -1022,7 +1023,7 @@ export default function Conversa() {
 </p>
               </div>
 
-              {!suporteAtivo && (
+              {podeSolicitarServico && (
               <button  onClick={() => setModalSolicitacaoAberto(true)}
               className="ml-4 bg-[#2F80ED] text-white px-5 py-2 rounded-full text-sm hover:bg-blue-600 cursor-pointer">
                 Solicitar serviço
@@ -1351,7 +1352,7 @@ export default function Conversa() {
 
         </section>
       </div>
-      {modalSolicitacaoAberto && (
+      {modalSolicitacaoAberto && podeSolicitarServico && (
       <div
       className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50 inset-0 bg-black/40 flex items-center justify-center z-50"
       onClick={() => setModalSolicitacaoAberto(false)}

@@ -5,6 +5,6 @@ export async function POST(req: NextRequest) {
   return alertaController.criar(req);
 }
 
-export async function GET() {
-  return alertaController.listarAtivos();
+export async function GET(req: NextRequest) {
+  return alertaController.listar(req);
 }

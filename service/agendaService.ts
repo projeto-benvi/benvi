@@ -1,365 +1,174 @@
 import pool from '@/app/lib/dataBase';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { AgendaModel } from '@/model/agendaModel';
- 
-export const AgendaService = {
- 
-    async listar() {
- 
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `
-            SELECT
-                a.id_agenda,
-                a.horario_inicio,
-                a.horario_fim,
-                a.status,
-                a.titulo,
-                a.descricao,
- 
-                p.id_usuario    AS id_prestador,
-                u.nome          AS nome_prestador,
-                u.email         AS email_prestador,
-                u.telefone      AS telefone_prestador,
-                u.foto_perfil   AS foto_prestador,
-                p.categoria_principal,
-                p.status_verificado,
- 
-                s.id_solicitacao,
-                s.endereco,
-                s.data_solicitacao,
-                s.data_agendamento,
-                s.descricao_servico,
-                s.complemento,
- 
-                u2.id_usuario   AS id_usuario_solicitante,
-                u2.nome         AS nome_usuario,
-                u2.email        AS email_usuario,
-                u2.telefone     AS telefone_usuario,
-                u2.foto_perfil  AS foto_usuario
- 
-            FROM agenda a
- 
-            INNER JOIN prestador p
-                ON a.id_prestador = p.id_usuario
- 
-            INNER JOIN usuario u
-                ON p.id_usuario = u.id_usuario
- 
-            INNER JOIN solicitacaoservico s
-                ON a.id_solicitacao = s.id_solicitacao
- 
-            INNER JOIN usuario u2
-                ON s.id_usuario = u2.id_usuario
- 
-            ORDER BY a.horario_inicio ASC
-            `
-        );
- 
-        return rows.map(row => ({
-            id_agenda:      row.id_agenda,
-            horario_inicio: row.horario_inicio,
-            horario_fim:    row.horario_fim,
-            status:         row.status,
-            titulo:         row.titulo,
-            descricao:      row.descricao,
- 
-            prestador: {
-                id_usuario:          row.id_prestador,
-                nome:                row.nome_prestador,
-                email:               row.email_prestador,
-                telefone:            row.telefone_prestador,
-                foto_perfil:         row.foto_prestador,
-                categoria_principal: row.categoria_principal,
-                status_verificado:   row.status_verificado,
-            },
- 
-            solicitacao: {
-                id_solicitacao:    row.id_solicitacao,
-                endereco:          row.endereco,
-                data_solicitacao:  row.data_solicitacao,
-                data_agendamento:  row.data_agendamento,
-                descricao_servico: row.descricao_servico,
-                complemento:       row.complemento,
- 
-                usuario: {
-                    id_usuario:  row.id_usuario_solicitante,
-                    nome:        row.nome_usuario,
-                    email:       row.email_usuario,
-                    telefone:    row.telefone_usuario,
-                    foto_perfil: row.foto_usuario,
-                },
-            },
-        }));
-    },
- 
-    async buscarPorId(id: number) {
- 
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `
-            SELECT
-                a.id_agenda,
-                a.horario_inicio,
-                a.horario_fim,
-                a.status,
-                a.titulo,
-                a.descricao,
- 
-                p.id_usuario    AS id_prestador,
-                u.nome          AS nome_prestador,
-                u.email         AS email_prestador,
-                u.telefone      AS telefone_prestador,
-                u.foto_perfil   AS foto_prestador,
-                p.categoria_principal,
-                p.status_verificado,
- 
-                s.id_solicitacao,
-                s.endereco,
-                s.data_solicitacao,
-                s.data_agendamento,
-                s.descricao_servico,
-                s.complemento,
- 
-                u2.id_usuario   AS id_usuario_solicitante,
-                u2.nome         AS nome_usuario,
-                u2.email        AS email_usuario,
-                u2.telefone     AS telefone_usuario,
-                u2.foto_perfil  AS foto_usuario
- 
-            FROM agenda a
- 
-            INNER JOIN prestador p
-                ON a.id_prestador = p.id_usuario
- 
-            INNER JOIN usuario u
-                ON p.id_usuario = u.id_usuario
- 
-            INNER JOIN solicitacaoservico s
-                ON a.id_solicitacao = s.id_solicitacao
- 
-            INNER JOIN usuario u2
-                ON s.id_usuario = u2.id_usuario
- 
-            WHERE a.id_agenda = ?
-            `,
-            [id]
-        );
- 
-        if (rows.length === 0) {
-            throw new Error('Agenda não encontrada');
-        }
- 
-        const row = rows[0];
- 
-        return {
-            id_agenda:      row.id_agenda,
-            horario_inicio: row.horario_inicio,
-            horario_fim:    row.horario_fim,
-            status:         row.status,
-            titulo:         row.titulo,
-            descricao:      row.descricao,
- 
-            prestador: {
-                id_usuario:           row.id_prestador,
-                nome:                 row.nome_prestador,
-                email:                row.email_prestador,
-                telefone:             row.telefone_prestador,
-                foto_perfil:          row.foto_prestador,
-                categoria_principal:  row.categoria_principal,
-                status_verificado:    row.status_verificado,
-            },
- 
-            solicitacao: {
-                id_solicitacao:   row.id_solicitacao,
-                endereco:         row.endereco,
-                data_solicitacao: row.data_solicitacao,
-                data_agendamento: row.data_agendamento,
-                descricao_servico: row.descricao_servico,
-                complemento:      row.complemento,
- 
-                usuario: {
-                    id_usuario:  row.id_usuario_solicitante,
-                    nome:        row.nome_usuario,
-                    email:       row.email_usuario,
-                    telefone:    row.telefone_usuario,
-                    foto_perfil: row.foto_usuario,
-                },
-            },
-        };
-    },
- 
-    async listarPorPrestador(id_prestador: number) {
- 
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `
-            SELECT
-                a.*,
-                s.endereco,
-                s.descricao_servico,
-                u.nome          AS nome_usuario,
-                u.foto_perfil   AS foto_usuario,
-                u.telefone      AS telefone_usuario
-            FROM agenda a
-            INNER JOIN solicitacaoservico s
-                ON a.id_solicitacao = s.id_solicitacao
-            INNER JOIN usuario u
-                ON s.id_usuario = u.id_usuario
-            WHERE a.id_prestador = ?
-            ORDER BY a.horario_inicio ASC
-            `,
-            [id_prestador]
-        );
- 
-        return rows;
-    },
- 
-    async listarPorSolicitacao(id_solicitacao: number) {
- 
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `
-            SELECT
-                a.*,
-                u.nome          AS nome_prestador,
-                u.foto_perfil   AS foto_prestador,
-                p.categoria_principal
-            FROM agenda a
-            INNER JOIN prestador p
-                ON a.id_prestador = p.id_usuario
-            INNER JOIN usuario u
-                ON p.id_usuario = u.id_usuario
-            WHERE a.id_solicitacao = ?
-            ORDER BY a.horario_inicio ASC
-            `,
-            [id_solicitacao]
-        );
- 
-        return rows;
-    },
- 
-    async criar(dados: {
-        id_prestador: number;
-        id_solicitacao?: number | null;
-        horario_inicio: Date;
-        horario_fim: Date;
-        status?: string;
-        titulo: string;
-        descricao?: string;
-    }): Promise<number> {
- 
-        const [prestador] = await pool.query<RowDataPacket[]>(
-            `SELECT id_usuario FROM prestador WHERE id_usuario = ?`,
-            [dados.id_prestador]
-        );
-        if (prestador.length === 0) {
-            throw new Error('Prestador não encontrado');
-        }
- 
-        if (dados.id_solicitacao) {
-            const [solicitacao] = await pool.query<RowDataPacket[]>(
-                `SELECT id_solicitacao FROM solicitacaoservico WHERE id_solicitacao = ?`,
-                [dados.id_solicitacao]
-            );
-            if (solicitacao.length === 0) {
-                throw new Error('Solicitação de serviço não encontrada');
-            }
-        }
+import { notificacaoService } from '@/service/notificacaoService';
 
-        await pool.query(`ALTER TABLE agenda MODIFY id_solicitacao INT NULL`).catch(() => null);
-const agenda = new AgendaModel(
-            dados.id_prestador,
-            dados.id_solicitacao ?? null,
-            new Date(dados.horario_inicio),
-            new Date(dados.horario_fim),
-            dados.status ?? 'pendente',
-            dados.titulo,
-            dados.descricao ?? ''
-        );
- 
-        if (!agenda.validarHorarios()) {
-            throw new Error('O horário de início deve ser anterior ao horário de fim');
-        }
- 
-        if (agenda.tituloVazio()) {
-            throw new Error('O título não pode ser vazio');
-        }
- 
-        if (!agenda.statusValido()) {
-            throw new Error('Status inválido. Use: pendente, confirmado, cancelado ou concluido');
-        }
- 
-        const [result] = await pool.query<ResultSetHeader>(
-            `
-            INSERT INTO agenda
-                (id_prestador, id_solicitacao, horario_inicio, horario_fim, status, titulo, descricao)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            `,
-            [
-                agenda.id_prestador,
-                agenda.id_solicitacao,
-                agenda.horario_inicio,
-                agenda.horario_fim,
-                agenda.status,
-                agenda.titulo,
-                agenda.descricao,
-            ]
-        );
- 
-        return result.insertId;
-    },
- 
-    async atualizar(id: number, dados: Partial<AgendaModel>): Promise<void> {
- 
-        const camposPermitidos = [
-            'horario_inicio',
-            'horario_fim',
-            'status',
-            'titulo',
-            'descricao',
-        ];
- 
-        const setClauses: string[] = [];
-        const valores: any[] = [];
- 
-        camposPermitidos.forEach(campo => {
-            if (dados[campo as keyof Partial<AgendaModel>] !== undefined) {
-                setClauses.push(`${campo} = ?`);
-                valores.push(dados[campo as keyof Partial<AgendaModel>]);
-            }
-        });
- 
-        if (setClauses.length === 0) return;
- 
-        if (dados.status) {
-            const statusPermitidos = ['pendente', 'confirmado', 'cancelado', 'concluido'];
-            if (!statusPermitidos.includes(dados.status)) {
-                throw new Error('Status inválido. Use: pendente, confirmado, cancelado ou concluido');
-            }
-        }
- 
-        if (dados.horario_inicio && dados.horario_fim) {
-            if (new Date(dados.horario_inicio) >= new Date(dados.horario_fim)) {
-                throw new Error('O horário de início deve ser anterior ao horário de fim');
-            }
-        }
- 
-        valores.push(id);
- 
-        const [result] = await pool.query<ResultSetHeader>(
-            `UPDATE agenda SET ${setClauses.join(', ')} WHERE id_agenda = ?`,
-            valores
-        );
- 
-        if (result.affectedRows === 0) {
-            throw new Error('Agenda não encontrada');
-        }
-    },
- 
-    async remover(id: number): Promise<boolean> {
- 
-        const [result] = await pool.query<ResultSetHeader>(
-            `DELETE FROM agenda WHERE id_agenda = ?`,
-            [id]
-        );
- 
-        return result.affectedRows > 0;
-    },
+async function garantirTabelaAgenda() {
+  await pool.query(
+    'CREATE TABLE IF NOT EXISTS agenda (' +
+      'id_agenda INT AUTO_INCREMENT PRIMARY KEY,' +
+      'id_prestador INT NOT NULL,' +
+      'id_solicitacao INT NULL,' +
+      'horario_inicio DATETIME NOT NULL,' +
+      'horario_fim DATETIME NOT NULL,' +
+      "status VARCHAR(50) NOT NULL DEFAULT 'pendente'," +
+      'titulo VARCHAR(255) NOT NULL,' +
+      'descricao TEXT NULL' +
+    ')'
+  );
+  await pool.query('ALTER TABLE agenda MODIFY id_solicitacao INT NULL').catch(() => null);
+}
+
+function consultaBase(where = '') {
+  return 'SELECT a.*, ' +
+    'u_prestador.nome AS nome_prestador, u_prestador.foto_perfil AS foto_prestador, ' +
+    's.endereco, s.descricao_servico, s.data_agendamento, s.complemento, s.id_usuario AS id_usuario, ' +
+    'u_cliente.nome AS nome_usuario, u_cliente.foto_perfil AS foto_usuario, u_cliente.telefone AS telefone_usuario ' +
+    'FROM agenda a ' +
+    'LEFT JOIN prestador p ON a.id_prestador = p.id_usuario ' +
+    'LEFT JOIN usuario u_prestador ON p.id_usuario = u_prestador.id_usuario ' +
+    'LEFT JOIN solicitacaoservico s ON a.id_solicitacao = s.id_solicitacao ' +
+    'LEFT JOIN usuario u_cliente ON s.id_usuario = u_cliente.id_usuario ' +
+    where + ' ORDER BY a.horario_inicio ASC';
+}
+
+async function validarConflito(idPrestador: number, inicio: Date, fim: Date, ignorarId?: number) {
+  const valores: any[] = [idPrestador, fim, inicio];
+  let sql = "SELECT id_agenda FROM agenda WHERE id_prestador = ? AND status <> 'cancelado' AND horario_inicio < ? AND horario_fim > ?";
+  if (ignorarId) {
+    sql += ' AND id_agenda <> ?';
+    valores.push(ignorarId);
+  }
+  const [rows] = await pool.query<RowDataPacket[]>(sql, valores);
+  if (rows.length > 0) throw new Error('Já existe um agendamento nesse horário.');
+}
+
+export const AgendaService = {
+  async listar() {
+    await garantirTabelaAgenda();
+    const [rows] = await pool.query<RowDataPacket[]>(consultaBase());
+    return rows;
+  },
+
+  async buscarPorId(id: number) {
+    await garantirTabelaAgenda();
+    const [rows] = await pool.query<RowDataPacket[]>(consultaBase('WHERE a.id_agenda = ?'), [id]);
+    if (rows.length === 0) throw new Error('Agenda não encontrada');
+    return rows[0];
+  },
+
+  async listarPorPrestador(id_prestador: number) {
+    await garantirTabelaAgenda();
+    const [rows] = await pool.query<RowDataPacket[]>(consultaBase('WHERE a.id_prestador = ?'), [id_prestador]);
+    return rows;
+  },
+
+  async listarPorSolicitacao(id_solicitacao: number) {
+    await garantirTabelaAgenda();
+    const [rows] = await pool.query<RowDataPacket[]>(consultaBase('WHERE a.id_solicitacao = ?'), [id_solicitacao]);
+    return rows;
+  },
+
+  async criar(dados: {
+    id_prestador: number;
+    id_solicitacao?: number | null;
+    horario_inicio: Date;
+    horario_fim: Date;
+    status?: string;
+    titulo: string;
+    descricao?: string;
+  }): Promise<number> {
+    await garantirTabelaAgenda();
+
+    const inicio = new Date(dados.horario_inicio);
+    const fim = new Date(dados.horario_fim);
+    const agora = new Date();
+
+    const agenda = new AgendaModel(dados.id_prestador, dados.id_solicitacao ?? null, inicio, fim, dados.status ?? 'pendente', dados.titulo, dados.descricao ?? '');
+    if (!agenda.validarHorarios()) throw new Error('O horário de início deve ser anterior ao horário de fim');
+    if (inicio < agora) throw new Error('Não é possível criar agendamento em data ou horário passado');
+    if (agenda.tituloVazio()) throw new Error('O título não pode ser vazio');
+    if (!agenda.statusValido()) throw new Error('Status inválido. Use: pendente, confirmado, cancelado ou concluido');
+
+    const [prestador] = await pool.query<RowDataPacket[]>('SELECT id_usuario FROM prestador WHERE id_usuario = ?', [dados.id_prestador]);
+    if (prestador.length === 0) throw new Error('Prestador não encontrado');
+
+    let idUsuarioCliente: number | null = null;
+    if (dados.id_solicitacao) {
+      const [solicitacao] = await pool.query<RowDataPacket[]>('SELECT id_solicitacao, id_usuario FROM solicitacaoservico WHERE id_solicitacao = ?', [dados.id_solicitacao]);
+      if (solicitacao.length === 0) throw new Error('Solicitação de serviço não encontrada');
+      idUsuarioCliente = Number(solicitacao[0].id_usuario);
+    }
+
+    await validarConflito(dados.id_prestador, inicio, fim);
+
+    const [result] = await pool.query<ResultSetHeader>(
+      'INSERT INTO agenda (id_prestador, id_solicitacao, horario_inicio, horario_fim, status, titulo, descricao) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [agenda.id_prestador, agenda.id_solicitacao, agenda.horario_inicio, agenda.horario_fim, agenda.status, agenda.titulo, agenda.descricao]
+    );
+
+    await notificacaoService.criar({
+      id_usuario: dados.id_prestador,
+      titulo: 'Novo agendamento',
+      descricao: 'Você tem um novo agendamento: ' + agenda.titulo,
+      url_acao: '/agendaPrestador',
+      tipo: 'agenda',
+    });
+
+    if (idUsuarioCliente) {
+      await notificacaoService.criar({
+        id_usuario: idUsuarioCliente,
+        titulo: 'Agendamento criado',
+        descricao: 'Seu serviço foi agendado: ' + agenda.titulo,
+        url_acao: '/pedidos',
+        tipo: 'agenda',
+      });
+    }
+
+    return result.insertId;
+  },
+
+  async atualizar(id: number, dados: Partial<AgendaModel>): Promise<void> {
+    await garantirTabelaAgenda();
+    const atual = await this.buscarPorId(id);
+    const inicio = dados.horario_inicio ? new Date(dados.horario_inicio) : new Date(atual.horario_inicio);
+    const fim = dados.horario_fim ? new Date(dados.horario_fim) : new Date(atual.horario_fim);
+
+    if (inicio >= fim) throw new Error('O horário de início deve ser anterior ao horário de fim');
+    if (dados.horario_inicio && inicio < new Date()) throw new Error('Não é possível reagendar para data ou horário passado');
+    await validarConflito(Number(atual.id_prestador), inicio, fim, id);
+
+    const camposPermitidos = ['horario_inicio', 'horario_fim', 'status', 'titulo', 'descricao'];
+    const setClauses: string[] = [];
+    const valores: any[] = [];
+    camposPermitidos.forEach(campo => {
+      if (dados[campo as keyof Partial<AgendaModel>] !== undefined) {
+        setClauses.push(campo + ' = ?');
+        valores.push(dados[campo as keyof Partial<AgendaModel>]);
+      }
+    });
+    if (setClauses.length === 0) return;
+    if (dados.status && !['pendente', 'confirmado', 'cancelado', 'concluido'].includes(dados.status)) {
+      throw new Error('Status inválido. Use: pendente, confirmado, cancelado ou concluido');
+    }
+    valores.push(id);
+    const [result] = await pool.query<ResultSetHeader>('UPDATE agenda SET ' + setClauses.join(', ') + ' WHERE id_agenda = ?', valores);
+    if (result.affectedRows === 0) throw new Error('Agenda não encontrada');
+
+    if (atual.id_usuario) {
+      await notificacaoService.criar({
+        id_usuario: Number(atual.id_usuario),
+        titulo: 'Agendamento atualizado',
+        descricao: 'O agendamento "' + (dados.titulo || atual.titulo) + '" foi atualizado.',
+        url_acao: '/pedidos',
+        tipo: 'agenda',
+      });
+    }
+  },
+
+  async remover(id: number): Promise<boolean> {
+    await garantirTabelaAgenda();
+    const [result] = await pool.query<ResultSetHeader>('DELETE FROM agenda WHERE id_agenda = ?', [id]);
+    return result.affectedRows > 0;
+  },
 };

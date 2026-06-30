@@ -34,6 +34,32 @@ interface AgendaApiItem {
 
 export type TipoVisualizacao = 'dia' | 'semana' | 'mes';
 
+const pad2Inicial = (n: number) => n.toString().padStart(2, '0');
+const dataLocalParaChave = (data: Date) => data.getFullYear() + '-' + pad2Inicial(data.getMonth() + 1) + '-' + pad2Inicial(data.getDate());
+
+function obterHorarioPadrao() {
+  const agora = new Date();
+
+  if (agora.getHours() >= 22) {
+    const amanha = new Date(agora);
+    amanha.setDate(amanha.getDate() + 1);
+
+    return {
+      data: dataLocalParaChave(amanha),
+      inicio: '09:00',
+      fim: '10:00',
+    };
+  }
+
+  const inicio = agora.getHours() + 1;
+  const fim = inicio + 1;
+
+  return {
+    data: dataLocalParaChave(agora),
+    inicio: pad2Inicial(inicio) + ':00',
+    fim: pad2Inicial(fim) + ':00',
+  };
+}
 export default function AgendaPrestador() {
   const { data: session } = useSession();
   
@@ -42,10 +68,11 @@ export default function AgendaPrestador() {
   const [loading, setLoading] = useState<boolean>(true);
   const [dataAtual, setDataAtual] = useState(new Date()); 
   const [modalAberto, setModalAberto] = useState(false);
+  const horarioPadrao = obterHorarioPadrao();
   const [novoTitulo, setNovoTitulo] = useState("");
-  const [novaData, setNovaData] = useState(new Date().toISOString().slice(0, 10));
-  const [novaHoraInicio, setNovaHoraInicio] = useState("09:00");
-  const [novaHoraFim, setNovaHoraFim] = useState("10:00");
+  const [novaData, setNovaData] = useState(horarioPadrao.data);
+  const [novaHoraInicio, setNovaHoraInicio] = useState(horarioPadrao.inicio);
+  const [novaHoraFim, setNovaHoraFim] = useState(horarioPadrao.fim);
   const [salvandoAgenda, setSalvandoAgenda] = useState(false);
   const [erroAgenda, setErroAgenda] = useState("");
   
@@ -261,6 +288,11 @@ export default function AgendaPrestador() {
     return;
   }
 
+  if (inicio < new Date()) {
+    setErroAgenda("Não é possível criar agendamento em data ou horário passado.");
+    return;
+  }
+
   setSalvandoAgenda(true);
   setErroAgenda("");
 
@@ -294,11 +326,14 @@ export default function AgendaPrestador() {
       },
     ]);
 
+    const proximoHorario = obterHorarioPadrao();
+
+    setDataAtual(inicio);
     setModalAberto(false);
     setNovoTitulo("");
-    setNovaData(new Date().toISOString().slice(0, 10));
-    setNovaHoraInicio("09:00");
-    setNovaHoraFim("10:00");
+    setNovaData(proximoHorario.data);
+    setNovaHoraInicio(proximoHorario.inicio);
+    setNovaHoraFim(proximoHorario.fim);
   } catch (error) {
     setErroAgenda(error instanceof Error ? error.message : "Erro ao salvar agendamento.");
   } finally {
@@ -601,8 +636,13 @@ export default function AgendaPrestador() {
                   <input type="time" value={novaHoraFim} onChange={(e) => setNovaHoraFim(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-700" />
                 </div>
               </div>
-              <button type="button" onClick={() => setModalAberto(false)} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-md shadow-blue-200">
-                Salvar Agendamento
+              {erroAgenda && (
+                <div className="text-sm font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {erroAgenda}
+                </div>
+              )}
+              <button type="submit" disabled={salvandoAgenda} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-md shadow-blue-200">
+                {salvandoAgenda ? "Salvando..." : "Salvar Agendamento"}
               </button>
             </form>
           </div>

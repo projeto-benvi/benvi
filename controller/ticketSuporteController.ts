@@ -5,16 +5,24 @@ export const ticketSuporteController = {
   async criar(req: NextRequest) {
     try {
       const body = await req.json();
-      const { id_usuario, titulo, descricao } = body;
+      const { id_usuario, titulo, descricao, categoria, prioridade, id_prestador, id_servico } = body;
 
       if (!id_usuario || !titulo || !descricao) {
         return NextResponse.json({ erro: 'Campos obrigatórios ausentes' }, { status: 400 });
       }
 
-      const novoTicket = await ticketSuporteService.criar({ id_usuario, titulo, descricao });
+      const novoTicket = await ticketSuporteService.criar({
+        id_usuario: Number(id_usuario),
+        titulo,
+        descricao,
+        categoria: categoria || 'geral',
+        prioridade: prioridade || 'media',
+        id_prestador: id_prestador ? Number(id_prestador) : null,
+        id_servico: id_servico ? Number(id_servico) : null,
+      });
       return NextResponse.json(novoTicket, { status: 201 });
     } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao criar ticket', detalhes: String(e) }, { status: 500 });
+      return NextResponse.json({ erro: 'Erro ao criar ticket', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
     }
   },
 
@@ -22,61 +30,54 @@ export const ticketSuporteController = {
     try {
       const { searchParams } = new URL(req.url);
       const idUsuario = searchParams.get('id_usuario');
-
-      // Se passar id_usuario na URL (?id_usuario=X), filtra. Senão, traz todos (Admin)
-      if (idUsuario) {
-        const tickets = await ticketSuporteService.listarPorUsuario(Number(idUsuario));
-        return NextResponse.json(tickets);
-      }
-
-      const tickets = await ticketSuporteService.listarTodos();
-      return NextResponse.json(tickets);
+      if (idUsuario) return NextResponse.json(await ticketSuporteService.listarPorUsuario(Number(idUsuario)));
+      return NextResponse.json(await ticketSuporteService.listarTodos());
     } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao listar tickets', detalhes: String(e) }, { status: 500 });
+      return NextResponse.json({ erro: 'Erro ao listar tickets', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
     }
   },
 
   async buscarPorId(id: number) {
     try {
       const ticket = await ticketSuporteService.buscarPorId(id);
-      if (!ticket) {
-        return NextResponse.json({ erro: 'Ticket não encontrado' }, { status: 404 });
-      }
+      if (!ticket) return NextResponse.json({ erro: 'Ticket não encontrado' }, { status: 404 });
       return NextResponse.json(ticket);
     } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao buscar ticket', detalhes: String(e) }, { status: 500 });
+      return NextResponse.json({ erro: 'Erro ao buscar ticket', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
     }
   },
 
   async responder(id: number, req: NextRequest) {
     try {
       const body = await req.json();
-      const { status, resposta_admin, encerrar } = body; // encerrar é um boolean (true/false)
+      const { status, resposta_admin, mensagem, encerrar, id_usuario_resposta } = body;
+      const textoResposta = resposta_admin || mensagem;
 
-      if (!status || !resposta_admin) {
-        return NextResponse.json({ erro: 'Status e resposta do admin são obrigatórios' }, { status: 400 });
+      if (!status || !textoResposta) {
+        return NextResponse.json({ erro: 'Status e resposta são obrigatórios' }, { status: 400 });
       }
 
-      const atualizado = await ticketSuporteService.responderTicket(id, status, resposta_admin, !!encerrar);
-      if (!atualizado) {
-        return NextResponse.json({ erro: 'Ticket não encontrado para atualização' }, { status: 404 });
-      }
-
+      const atualizado = await ticketSuporteService.responderTicket(
+        id,
+        status,
+        textoResposta,
+        !!encerrar,
+        id_usuario_resposta ? Number(id_usuario_resposta) : undefined
+      );
+      if (!atualizado) return NextResponse.json({ erro: 'Ticket não encontrado para atualização' }, { status: 404 });
       return NextResponse.json({ mensagem: 'Ticket atualizado/respondido com sucesso' });
     } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao responder ticket', detalhes: String(e) }, { status: 500 });
+      return NextResponse.json({ erro: 'Erro ao responder ticket', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
     }
   },
 
   async deletar(id: number) {
     try {
       const deletado = await ticketSuporteService.deletar(id);
-      if (!deletado) {
-        return NextResponse.json({ erro: 'Ticket não encontrado para exclusão' }, { status: 404 });
-      }
+      if (!deletado) return NextResponse.json({ erro: 'Ticket não encontrado para exclusão' }, { status: 404 });
       return NextResponse.json({ mensagem: 'Ticket deletado com sucesso' });
     } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao deletar ticket', detalhes: String(e) }, { status: 500 });
+      return NextResponse.json({ erro: 'Erro ao deletar ticket', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
     }
   }
 };

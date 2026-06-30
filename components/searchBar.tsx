@@ -17,6 +17,8 @@ interface Notificacao {
   descricao: string;
   visualizada: boolean;
   data_envio: string;
+  url_acao?: string;
+  tipo?: string;
 }
 
 export default function SearchBar() {
@@ -35,19 +37,39 @@ export default function SearchBar() {
 
   useEffect(() => {
     if (!usuarioLogado?.id) return;
-    fetch(`/api/notificacao?id_usuario=${usuarioLogado.id}`)
-      .then(res => res.json())
-      .then(dados => setNotificacoes(Array.isArray(dados) ? dados.slice(0, 5) : []))
-      .catch(() => setNotificacoes([]));
+
+    let ativo = true;
+    const carregarNotificacoes = () => {
+      fetch(`/api/notificacao?id_usuario=${usuarioLogado.id}`, { cache: "no-store" })
+        .then(res => res.json())
+        .then(dados => {
+          if (ativo) setNotificacoes(Array.isArray(dados) ? dados.slice(0, 5) : []);
+        })
+        .catch(() => {
+          if (ativo) setNotificacoes([]);
+        });
+    };
+
+    carregarNotificacoes();
+    const intervalo = window.setInterval(carregarNotificacoes, 15000);
+
+    return () => {
+      ativo = false;
+      window.clearInterval(intervalo);
+    };
   }, [usuarioLogado?.id]);
 
   const totalNaoLidas = notificacoes.filter(n => !n.visualizada).length;
 
-  const marcarComoLida = async (id: number) => {
-    await fetch(`/api/notificacao/${id}`, { method: "PATCH" });
+  const marcarComoLida = async (notificacao: Notificacao) => {
+    await fetch(`/api/notificacao/${notificacao.id_notificacao}`, { method: "PATCH" });
     setNotificacoes(prev =>
-      prev.map(n => n.id_notificacao === id ? { ...n, visualizada: true } : n)
+      prev.map(n => n.id_notificacao === notificacao.id_notificacao ? { ...n, visualizada: true } : n)
     );
+
+    if (notificacao.url_acao) {
+      router.push(notificacao.url_acao);
+    }
   };
 
   const lidarComRedirecionamentoPerfil = (e: React.MouseEvent) => {
@@ -118,7 +140,7 @@ export default function SearchBar() {
                     {notificacoes.map((notif) => (
                       <li
                         key={notif.id_notificacao}
-                        onClick={() => marcarComoLida(notif.id_notificacao)}
+                        onClick={() => marcarComoLida(notif)}
                         className={`flex items-start gap-3 py-3 px-1 cursor-pointer hover:bg-gray-50 rounded-lg transition ${!notif.visualizada ? "bg-blue-50/40" : ""}`}
                       >
                         <div className="flex-1 min-w-0">

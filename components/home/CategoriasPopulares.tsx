@@ -1,38 +1,15 @@
 'use client';
 
 import { useEffect, useState, useRef } from "react";
-import { 
-  Hammer,     // Pedreiro
-  Zap,        // Eletricista
-  Droplet,    // Encanador
-  Trees,      // Carpinteiro / Madeira
-  Paintbrush, // Pintor
-  Layers,     // Gesseiro / Divisórias
-  Construction, // Serralheiro / Metalúrgica
-  Wrench,      // Ícone padrão caso surja outra
-  ChevronLeft, // Seta Esquerda para o carrossel
-  ChevronRight // Seta Direita para o carrossel
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { CategoriaIcon } from "@/components/CategoriaIcon";
 
 
 type Categoria = {
   id_categoria: number;
   nome_categoria: string;
   descricao: string | null;
-};
-
-// Função auxiliar para renderizar o ícone correto baseado no nome da categoria
-const obterIconeCategoria = (nome: string) => {
-  switch (nome.toLowerCase()) {
-    case 'pedreiro': return <Hammer className="w-7 h-7 text-green-600" />;
-    case 'eletricista': return <Zap className="w-7 h-7 text-blue-600" />;
-    case 'encanador': return <Droplet className="w-7 h-7 text-cyan-600" />;
-    case 'carpinteiro': return <Trees className="w-7 h-7 text-amber-700" />;
-    case 'pintor': return <Paintbrush className="w-7 h-7 text-purple-600" />;
-    case 'gesseiro': return <Layers className="w-7 h-7 text-orange-500" />;
-    case 'serralheiro': return <Construction className="w-7 h-7 text-gray-600" />;
-    default: return <Wrench className="w-7 h-7 text-blue-600" />;
-  }
 };
 
 export default function CategoriasPopulares() {
@@ -87,9 +64,9 @@ export default function CategoriasPopulares() {
         <h2 className="text-xl font-bold text-gray-800">
           Categorias
         </h2>
-        <button className="text-xs text-blue-500 hover:underline">
+        <Link href="/categorias" className="text-xs text-blue-500 hover:underline">
           ver todos
-        </button>
+        </Link>
       </div>
 
       {/* Container posicionado para alinhar as setas nas extremidades */}
@@ -111,21 +88,22 @@ export default function CategoriasPopulares() {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {categorias.map((cat) => (
-            <button
+            <Link
               key={cat.id_categoria}
+              href={"/buscar-servicos?categoria=" + encodeURIComponent(cat.nome_categoria)}
               // Larguras calculadas por break-point para manter a proporção exata do grid anterior
               className="flex-none w-[calc(50%-8px)] sm:w-[calc(33.333%-11px)] md:w-[calc(25%-12px)] lg:w-[calc(16.666%-14px)] snap-start flex flex-col items-center justify-center p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-300 transition-all group text-center h-28"
             >
               {/* Espaço do Ícone */}
               <div className="mb-3 transform group-hover:scale-110 transition-transform">
-                {obterIconeCategoria(cat.nome_categoria)}
+                <CategoriaIcon nome={cat.nome_categoria} />
               </div>
 
               {/* Nome da Categoria */}
               <span className="text-xs font-semibold text-gray-700 group-hover:text-blue-600 transition-colors line-clamp-2 px-1">
                 {cat.nome_categoria}
               </span>
-            </button>
+            </Link>
           ))}
         </div>
 

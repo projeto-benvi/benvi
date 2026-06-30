@@ -3,6 +3,13 @@ import { Prestador } from '@/model/prestador';
 
 type PrestadorComTags = Prestador & { id_categorias?: number[] };
 
+type FiltrosPrestador = {
+  search?: string;
+  location?: string;
+  categoria?: string;
+  apenasVerificados?: boolean;
+};
+
 async function garantirTabelaTagPrestador() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tag (
@@ -56,7 +63,42 @@ async function salvarTagsPrestador(idPrestador: number, idsCategorias: unknown) 
 
 export const prestadorService = {
 
-  async listarTodos() {
+  async listarTodos(filtros: FiltrosPrestador = {}) {
+    const params: unknown[] = [];
+    const whereParts: string[] = [];
+    const termo = filtros.search?.trim();
+    const localizacao = filtros.location?.trim();
+    const categoria = filtros.categoria?.trim();
+
+    if (termo) {
+      const termoLike = `%${termo}%`;
+      whereParts.push(`(
+        u.nome LIKE ?
+        OR u.cidade LIKE ?
+        OR p.categoria_principal LIKE ?
+        OR p.descricao_profissional LIKE ?
+        OR tags.categorias_vinculadas LIKE ?
+        OR servicos.servicos_busca LIKE ?
+      )`);
+      params.push(termoLike, termoLike, termoLike, termoLike, termoLike, termoLike);
+    }
+
+    if (localizacao) {
+      whereParts.push('u.cidade LIKE ?');
+      params.push(`%${localizacao}%`);
+    }
+
+    if (categoria && categoria !== 'Todas') {
+      whereParts.push('(p.categoria_principal = ? OR tags.categorias_vinculadas LIKE ?)');
+      params.push(categoria, `%${categoria}%`);
+    }
+
+    if (filtros.apenasVerificados) {
+      whereParts.push('p.status_verificado = 1');
+    }
+
+    const whereClause = whereParts.length ? ` WHERE ${whereParts.join(' AND ')}` : '';
+
     const [rows] = await pool.query(
       `SELECT
         p.*,
@@ -69,7 +111,8 @@ export const prestadorService = {
         COALESCE(av.media_nota, 0) AS media_nota,
         COALESCE(av.total_avaliacoes, 0) AS total_avaliacoes,
         COALESCE(sv.servicos_concluidos, 0) AS servicos_concluidos,
-        tags.categorias_vinculadas
+        tags.categorias_vinculadas,
+        servicos.servicos_busca
        FROM prestador p
        INNER JOIN usuario u ON p.id_usuario = u.id_usuario
        LEFT JOIN (
@@ -95,7 +138,18 @@ export const prestadorService = {
         FROM tag t
         INNER JOIN categoria c ON c.id_categoria = t.id_categoria
         GROUP BY t.id_prestador
-       ) tags ON tags.id_prestador = p.id_usuario`
+       ) tags ON tags.id_prestador = p.id_usuario
+       LEFT JOIN (
+        SELECT
+          s.id_prestador,
+          GROUP_CONCAT(DISTINCT CONCAT_WS(' ', s.titulo, s.descricao, c.nome_categoria) SEPARATOR ' ') AS servicos_busca
+        FROM servico s
+        LEFT JOIN categoria c ON c.id_categoria = s.id_categoria
+        GROUP BY s.id_prestador
+       ) servicos ON servicos.id_prestador = p.id_usuario
+       ${whereClause}
+       ORDER BY p.impulsiona_perfil DESC, av.media_nota DESC, u.nome ASC`,
+      params
     );
     return rows;
   },

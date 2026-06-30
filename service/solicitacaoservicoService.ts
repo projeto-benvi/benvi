@@ -3,6 +3,7 @@
 import pool from '@/app/lib/dataBase';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { SolicitacaoServico } from '@/model/solicitacaoservico';
+import { notificacaoService } from '@/service/notificacaoService';
 
 export const SolicitacaoServicoService = {
 
@@ -214,6 +215,14 @@ export const SolicitacaoServicoService = {
                 solicitacao.complemento,
             ]
         );
+
+        await notificacaoService.criar({
+            id_usuario: dados.id_prestador,
+            titulo: 'Solicitação de serviço recebida',
+            descricao: 'Você recebeu uma nova solicitação de serviço.',
+            url_acao: '/servicoPrestador',
+            tipo: 'solicitacao',
+        });
 
         return result.insertId;
     },
