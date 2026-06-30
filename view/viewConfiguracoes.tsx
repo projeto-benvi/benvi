@@ -26,6 +26,17 @@ import {
   Briefcase
 } from "lucide-react";
 
+type CategoriaBanco = {
+  id_categoria: number;
+  nome_categoria: string;
+  descricao?: string;
+};
+
+type CategoriaVinculada = {
+  id_categoria: number;
+  nome_categoria: string;
+};
+
 export default function ConfiguracoesView() {
   const { user, logado, atualizarSessao } = useAuth();
 
@@ -60,10 +71,13 @@ export default function ConfiguracoesView() {
   // Estados Profissionais
   const [descricaoProfissional, setDescricaoProfissional] = useState("");
   const [categoriaPrincipal, setCategoriaPrincipal] = useState("");
+  const [categoriasBanco, setCategoriasBanco] = useState<CategoriaBanco[]>([]);
+  const [carregandoCategorias, setCarregandoCategorias] = useState(false);
   const [carregandoProfissional, setCarregandoProfissional] = useState(false);
   const [sucessoProfissional, setSucessoProfissional] = useState(false);
   const [erroProfissional, setErroProfissional] = useState("");
-  const [tagsSelecionadas, setTagsSelecionadas] = useState<string[]>([]);
+  const [tagsSelecionadas, setTagsSelecionadas] = useState<number[]>([]);
+  const [dropdownTagsAberto, setDropdownTagsAberto] = useState(false);
 
   // Estados das Notificações
   const [notifEmailPedidos, setNotifEmailPedidos] = useState(true);
@@ -105,14 +119,46 @@ export default function ConfiguracoesView() {
   }, [user]);
 
   useEffect(() => {
-    if (user?.isPrestador && user?.id) {
-      fetch(`/api/prestador/por-usuario/${user.id}`)
-        .then(res => res.json())
-        .then(dados => {
-          setDescricaoProfissional(dados.descricao_profissional || "");
-          setCategoriaPrincipal(dados.categoria_principal || "");
-        });
+    async function carregarCategorias() {
+      setCarregandoCategorias(true);
+
+      try {
+        const res = await fetch("/api/categoria");
+        const dados = await res.json();
+        setCategoriasBanco(Array.isArray(dados) ? dados : []);
+      } catch {
+        setCategoriasBanco([]);
+      } finally {
+        setCarregandoCategorias(false);
+      }
     }
+
+    carregarCategorias();
+  }, []);
+
+  useEffect(() => {
+    async function carregarProfissional() {
+      if (!user?.isPrestador || !user?.id) return;
+
+      try {
+        const res = await fetch(`/api/prestador/${user.id}`);
+        const dados = await res.json();
+
+        if (!res.ok) return;
+
+        setDescricaoProfissional(dados.descricao_profissional || "");
+        setCategoriaPrincipal(dados.categoria_principal || "");
+        setTagsSelecionadas(
+          Array.isArray(dados.categorias_vinculadas)
+            ? dados.categorias_vinculadas.map((cat: CategoriaVinculada) => Number(cat.id_categoria)).filter(Boolean)
+            : []
+        );
+      } catch {
+        setTagsSelecionadas([]);
+      }
+    }
+
+    carregarProfissional();
   }, [user]);
 
   const handleTrocarFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,6 +222,9 @@ export default function ConfiguracoesView() {
     setSucessoProfissional(false);
     setErroProfissional("");
     try {
+      const categoriaAtual = categoriasBanco.find((cat) => cat.nome_categoria === categoriaPrincipal);
+      const idsTags = tagsSelecionadas.filter((idCategoria) => idCategoria !== categoriaAtual?.id_categoria);
+
       const res = await fetch(`/api/prestador/por-usuario/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -185,6 +234,18 @@ export default function ConfiguracoesView() {
         }),
       });
       if (!res.ok) throw new Error("Erro ao salvar");
+
+      const resTags = await fetch("/api/tag", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_prestador: user.id,
+          id_categorias: idsTags,
+        }),
+      });
+      if (!resTags.ok) throw new Error("Erro ao salvar tags");
+
+      setTagsSelecionadas(idsTags);
       setSucessoProfissional(true);
     } catch {
       setErroProfissional("Erro ao salvar informações profissionais.");
@@ -349,6 +410,10 @@ export default function ConfiguracoesView() {
                   <label className="text-xs font-bold text-gray-700">Telefone</label>
                   <input type="text" value={telefone} placeholder="(00) 00000-0000" onChange={(e) => setTelefone(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition" />
                 </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-gray-700">Cidade</label>
+                  <input type="text" value={cidade} placeholder="Ex: Garanhuns" onChange={(e) => setCidade(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition" />
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-gray-50">
@@ -378,80 +443,76 @@ export default function ConfiguracoesView() {
         <label className="text-xs font-bold text-gray-700">Categoria principal</label>
         <select
           value={categoriaPrincipal}
-          onChange={(e) => setCategoriaPrincipal(e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition"
+          onChange={(e) => {
+            setCategoriaPrincipal(e.target.value);
+            const categoriaEscolhida = categoriasBanco.find((cat) => cat.nome_categoria === e.target.value);
+            if (categoriaEscolhida) {
+              setTagsSelecionadas((tags) => tags.filter((id) => id !== categoriaEscolhida.id_categoria));
+            }
+          }}
+          disabled={carregandoCategorias || categoriasBanco.length === 0}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 transition disabled:opacity-60"
         >
-          <option value="">Selecione uma categoria</option>
-          <option value="Eletricista">Eletricista</option>
-          <option value="Encanador">Encanador</option>
-          <option value="Pedreiro">Pedreiro</option>
-          <option value="Pintor">Pintor</option>
-          <option value="Diarista">Diarista</option>
-          <option value="Faxineira">Faxineira</option>
-          <option value="Jardineiro">Jardineiro</option>
-          <option value="Marceneiro">Marceneiro</option>
-          <option value="Serralheiro">Serralheiro</option>
-          <option value="Técnico em Ar-condicionado">Técnico em Ar-condicionado</option>
-          <option value="Técnico em Informática">Técnico em Informática</option>
-          <option value="Montador de Móveis">Montador de Móveis</option>
-          <option value="Chaveiro">Chaveiro</option>
-          <option value="Gesseiro">Gesseiro</option>
-          <option value="Instalador de Câmeras">Instalador de Câmeras</option>
-          <option value="Manicure e Pedicure">Manicure e Pedicure</option>
-          <option value="Cabeleireiro">Cabeleireiro</option>
-          <option value="Maquiador(a)">Maquiador(a)</option>
-          <option value="Designer Gráfico">Designer Gráfico</option>
-          <option value="Fotógrafo">Fotógrafo</option>
-          <option value="Personal Trainer">Personal Trainer</option>
-          <option value="Professor Particular / Reforço Escolar">Professor Particular / Reforço Escolar</option>
-          <option value="Cuidador de Idosos">Cuidador de Idosos</option>
-          <option value="Babá">Babá</option>
-          <option value="Lavador de Carros / Estética Automotiva">Lavador de Carros / Estética Automotiva</option>
-          <option value="Motoboy / Entregador Particular">Motoboy / Entregador Particular</option>
-          <option value="Costureira / Ajustes de Roupas">Costureira / Ajustes de Roupas</option>
-          <option value="Confeiteira / Bolos e Doces">Confeiteira / Bolos e Doces</option>
-          <option value="Decorador(a) de Eventos">Decorador(a) de Eventos</option>
-          <option value="Social Media / Gestor de Redes Sociais">Social Media / Gestor de Redes Sociais</option>
+          <option value="">
+            {carregandoCategorias ? "Carregando categorias..." : "Selecione uma categoria"}
+          </option>
+          {categoriasBanco.map((cat) => (
+            <option key={cat.id_categoria} value={cat.nome_categoria}>
+              {cat.nome_categoria}
+            </option>
+          ))}
         </select>
       </div>
 
-      {/* Tags / Outras especialidades */}
-      <div className="flex flex-col gap-2">
-        <label className="text-xs font-bold text-gray-700">Outras especialidades</label>
-        <p className="text-[11px] text-gray-400">Selecione todas as áreas em que você também atua.</p>
-        <div className="flex flex-wrap gap-2 mt-1">
-          {[
-            'Eletricista','Encanador','Pedreiro','Pintor','Diarista','Faxineira',
-            'Jardineiro','Marceneiro','Serralheiro','Técnico em Ar-condicionado',
-            'Técnico em Informática','Montador de Móveis','Chaveiro','Gesseiro',
-            'Instalador de Câmeras','Manicure e Pedicure','Cabeleireiro','Maquiador(a)',
-            'Designer Gráfico','Fotógrafo','Personal Trainer',
-            'Professor Particular / Reforço Escolar','Cuidador de Idosos','Babá',
-            'Lavador de Carros / Estética Automotiva','Motoboy / Entregador Particular',
-            'Costureira / Ajustes de Roupas','Confeiteira / Bolos e Doces',
-            'Decorador(a) de Eventos','Social Media / Gestor de Redes Sociais'
-          ].filter(c => c !== categoriaPrincipal).map((cat) => {
-            const selecionado = tagsSelecionadas.includes(cat);
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => {
-                  setTagsSelecionadas(prev =>
-                    selecionado ? prev.filter(t => t !== cat) : [...prev, cat]
+      {/* Tags / Categorias secundárias */}
+      <div className="relative flex flex-col gap-2">
+        <label className="text-xs font-bold text-gray-700">Categorias secundárias</label>
+        <button
+          type="button"
+          onClick={() => setDropdownTagsAberto((aberto) => !aberto)}
+          className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left text-sm text-gray-700 transition hover:border-blue-400"
+        >
+          <span>
+            {tagsSelecionadas.length > 0
+              ? `${tagsSelecionadas.length} selecionada(s)`
+              : "Selecione as categorias secundárias"}
+          </span>
+          <span className="text-xs text-gray-400">{dropdownTagsAberto ? "▲" : "▼"}</span>
+        </button>
+
+        {dropdownTagsAberto && (
+          <div className="absolute left-0 right-0 top-full z-30 mt-2 max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+            {categoriasBanco.filter((cat) => cat.nome_categoria !== categoriaPrincipal).length === 0 ? (
+              <p className="px-3 py-2 text-xs text-gray-400">Nenhuma categoria disponível.</p>
+            ) : (
+              categoriasBanco
+                .filter((cat) => cat.nome_categoria !== categoriaPrincipal)
+                .map((cat) => {
+                  const selecionado = tagsSelecionadas.includes(cat.id_categoria);
+                  return (
+                    <label
+                      key={cat.id_categoria}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selecionado}
+                        onChange={() => {
+                          setTagsSelecionadas(prev =>
+                            selecionado
+                              ? prev.filter(id => id !== cat.id_categoria)
+                              : [...prev, cat.id_categoria]
+                          );
+                        }}
+                        className="h-4 w-4 accent-blue-600"
+                      />
+                      <span>{cat.nome_categoria}</span>
+                    </label>
                   );
-                }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer ${
-                  selecionado
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
+                })
+            )}
+          </div>
+        )}
       </div>
 
       {/* Descrição profissional */}

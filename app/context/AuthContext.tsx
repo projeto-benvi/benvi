@@ -12,6 +12,8 @@ interface AuthContextType {
     isAdmin: boolean;
     nivelAcesso: number;
     isPrestador: boolean;
+    telefone?: string;
+    cidade?: string;
   } | null;
   logado: boolean;
   carregando: boolean;
@@ -42,6 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin: (session.user as any).isAdmin ?? false,
         nivelAcesso: (session.user as any).nivelAcesso ?? 1,
         isPrestador: (session.user as any).isPrestador ?? false,
+        telefone: (session.user as any).telefone ?? "",
+        cidade: (session.user as any).cidade ?? "",
       }
     : null;
 

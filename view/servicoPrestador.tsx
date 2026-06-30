@@ -58,40 +58,6 @@ interface SolicitacaoRetorno {
 
 type TipoAlerta = "success" | "error";
 
-const CATEGORIAS_FIXAS = [
-  "Eletricista",
-  "Encanador",
-  "Pedreiro",
-  "Pintor",
-  "Diarista",
-  "Faxineira",
-  "Jardineiro",
-  "Marceneiro",
-  "Serralheiro",
-  "Técnico em Ar-Condicionado",
-  "Técnico em Informática",
-  "Montador de Móveis",
-  "Chaveiro",
-  "Gesseiro",
-  "Instalador de Câmeras",
-  "Manicure e Pedicure",
-  "Cabeleireiro",
-  "Maquiador(a)",
-  "Designer Gráfico",
-  "Fotógrafo",
-  "Personal Trainer",
-  "Professor Particular / Reforço Escolar",
-  "Cuidador de Idosos",
-  "Babá",
-  "Lavador de Carros / Estética Automotiva",
-  "Motoboy / Entregador Particular",
-  "Costureira / Ajustes de Roupas",
-  "Confeiteira / Bolos e Doces",
-  "Decorador(a) de Eventos",
-  "Social Media / Gestor de Redes Sociais",
-  "Outro",
-];
-
 export default function ServicoPrestador() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -108,6 +74,7 @@ export default function ServicoPrestador() {
 
   const [services, setServices] = useState<ServicoRetorno[]>([]);
   const [categorias, setCategorias] = useState<CategoriaRetorno[]>([]);
+  const categoriasDisponiveis = categorias.map((cat) => cat.nome_categoria);
   const [solicitacoes, setSolicitacoes] = useState<SolicitacaoRetorno[]>([]);
 
   const [activeCategory, setActiveCategory] = useState<string>("Todos");
@@ -1065,7 +1032,7 @@ export default function ServicoPrestador() {
                 <span>{services.length}</span>
               </button>
 
-              {CATEGORIAS_FIXAS.map((categoria) => (
+              {categoriasDisponiveis.map((categoria) => (
                 <button
                   key={categoria}
                   onClick={() => setActiveCategory(categoria)}
@@ -1171,7 +1138,7 @@ export default function ServicoPrestador() {
                     >
                       <option value="">Selecione a categoria</option>
 
-                      {CATEGORIAS_FIXAS.map((categoria) => (
+                      {categoriasDisponiveis.map((categoria) => (
                         <option key={categoria} value={categoria}>
                           {categoria}
                         </option>

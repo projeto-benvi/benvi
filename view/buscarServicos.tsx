@@ -15,24 +15,17 @@ interface Prestador {
   categoria_principal: string;
   status_verificado: boolean;
   status_social: string;
+  categorias_vinculadas?: string;
 }
 
-const CATEGORIAS = [
-  "Todas",
-  "Eletricista", "Encanador", "Pedreiro", "Pintor", "Diarista",
-  "Faxineira", "Jardineiro", "Marceneiro", "Serralheiro",
-  "Técnico em Ar-condicionado", "Técnico em Informática",
-  "Montador de Móveis", "Chaveiro", "Gesseiro", "Instalador de Câmeras",
-  "Manicure e Pedicure", "Cabeleireiro", "Maquiador(a)", "Designer Gráfico",
-  "Fotógrafo", "Personal Trainer", "Professor Particular / Reforço Escolar",
-  "Cuidador de Idosos", "Babá", "Lavador de Carros / Estética Automotiva",
-  "Motoboy / Entregador Particular", "Costureira / Ajustes de Roupas",
-  "Confeiteira / Bolos e Doces", "Decorador(a) de Eventos",
-  "Social Media / Gestor de Redes Sociais"
-];
+interface CategoriaBanco {
+  id_categoria: number;
+  nome_categoria: string;
+}
 
 export default function BuscarServicosView() {
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaBanco[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [termo, setTermo] = useState("");
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
@@ -40,11 +33,29 @@ export default function BuscarServicosView() {
   const [apenasVerificados, setApenasVerificados] = useState(false);
 
   useEffect(() => {
-    fetch("/api/prestador")
-      .then(res => res.json())
-      .then(dados => setPrestadores(Array.isArray(dados) ? dados : []))
-      .catch(() => setPrestadores([]))
-      .finally(() => setCarregando(false));
+    async function carregarDados() {
+      setCarregando(true);
+
+      try {
+        const [resPrestadores, resCategorias] = await Promise.all([
+          fetch("/api/prestador"),
+          fetch("/api/categoria"),
+        ]);
+
+        const dadosPrestadores = await resPrestadores.json();
+        const dadosCategorias = await resCategorias.json();
+
+        setPrestadores(Array.isArray(dadosPrestadores) ? dadosPrestadores : []);
+        setCategorias(Array.isArray(dadosCategorias) ? dadosCategorias : []);
+      } catch {
+        setPrestadores([]);
+        setCategorias([]);
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarDados();
   }, []);
 
   const prestadoresFiltrados = prestadores.filter(p => {
@@ -53,12 +64,14 @@ export default function BuscarServicosView() {
       !termo ||
       p.nome?.toLowerCase().includes(termoLower) ||
       p.categoria_principal?.toLowerCase().includes(termoLower) ||
+      p.categorias_vinculadas?.toLowerCase().includes(termoLower) ||
       p.descricao_profissional?.toLowerCase().includes(termoLower) ||
       p.cidade?.toLowerCase().includes(termoLower);
 
     const bateCategoria =
       categoriaSelecionada === "Todas" ||
-      p.categoria_principal === categoriaSelecionada;
+      p.categoria_principal === categoriaSelecionada ||
+      p.categorias_vinculadas?.split(',').map((cat) => cat.trim()).includes(categoriaSelecionada);
 
     const bateVerificado = !apenasVerificados || Boolean(p.status_verificado);
 
@@ -131,7 +144,7 @@ export default function BuscarServicosView() {
           <div>
             <label className="text-xs font-bold text-gray-600 mb-2 block">Categoria</label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIAS.map(cat => (
+              {["Todas", ...categorias.map((cat) => cat.nome_categoria)].map(cat => (
                 <button
                   key={cat}
                   onClick={() => setCategoriaSelecionada(cat)}

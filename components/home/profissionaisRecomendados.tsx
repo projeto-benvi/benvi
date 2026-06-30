@@ -22,7 +22,7 @@ export default function ProfissionaisRecomendados() {
         const res = await fetch("/api/prestador/destaques");
         if (res.ok) {
           const dados = await res.json();
-          setProfissionais(dados);
+          setProfissionais(Array.isArray(dados) ? dados.slice(0, 5) : []);
         } else {
           console.error("Erro ao buscar profissionais de destaque.");
         }
@@ -51,9 +51,9 @@ export default function ProfissionaisRecomendados() {
           Profissionais Recomendados
         </h2>
 
-        <button className="text-sm text-blue-600 hover:underline">
+        <Link href="/buscar" className="text-sm text-blue-600 hover:underline">
           Ver todos
-        </button>
+        </Link>
       </div>
 
       {profissionais.length === 0 ? (

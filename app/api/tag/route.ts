@@ -3,6 +3,7 @@ import {
   listarTagsPorPrestadorController,
   criarTagController,
   deletarTagController,
+  substituirTagsDoPrestadorController,
 } from "@/controller/tagController";
 
 export async function GET(req: NextRequest) {
@@ -20,6 +21,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   return criarTagController(req);
+}
+
+export async function PUT(req: NextRequest) {
+  return substituirTagsDoPrestadorController(req);
 }
 
 export async function DELETE(req: NextRequest) {
