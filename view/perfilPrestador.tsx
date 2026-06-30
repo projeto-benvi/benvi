@@ -1,7 +1,9 @@
-import { ArrowLeft, Star } from "lucide-react";
+import { Star } from "lucide-react";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import SearchBar from "@/components/searchBar"; 
 import { servicoService } from "@/service/servicoService";
-import { usuarioService } from "@/service/usuarioService"; 
+import { prestadorService } from "@/service/prestadorService"; 
 import BotaoVoltarDinamico from "@/components/BotaoVoltarDinamico";
 import FavoritarPrestadorButton from "@/components/FavoritarPrestadorButton";
 import * as avaliacaoModulo from "@/service/avaliacaoService";
@@ -18,30 +20,58 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
   console.log("ID recebido para o perfil do prestador:", id); 
   const idPrestador = id ? parseInt(id) : 1;
 
-  // Perfil público: não depende de sessão para abrir.
-  const ehDonoDoPerfil = false;
+  const session = await getServerSession(authOptions);
+  const usuarioLogado = session?.user as any;
+  const ehDonoDoPerfil = Boolean(
+    usuarioLogado?.isPrestador && Number(usuarioLogado?.id) === idPrestador
+  );
 
-  // 2. BUSCA CORRETA: Buscar os dados REAIS do usuário/prestador diretamente do banco
-  let dadosUsuario = null;
+  let dadosPrestador = null;
   try {
-    dadosUsuario = await usuarioService.buscarPorId(idPrestador); 
+    dadosPrestador = await prestadorService.buscarPorId(idPrestador);
   } catch (error) {
-    console.error("Erro ao buscar dados do usuário:", error);
+    console.error("Erro ao buscar dados profissionais:", error);
   }
 
-  // Ignora a tipagem estrita do modelo antigo de Usuario para aceitar os novos campos dinâmicos do banco
-  const dadosUsuarioAny = dadosUsuario as any;
+  const dadosPrestadorAny = dadosPrestador as any;
 
-  // 3. Busca a lista de serviços desse prestador
+  if (!dadosPrestadorAny) {
+    return (
+      <div className="w-full min-h-screen bg-[#F9FAFB]">
+        <SearchBar />
+        <div className="text-[#1F2937] p-6 w-full max-w-[1200px] mx-auto flex flex-col gap-5">
+          <BotaoVoltarDinamico />
+          <h1 className="text-2xl font-bold -mt-1">Perfil Profissional</h1>
+          <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <p className="text-sm text-gray-500">Prestador não encontrado.</p>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  const categoriasSecundarias = Array.isArray(dadosPrestadorAny.categorias_vinculadas)
+    ? dadosPrestadorAny.categorias_vinculadas
+        .map((categoria: any) => categoria?.nome_categoria)
+        .filter(Boolean)
+    : [];
+
   const todosServicos = await servicoService.buscarPorPrestador(idPrestador) || [];
+  const servicosConcluidos = todosServicos.filter((servico: any) => {
+    const statusServico = String(servico.status_servico || "").toLowerCase();
+    return statusServico === "concluido" || statusServico === "concluído";
+  });
+  const servicosDoPerfil = (servicosConcluidos.length > 0 ? servicosConcluidos : todosServicos).slice(0, 5);
 
-  // 4. Monta o objeto do prestador tratando chaves legadas e novas sem quebrar o TypeScript
   const prestador = {
-    nome: dadosUsuarioAny?.nome || dadosUsuarioAny?.name || `Prestador ID: ${idPrestador}`,
-    foto_perfil: dadosUsuarioAny?.foto_perfil || dadosUsuarioAny?.avatar || dadosUsuarioAny?.image || "",
-    cidade: dadosUsuarioAny?.cidade || "Não informada",
-    descricao_profissional: dadosUsuarioAny?.descricao_profissional || "Nenhuma descrição profissional informada ainda.",
-    categoria_principal: dadosUsuarioAny?.categoria_principal || "Prestador",
+    nome: dadosPrestadorAny.nome || dadosPrestadorAny.name || `Prestador ID: ${idPrestador}`,
+    foto_perfil: dadosPrestadorAny.foto_perfil || dadosPrestadorAny.avatar || dadosPrestadorAny.image || "",
+    cidade: dadosPrestadorAny.cidade || "Não informada",
+    descricao_profissional: dadosPrestadorAny.descricao_profissional || "Nenhuma descrição profissional informada ainda.",
+    categoria_principal: dadosPrestadorAny.categoria_principal || "Prestador",
+    media_nota: Number(dadosPrestadorAny.media_nota || 0),
+    total_avaliacoes: Number(dadosPrestadorAny.total_avaliacoes || 0),
+    servicos_concluidos: Number(dadosPrestadorAny.servicos_concluidos || 0),
   };
 
   // 5. Busca as avaliações
@@ -60,7 +90,9 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
   }
 
   const totalNotas = avaliacoesDoPrestador.reduce((acc: number, curr: any) => acc + Number(curr.nota || 0), 0);
-  const mediaNota = avaliacoesDoPrestador.length > 0 ? totalNotas / avaliacoesDoPrestador.length : 0;
+  const mediaNota = avaliacoesDoPrestador.length > 0 ? totalNotas / avaliacoesDoPrestador.length : prestador.media_nota;
+  const avaliacoesRecentes = avaliacoesDoPrestador.slice(0, 5);
+  const totalServicosConcluidos = prestador.servicos_concluidos || servicosConcluidos.length;
 
   return (
     <div className="w-full min-h-screen bg-[#F9FAFB]">
@@ -78,28 +110,34 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
           
           {/* Banner Colorido Superior */}
           <div 
-            className="w-full h-32 rounded-t-2xl flex justify-end items-start gap-3 p-5"
+            className="w-full min-h-32 rounded-t-2xl flex flex-wrap justify-end items-start gap-3 p-5"
             style={{ background: "linear-gradient(135deg, #83A5EE 0%, #76DA94 100%)" }}
           >
-            <a
-              href={`/mensagens?idPrestador=${idPrestador}`}
-              className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer"
-            >
-              Conversar no chat
-            </a>
-            <FavoritarPrestadorButton idPrestador={idPrestador} />
-            {ehDonoDoPerfil && (
-              <button className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer">
+            {ehDonoDoPerfil ? (
+              <a
+                href="/tela-configuracoes"
+                className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer"
+              >
                 Editar perfil
-              </button>
+              </a>
+            ) : (
+              <>
+                <a
+                  href={`/mensagens?idPrestador=${idPrestador}`}
+                  className="bg-white text-blue-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer"
+                >
+                  Conversar no chat
+                </a>
+                <FavoritarPrestadorButton idPrestador={idPrestador} />
+              </>
             )}
           </div>
 
           {/* Área de Informações Alinhada */}
-          <div className="px-8 pb-6 pt-14 grid grid-cols-1 md:grid-cols-3 items-center relative gap-6 md:gap-0">
+          <div className="px-6 md:px-9 pb-7 pt-0 grid grid-cols-1 md:grid-cols-[148px_minmax(0,1fr)_170px_170px] items-end gap-5 md:gap-6">
             
-            {/* Foto de Perfil, Nome e Categoria acoplados */}
-            <div className="absolute left-8 -top-14 flex flex-col items-center gap-2 w-32">
+            {/* Foto de Perfil e categoria */}
+            <div className="-mt-12 flex flex-col items-center gap-2 self-start md:items-center">
               <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-md bg-white relative flex-shrink-0 flex items-center justify-center">
                 {prestador.foto_perfil ? (
                   <img 
@@ -113,19 +151,19 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
                   </div>
                 )}
               </div>
-              <span className="bg-blue-600 text-white font-bold text-[11px] px-4 py-0.5 rounded-full shadow-sm whitespace-nowrap">
+              <span className="w-full max-w-[148px] truncate bg-blue-600 text-center text-white font-bold text-[10px] px-3 py-1 rounded-full shadow-sm">
                 {prestador.categoria_principal}
               </span>
             </div>
 
-            {/* Nome e Cidade posicionados ao lado da foto */}
-            <div className="flex flex-col mt-12 md:mt-0 pl-0 md:pl-32 col-span-1 md:col-span-1 text-center md:text-left">
-              <h2 className="text-xl font-bold text-gray-800 truncate max-w-full">{prestador.nome}</h2>
-              <p className="text-xs text-gray-400 font-semibold mt-0.5">{prestador.cidade}</p>
+            {/* Nome e dados principais */}
+            <div className="min-w-0 flex flex-col justify-end pb-2 text-center md:text-left">
+              <h2 className="text-xl font-bold text-gray-800 break-words leading-tight">{prestador.nome}</h2>
+              <p className="text-xs text-gray-400 font-semibold mt-1">{prestador.cidade}</p>
             </div>
 
             {/* Média de Avaliações */}
-            <div className="flex flex-col items-center justify-center md:border-r border-gray-100 py-2 mt-0 md:mt-0">
+            <div className="flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:py-2 md:self-stretch">
               <div className="flex items-center gap-1.5">
                 <Star className="text-amber-400 fill-amber-400 w-6 h-6" />
                 <span className="text-xl font-bold text-gray-800">
@@ -136,8 +174,8 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
             </div>
 
             {/* Serviços Concluídos */}
-            <div className="flex flex-col items-center justify-center py-2">
-              <span className="text-xl font-bold text-gray-800">{todosServicos.length}</span>
+            <div className="flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:py-2 md:self-stretch">
+              <span className="text-xl font-bold text-gray-800">{totalServicosConcluidos}</span>
               <span className="text-xs text-gray-400 font-semibold mt-1">Serviços concluídos</span>
             </div>
 
@@ -152,6 +190,15 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
               <p className="text-sm leading-relaxed text-gray-500">
                 {prestador.descricao_profissional}
               </p>
+              {categoriasSecundarias.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {categoriasSecundarias.map((categoria: string) => (
+                    <span key={categoria} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
+                      {categoria}
+                    </span>
+                  ))}
+                </div>
+              )}
             </section>
 
             <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
@@ -166,10 +213,10 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
               </div>
 
               <div className="flex flex-col gap-4">
-                {todosServicos.length === 0 ? (
+                {servicosDoPerfil.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">Nenhum serviço registrado para este profissional.</p>
                 ) : (
-                  todosServicos.map((servico: any) => {
+                  servicosDoPerfil.map((servico: any) => {
                     let listaImagens: string[] = [];
                     try {
                       if (servico.imagens) {
@@ -207,10 +254,10 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
             <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
               <h2 className="text-sm font-bold text-gray-800 mb-5">Avaliações recentes</h2>
               <div className="flex flex-col gap-6">
-                {avaliacoesDoPrestador.length === 0 ? (
+                {avaliacoesRecentes.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">Nenhuma avaliação encontrada.</p>
                 ) : (
-                  avaliacoesDoPrestador.map((avaliacao: any, index: number) => {
+                  avaliacoesRecentes.map((avaliacao: any, index: number) => {
                     const nomeAvaliador = avaliacao.nome || avaliacao.nome_usuario || avaliacao.usuario?.nome || "Cliente";
                     const inicialAvaliador = nomeAvaliador?.charAt(0).toUpperCase() || "C";
 
@@ -241,7 +288,7 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
                           </span>
                         </div>
                         <p className="text-xs italic text-gray-500 pl-1">"{avaliacao.comentario}"</p>
-                        {index < avaliacoesDoPrestador.length - 1 && <div className="w-full h-px bg-gray-100 mt-2" />}
+                        {index < avaliacoesRecentes.length - 1 && <div className="w-full h-px bg-gray-100 mt-2" />}
                       </div>
                     );
                   })

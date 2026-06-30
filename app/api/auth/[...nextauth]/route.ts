@@ -37,6 +37,8 @@ export const authOptions: NextAuthOptions = {
           nivelAcesso: usuario.nivel_acesso,
           isAdmin: usuario.is_admin,
           isPrestador: prestadorRows.length > 0,
+          telefone: usuario.telefone ?? null,
+          cidade: usuario.cidade ?? null,
         };
       },
     }),
@@ -56,6 +58,8 @@ export const authOptions: NextAuthOptions = {
         token.nivelAcesso = (user as any).nivelAcesso;
         token.isAdmin = (user as any).isAdmin;
         token.isPrestador = (user as any).isPrestador;
+        token.telefone = (user as any).telefone;
+        token.cidade = (user as any).cidade;
       }
 
       // Login com Google
@@ -73,6 +77,8 @@ export const authOptions: NextAuthOptions = {
           token.nivelAcesso = usuarioExistente.nivel_acesso;
           token.isAdmin = usuarioExistente.is_admin;
           token.isPrestador = prestadorRows.length > 0;
+          token.telefone = usuarioExistente.telefone ?? null;
+          token.cidade = usuarioExistente.cidade ?? null;
         } else {
           const novoId = await usuarioService.criar({
             nome: token.name!,
@@ -93,13 +99,15 @@ export const authOptions: NextAuthOptions = {
           token.nivelAcesso = 1;
           token.isAdmin = false;
           token.isPrestador = false;
+          token.telefone = "";
+          token.cidade = "";
         }
       }
 
       // Chamado quando atualizarSessao() é disparado no frontend
       if (trigger === 'update') {
         const [rows] = await pool.query<RowDataPacket[]>(
-          'SELECT foto_perfil, nome FROM usuario WHERE id_usuario = ?',
+          'SELECT foto_perfil, nome, telefone, cidade FROM usuario WHERE id_usuario = ?',
           [token.id]
         );
         const dadosAtualizados = (rows as any)[0];
@@ -109,6 +117,8 @@ export const authOptions: NextAuthOptions = {
         if (dadosAtualizados?.nome) {
           token.name = dadosAtualizados.nome;
         }
+        token.telefone = dadosAtualizados?.telefone ?? null;
+        token.cidade = dadosAtualizados?.cidade ?? null;
       }
 
       return token;
@@ -121,6 +131,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).nivelAcesso = token.nivelAcesso;
         (session.user as any).isAdmin = token.isAdmin;
         (session.user as any).isPrestador = token.isPrestador;
+        (session.user as any).telefone = token.telefone;
+        (session.user as any).cidade = token.cidade;
         session.user.image = token.picture as string;
         session.user.name = token.name as string;
       }

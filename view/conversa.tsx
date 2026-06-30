@@ -13,6 +13,8 @@ export default function Conversa() {
 
    const [fotos, setFotos] = useState<File[]>([]);
   const [categoria, setCategoria] = useState("");
+  const [categoriasPrestador, setCategoriasPrestador] = useState<string[]>([]);
+  const [carregandoCategoriasPrestador, setCarregandoCategoriasPrestador] = useState(false);
   const [descricao, setDescricao] = useState("");
   const [dataServico, setDataServico] = useState("");
   const [endereco, setEndereco] = useState("");
@@ -80,6 +82,11 @@ export default function Conversa() {
 
   mensagens?: Mensagem[];
 };
+
+  type CategoriaVinculada = {
+    id_categoria?: number;
+    nome_categoria?: string;
+  };
 
   type MensagemSuporte = {
     id: string;
@@ -463,6 +470,65 @@ export default function Conversa() {
     if (mimeType === "application/pdf") return "pdf";
     return null;
   };
+
+  const montarCategoriasDoPrestador = (dadosPrestador: any) => {
+    const nomes = [
+      ...(Array.isArray(dadosPrestador?.categorias_vinculadas)
+        ? dadosPrestador.categorias_vinculadas.map((categoriaVinculada: CategoriaVinculada) =>
+            categoriaVinculada.nome_categoria?.trim()
+          )
+        : []),
+      dadosPrestador?.categoria_principal?.trim(),
+    ].filter(Boolean) as string[];
+
+    return Array.from(new Set(nomes));
+  };
+
+  useEffect(() => {
+    if (!modalSolicitacaoAberto || !chatSelecionado?.idPrestador || suporteAtivo) return;
+
+    let ativo = true;
+
+    const carregarCategoriasPrestador = async () => {
+      setCarregandoCategoriasPrestador(true);
+      setCategoriasPrestador([]);
+
+      try {
+        const response = await fetch(`/api/prestador/${chatSelecionado.idPrestador}`);
+        const dadosPrestador = await response.json();
+
+        if (!response.ok) {
+          throw new Error(dadosPrestador?.erro || "Não foi possível carregar as categorias do prestador.");
+        }
+
+        const categorias = montarCategoriasDoPrestador(dadosPrestador);
+
+        if (!ativo) return;
+
+        setCategoriasPrestador(categorias);
+        setCategoria((categoriaAtual) =>
+          categoriaAtual && categorias.includes(categoriaAtual) ? categoriaAtual : ""
+        );
+      } catch (error) {
+        console.error(error);
+
+        if (ativo) {
+          setCategoriasPrestador([]);
+          setCategoria("");
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoCategoriasPrestador(false);
+        }
+      }
+    };
+
+    carregarCategoriasPrestador();
+
+    return () => {
+      ativo = false;
+    };
+  }, [modalSolicitacaoAberto, chatSelecionado?.idPrestador, suporteAtivo]);
 
   // ==========================
   // SOLICITAÇÃO
@@ -1327,12 +1393,21 @@ export default function Conversa() {
               <select required 
               value={categoria}
               onChange={(e) => setCategoria(e.target.value)}
+              disabled={carregandoCategoriasPrestador || categoriasPrestador.length === 0}
               className="w-full border border-[#CDCDCD] rounded-lg p-3"
               >
-                <option value="">Selecione a categoria</option>
-                <option value="Eletricista">
-                  Eletricista
+                <option value="">
+                  {carregandoCategoriasPrestador
+                    ? "Carregando categorias..."
+                    : categoriasPrestador.length === 0
+                    ? "Nenhuma categoria cadastrada para este prestador"
+                    : "Selecione a categoria"}
                 </option>
+                {categoriasPrestador.map((nomeCategoria) => (
+                  <option key={nomeCategoria} value={nomeCategoria}>
+                    {nomeCategoria}
+                  </option>
+                ))}
               </select>
 
               <p className="mb-1 text-sm">

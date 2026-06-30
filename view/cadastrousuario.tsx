@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
@@ -19,44 +19,15 @@ import iconCadeado from "@/assets/icons/iconCadeado.svg";
 import {
   FaWrench,
   FaBriefcase,
-  FaAward,
   FaEye,
   FaEyeSlash,
 } from "react-icons/fa";
 
-const CATEGORIAS = [
-  "Eletricista",
-  "Encanador",
-  "Pedreiro",
-  "Pintor",
-  "Diarista",
-  "Faxineira",
-  "Jardineiro",
-  "Marceneiro",
-  "Serralheiro",
-  "Técnico em Ar-Condicionado",
-  "Técnico em Informática",
-  "Montador de Móveis",
-  "Chaveiro",
-  "Gesseiro",
-  "Instalador de Câmeras",
-  "Manicure e Pedicure",
-  "Cabeleireiro",
-  "Maquiador(a)",
-  "Designer Gráfico",
-  "Fotógrafo",
-  "Personal Trainer",
-  "Professor Particular / Reforço Escolar",
-  "Cuidador de Idosos",
-  "Babá",
-  "Lavador de Carros / Estética Automotiva",
-  "Motoboy / Entregador Particular",
-  "Costureira / Ajustes de Roupas",
-  "Confeiteira / Bolos e Doces",
-  "Decorador(a) de Eventos",
-  "Social Media / Gestor de Redes Sociais",
-  "Outro",
-];
+type CategoriaBanco = {
+  id_categoria: number;
+  nome_categoria: string;
+  descricao?: string;
+};
 
 function mascaraCPF(valor: string) {
   return valor
@@ -121,14 +92,38 @@ export default function CadastroUnificado() {
   const [verConfirmar, setVerConfirmar] = useState(false);
 
   const [categoria, setCategoria] = useState("");
+  const [categoriasBanco, setCategoriasBanco] = useState<CategoriaBanco[]>([]);
+  const [tagsSelecionadas, setTagsSelecionadas] = useState<number[]>([]);
+  const [dropdownTagsAberto, setDropdownTagsAberto] = useState(false);
+  const [carregandoCategorias, setCarregandoCategorias] = useState(false);
   const [descricao, setDescricao] = useState("");
-  const [especialidade, setEspecialidade] = useState("");
 
   const [erros, setErros] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(false);
 
   const forcaSenha = validarSenha(senha);
   const forcaTotal = Object.values(forcaSenha).filter(Boolean).length;
+
+  useEffect(() => {
+    async function carregarCategorias() {
+      setCarregandoCategorias(true);
+
+      try {
+        const res = await fetch("/api/categoria");
+        const dados = await res.json();
+        setCategoriasBanco(Array.isArray(dados) ? dados : []);
+        if (!res.ok || !Array.isArray(dados) || dados.length === 0) {
+          setErros((p) => ({ ...p, categoria: "Não foi possível carregar as categorias do banco." }));
+        }
+      } catch {
+        setCategoriasBanco([]);
+      } finally {
+        setCarregandoCategorias(false);
+      }
+    }
+
+    carregarCategorias();
+  }, []);
 
   async function fazerLoginAutomatico() {
     const login = await signIn("credentials", {
@@ -201,9 +196,6 @@ export default function CadastroUnificado() {
         "Descreva seus serviços em pelo menos 20 caracteres.";
     }
 
-    if (!especialidade.trim()) {
-      novosErros.especialidade = "Informe sua especialidade principal.";
-    }
 
     setErros(novosErros);
     return Object.keys(novosErros).length === 0;
@@ -294,7 +286,10 @@ export default function CadastroUnificado() {
           id_usuario: idUsuarioGerado,
           categoria_principal: categoria,
           descricao_profissional: descricao.trim(),
-          especialidade_principal: especialidade.trim(),
+          id_categorias: tagsSelecionadas.filter((idCategoria) => {
+            const categoriaPrincipal = categoriasBanco.find((cat) => cat.nome_categoria === categoria);
+            return idCategoria !== categoriaPrincipal?.id_categoria;
+          }),
         }),
       });
 
@@ -750,18 +745,25 @@ export default function CadastroUnificado() {
                     value={categoria}
                     onChange={(e) => {
                       setCategoria(e.target.value);
+                      const categoriaEscolhida = categoriasBanco.find((cat) => cat.nome_categoria === e.target.value);
+                      if (categoriaEscolhida) {
+                        setTagsSelecionadas((tags) => tags.filter((id) => id !== categoriaEscolhida.id_categoria));
+                      }
                       setErros((p) => ({ ...p, categoria: "" }));
                     }}
-                    className={`bg-[#EFEFEF] text-gray-700 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all text-sm appearance-none cursor-pointer ${
+                    disabled={carregandoCategorias || categoriasBanco.length === 0}
+                    className={`bg-[#EFEFEF] text-gray-700 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all text-sm appearance-none cursor-pointer disabled:opacity-60 ${
                       erros.categoria
                         ? "ring-2 ring-red-400"
                         : "focus:ring-orange-500"
                     }`}
                   >
-                    <option value="">Selecione sua categoria</option>
-                    {CATEGORIAS.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    <option value="">
+                      {carregandoCategorias ? "Carregando categorias..." : "Selecione sua categoria principal"}
+                    </option>
+                    {categoriasBanco.map((cat) => (
+                      <option key={cat.id_categoria} value={cat.nome_categoria}>
+                        {cat.nome_categoria}
                       </option>
                     ))}
                   </select>
@@ -778,33 +780,56 @@ export default function CadastroUnificado() {
                 )}
               </div>
 
-              <div>
-                <div className="relative">
-                  <FaAward
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={16}
-                  />
+              <div className="relative rounded-xl bg-[#F7F7F7] p-4">
+                <button
+                  type="button"
+                  onClick={() => setDropdownTagsAberto((aberto) => !aberto)}
+                  className="flex w-full items-center justify-between text-left"
+                >
+                  <span>
+                    <span className="block text-sm font-semibold text-gray-700">Categorias secundárias</span>
+                    <span className="block text-xs text-gray-500 mt-1">
+                      {tagsSelecionadas.length > 0
+                        ? `${tagsSelecionadas.length} selecionada(s)`
+                        : "Escolha outras áreas em que você também atende."}
+                    </span>
+                  </span>
+                  <span className="text-xs text-gray-400">{dropdownTagsAberto ? "▲" : "▼"}</span>
+                </button>
 
-                  <input
-                    value={especialidade}
-                    onChange={(e) => {
-                      setEspecialidade(e.target.value);
-                      setErros((p) => ({ ...p, especialidade: "" }));
-                    }}
-                    type="text"
-                    placeholder="Ex: Elétrica residencial, colorimetria..."
-                    className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
-                      erros.especialidade
-                        ? "ring-2 ring-red-400"
-                        : "focus:ring-orange-500"
-                    }`}
-                  />
-                </div>
+                {dropdownTagsAberto && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+                    {categoriasBanco.filter((cat) => cat.nome_categoria !== categoria).length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-gray-400">Nenhuma categoria disponível.</p>
+                    ) : (
+                      categoriasBanco
+                        .filter((cat) => cat.nome_categoria !== categoria)
+                        .map((cat) => {
+                          const selecionada = tagsSelecionadas.includes(cat.id_categoria);
 
-                {erros.especialidade && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">
-                    {erros.especialidade}
-                  </p>
+                          return (
+                            <label
+                              key={cat.id_categoria}
+                              className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selecionada}
+                                onChange={() => {
+                                  setTagsSelecionadas((tags) =>
+                                    selecionada
+                                      ? tags.filter((id) => id !== cat.id_categoria)
+                                      : [...tags, cat.id_categoria]
+                                  );
+                                }}
+                                className="h-4 w-4 accent-blue-600"
+                              />
+                              <span>{cat.nome_categoria}</span>
+                            </label>
+                          );
+                        })
+                    )}
+                  </div>
                 )}
               </div>
 
