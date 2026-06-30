@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   User, 
@@ -26,6 +27,14 @@ import {
   Briefcase
 } from "lucide-react";
 
+type TicketSuporteResumo = {
+  id_ticket: number;
+  titulo: string;
+  status: string;
+  data_abertura: string;
+  data_atualizacao?: string;
+};
+
 type CategoriaBanco = {
   id_categoria: number;
   nome_categoria: string;
@@ -38,6 +47,7 @@ type CategoriaVinculada = {
 };
 
 export default function ConfiguracoesView() {
+  const searchParams = useSearchParams();
   const { user, logado, atualizarSessao } = useAuth();
 
   useEffect(() => {
@@ -52,6 +62,11 @@ export default function ConfiguracoesView() {
   const [verConfirmaSenha, setVerConfirmaSenha] = useState(false);
 
   const [abaAtiva, setAbaAtiva] = useState("perfil");
+
+  useEffect(() => {
+    const abaUrl = searchParams.get("aba");
+    if (abaUrl) setAbaAtiva(abaUrl);
+  }, [searchParams]);
   const [carregando, setCarregando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   const [erroMensagem, setErroMensagem] = useState("");
@@ -104,6 +119,8 @@ export default function ConfiguracoesView() {
   const [suporteAssunto, setSuporteAssunto] = useState("");
   const [suporteDescricao, setSuporteDescricao] = useState("");
   const [suporteArquivo, setSuporteArquivo] = useState<File | null>(null);
+  const [ticketsSuporte, setTicketsSuporte] = useState<TicketSuporteResumo[]>([]);
+  const [carregandoTicketsSuporte, setCarregandoTicketsSuporte] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -296,21 +313,93 @@ export default function ConfiguracoesView() {
     }
   };
 
+  async function carregarTicketsSuporte() {
+    if (!user?.id) return;
+
+    try {
+      setCarregandoTicketsSuporte(true);
+      const response = await fetch(`/api/ticketSuporte?id_usuario=${user.id}`, { cache: "no-store" });
+      const dados = await response.json().catch(() => []);
+      setTicketsSuporte(Array.isArray(dados) ? dados : []);
+    } catch (error) {
+      setTicketsSuporte([]);
+    } finally {
+      setCarregandoTicketsSuporte(false);
+    }
+  }
+
+  useEffect(() => {
+    if (abaAtiva === "suporte" && user?.id) {
+      carregarTicketsSuporte();
+    }
+  }, [abaAtiva, user?.id]);
+
+  const formatarDataTicket = (valor?: string) => {
+    if (!valor) return "--";
+    const data = new Date(valor);
+    return Number.isNaN(data.getTime()) ? "--" : data.toLocaleDateString("pt-BR");
+  };
+
+  const classeStatusTicket = (status: string) => {
+    const normalizado = String(status || "").toLowerCase();
+    if (["resolvido", "fechado", "concluído", "concluido"].includes(normalizado)) return "bg-green-50 text-green-600";
+    if (["em análise", "em analise", "aguardando resposta"].includes(normalizado)) return "bg-blue-50 text-blue-600";
+    return "bg-orange-50 text-orange-600";
+  };
+
   const handleEnviarSuporte = async (e: React.FormEvent) => {
     e.preventDefault();
     setCarregando(true);
     setSucesso(false);
     setErroMensagem("");
+
+    if (!user?.id) {
+      setErroMensagem("Você precisa estar logado para abrir um chamado.");
+      setCarregando(false);
+      return;
+    }
+
+    if (!suporteTipo || !suporteAssunto.trim() || !suporteDescricao.trim()) {
+      setErroMensagem("Preencha tipo, assunto e descrição do problema.");
+      setCarregando(false);
+      return;
+    }
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const descricaoCompleta = [
+        `Tipo: ${suporteTipo}`,
+        `Data do ocorrido: ${suporteData || "Não informada"}`,
+        suporteArquivo ? `Anexo informado: ${suporteArquivo.name}` : "Sem anexo",
+        "",
+        suporteDescricao.trim(),
+      ].join("\n");
+
+      const response = await fetch("/api/ticketSuporte", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_usuario: Number(user.id),
+          titulo: suporteAssunto.trim(),
+          descricao: descricaoCompleta,
+          categoria: suporteTipo,
+          prioridade: "media",
+        }),
+      });
+
+      const dados = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(dados.erro || dados.error || "Erro ao enviar o chamado técnico.");
+      }
+
       setSucesso(true);
       setSuporteTipo("");
       setSuporteData("");
       setSuporteAssunto("");
       setSuporteDescricao("");
       setSuporteArquivo(null);
+      await carregarTicketsSuporte();
     } catch (error) {
-      setErroMensagem("Erro ao enviar o chamado técnico.");
+      setErroMensagem(error instanceof Error ? error.message : "Erro ao enviar o chamado técnico.");
     } finally {
       setCarregando(false);
     }
@@ -1003,30 +1092,26 @@ export default function ConfiguracoesView() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-xs text-gray-700">
-                          <tr>
-                            <td className="py-2.5 font-medium text-gray-500">#12457</td>
-                            <td className="py-2.5 font-semibold">Pagamento</td>
-                            <td className="py-2.5 text-gray-400">22/05/2026</td>
-                            <td className="py-2.5 text-right">
-                              <span className="bg-orange-50 text-orange-600 font-bold text-[9px] px-2 py-0.5 rounded-full">Pendente</span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="py-2.5 font-medium text-gray-500">#12657</td>
-                            <td className="py-2.5 font-semibold">Pagamento</td>
-                            <td className="py-2.5 text-gray-400">29/04/2026</td>
-                            <td className="py-2.5 text-right">
-                              <span className="bg-green-50 text-green-600 font-bold text-[9px] px-2 py-0.5 rounded-full">Concluído</span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="py-2.5 font-medium text-gray-500">#12459</td>
-                            <td className="py-2.5 font-semibold">Pagamento</td>
-                            <td className="py-2.5 text-gray-400">15/03/2026</td>
-                            <td className="py-2.5 text-right">
-                              <span className="bg-blue-50 text-blue-600 font-bold text-[9px] px-2 py-0.5 rounded-full">Análise</span>
-                            </td>
-                          </tr>
+                          {carregandoTicketsSuporte ? (
+                            <tr>
+                              <td colSpan={4} className="py-4 text-center text-gray-400">Carregando chamados...</td>
+                            </tr>
+                          ) : ticketsSuporte.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="py-4 text-center text-gray-400">Nenhum chamado aberto.</td>
+                            </tr>
+                          ) : (
+                            ticketsSuporte.slice(0, 5).map((ticket) => (
+                              <tr key={ticket.id_ticket}>
+                                <td className="py-2.5 font-medium text-gray-500">#{ticket.id_ticket}</td>
+                                <td className="py-2.5 font-semibold">{ticket.titulo}</td>
+                                <td className="py-2.5 text-gray-400">{formatarDataTicket(ticket.data_atualizacao || ticket.data_abertura)}</td>
+                                <td className="py-2.5 text-right">
+                                  <span className={`${classeStatusTicket(ticket.status)} font-bold text-[9px] px-2 py-0.5 rounded-full`}>{ticket.status}</span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>

@@ -47,6 +47,16 @@ async function garantirTabelaCategoria() {
   if (descricao.length === 0) {
     await pool.query("ALTER TABLE categoria ADD COLUMN descricao TEXT NULL");
   }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tag (
+      id_tag INT AUTO_INCREMENT PRIMARY KEY,
+      id_prestador INT NOT NULL,
+      id_categoria INT NOT NULL,
+      data_vinculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_prestador_categoria (id_prestador, id_categoria)
+    )
+  `);
 }
 
 export async function listarCategorias() {
@@ -55,12 +65,27 @@ export async function listarCategorias() {
 
   const [rows] = await pool.query(`
     SELECT
-      id_categoria,
-      nome_categoria,
-      descricao,
-      0 AS total_prestadores
-    FROM categoria
-    ORDER BY nome_categoria ASC
+      c.id_categoria,
+      c.nome_categoria,
+      c.descricao,
+      COUNT(DISTINCT pc.id_prestador) AS total_prestadores
+    FROM categoria c
+    LEFT JOIN (
+      SELECT
+        p.id_usuario AS id_prestador,
+        c2.id_categoria
+      FROM prestador p
+      INNER JOIN categoria c2
+        ON p.categoria_principal = c2.nome_categoria
+        OR CAST(p.categoria_principal AS CHAR) = CAST(c2.id_categoria AS CHAR)
+      UNION
+      SELECT
+        t.id_prestador,
+        t.id_categoria
+      FROM tag t
+    ) pc ON pc.id_categoria = c.id_categoria
+    GROUP BY c.id_categoria, c.nome_categoria, c.descricao
+    ORDER BY c.nome_categoria ASC
   `);
 
   return rows;

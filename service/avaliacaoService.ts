@@ -3,10 +3,43 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { AvaliacaoModel } from '@/model/avaliacaoModel';
 //import { Avaliacao } from '@/model/avaliacaoModel';
 
+async function garantirTabelaAvaliacao() {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS avaliacao (
+        id_avaliacao INT AUTO_INCREMENT PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        id_prestador INT NOT NULL,
+        id_servico INT NULL,
+        nota DECIMAL(2,1) NOT NULL,
+        comentario TEXT,
+        comunicacao DECIMAL(2,1) NOT NULL DEFAULT 5,
+        respeito DECIMAL(2,1) NOT NULL DEFAULT 5,
+        pontualidade DECIMAL(2,1) NOT NULL DEFAULT 5,
+        acordo DECIMAL(2,1) NOT NULL DEFAULT 5,
+        data_avaliacao DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const [colunas] = await pool.query<RowDataPacket[]>('SHOW COLUMNS FROM avaliacao');
+    const nomes = new Set(colunas.map((coluna) => String(coluna.Field)));
+
+    if (!nomes.has('id_servico')) {
+        await pool.query('ALTER TABLE avaliacao ADD COLUMN id_servico INT NULL');
+    }
+
+    const subAvaliacoes = ['comunicacao', 'respeito', 'pontualidade', 'acordo'];
+    for (const coluna of subAvaliacoes) {
+        if (!nomes.has(coluna)) {
+            await pool.query(`ALTER TABLE avaliacao ADD COLUMN ${coluna} DECIMAL(2,1) NOT NULL DEFAULT 5`);
+        }
+    }
+}
+
 
 export const AvaliacaoService = {
 
     async listar(): Promise<AvaliacaoModel[]> {
+        await garantirTabelaAvaliacao();
 
         const [rows] = await pool.query<(RowDataPacket & any)[]>(
             `
@@ -142,6 +175,7 @@ export const AvaliacaoService = {
     },
 
     async listarPorPrestador(id_prestador: number) {
+        await garantirTabelaAvaliacao();
 
         const [rows] = await pool.query<RowDataPacket[]>(
             `
@@ -198,6 +232,7 @@ export const AvaliacaoService = {
         pontualidade: number = 5,
         acordo: number = 5
     ): Promise<number> {
+        await garantirTabelaAvaliacao();
 
         if (id_usuario === id_prestador) {
             throw new Error(

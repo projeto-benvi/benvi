@@ -1,52 +1,50 @@
 // service/mensagemService.ts
 import pool from '@/app/lib/dataBase';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { notificacaoService } from '@/service/notificacaoService';
 
 interface DadosNovaMensagem {
-  idConversa: number;   
-  idRemetente: number;  
-  conteudo: string;     
+  idConversa: number;
+  idRemetente: number;
+  conteudo: string;
+}
+
+async function garantirTabelaMensagem() {
+  await pool.query("ALTER TABLE mensagens ADD COLUMN lida TINYINT(1) DEFAULT 0").catch(() => null);
 }
 
 export class MensagemService {
-
   async enviarMensagem(dados: DadosNovaMensagem) {
+    await garantirTabelaMensagem();
     const { idConversa, idRemetente, conteudo } = dados;
     const agora = new Date();
-
     const conexao = await pool.getConnection();
 
     try {
       await conexao.beginTransaction();
-
-      const queryMensagem = `
-        INSERT INTO mensagens (idConversa, idRemetente, conteudo, criadoEm) 
-        VALUES (?, ?, ?, ?)
-      `;
-      const [resultadoMensagem] = await conexao.execute<ResultSetHeader>(queryMensagem, [
-        idConversa, 
-        idRemetente, 
-        conteudo, 
-        agora
-      ]);
-
-      const queryConversa = `
-        UPDATE conversas 
-        SET ultimaMensagemEm = ? 
-        WHERE idConversa = ?
-      `;
-      await conexao.execute(queryConversa, [agora, idConversa]);
-
+      const [resultadoMensagem] = await conexao.execute<ResultSetHeader>(
+        'INSERT INTO mensagens (idConversa, idRemetente, conteudo, criadoEm, lida) VALUES (?, ?, ?, ?, ?)',
+        [idConversa, idRemetente, conteudo, agora, 0]
+      );
+      await conexao.execute('UPDATE conversas SET ultimaMensagemEm = ? WHERE idConversa = ?', [agora, idConversa]);
       await conexao.commit();
 
-      return {
-        idMensagem: resultadoMensagem.insertId,
-        idConversa,
-        idRemetente,
-        conteudo,
-        criadoEm: agora
-      };
+      const [conversas] = await pool.execute<RowDataPacket[]>('SELECT idUsuario, idPrestador FROM conversas WHERE idConversa = ?', [idConversa]);
+      const conversa = conversas[0];
+      if (conversa) {
+        const destinatario = Number(conversa.idUsuario) === idRemetente ? Number(conversa.idPrestador) : Number(conversa.idUsuario);
+        if (destinatario && destinatario !== idRemetente) {
+          await notificacaoService.criar({
+            id_usuario: destinatario,
+            titulo: 'Nova mensagem',
+            descricao: conteudo.length > 80 ? conteudo.slice(0, 77) + '...' : conteudo,
+            url_acao: '/mensagens',
+            tipo: 'mensagem',
+          });
+        }
+      }
 
+      return { idMensagem: resultadoMensagem.insertId, idConversa, idRemetente, conteudo, criadoEm: agora, lida: false };
     } catch (erro) {
       await conexao.rollback();
       throw erro;
@@ -56,13 +54,11 @@ export class MensagemService {
   }
 
   async listarMensagensPorConversa(idConversa: number) {
-    const queryHistorico = `
-      SELECT * FROM mensagens 
-      WHERE idConversa = ? 
-      ORDER BY criadoEm ASC
-    `;
-
-    const [historico] = await pool.execute<RowDataPacket[]>(queryHistorico, [idConversa]);
+    await garantirTabelaMensagem();
+    const [historico] = await pool.execute<RowDataPacket[]>(
+      'SELECT * FROM mensagens WHERE idConversa = ? ORDER BY criadoEm ASC',
+      [idConversa]
+    );
     return historico;
   }
 }

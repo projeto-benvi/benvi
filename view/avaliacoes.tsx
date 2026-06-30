@@ -15,7 +15,7 @@ import { useSearchParams } from "next/navigation";
 
 export default function Avaliacoes() {
 
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const searchParams = useSearchParams();
     const idPrestadorUrl = Number(searchParams.get("prestador") ?? 0);
     const idPrestadorLogado = Number((session?.user as any)?.id ?? 0);
@@ -27,6 +27,7 @@ export default function Avaliacoes() {
 
     const [avaliacoes, setAvaliacoes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [erroCarregamento, setErroCarregamento] = useState("");
 
 
     const avaliacoesFiltradas = avaliacoes
@@ -86,15 +87,27 @@ export default function Avaliacoes() {
     useEffect(() => {
 
     const carregarAvaliacoes = async () => {
+        if (!idPrestadorAvaliacoes) {
+            if (status !== "loading") {
+                setLoading(false);
+            }
+            return;
+        }
 
         try {
+        setLoading(true);
+        setErroCarregamento("");
 
         const response = await fetch(
-            "/api/avaliacoes/prestador/4"
+            `/api/avaliacoes/prestador/${idPrestadorAvaliacoes}`,
+            { cache: "no-store" }
         );
 
         if (!response.ok) {
-            throw new Error(`Erro ao carregar avaliações: ${response.status}`);
+            const dadosErro = await response.json().catch(() => ({}));
+            throw new Error(
+            dadosErro.error || `Erro ao carregar avaliações: ${response.status}`
+            );
         }
 
         const data = await response.json();
@@ -108,6 +121,12 @@ export default function Avaliacoes() {
             "Erro ao carregar avaliações",
             error
         );
+        setAvaliacoes([]);
+        setErroCarregamento(
+            error instanceof Error
+            ? error.message
+            : "Não foi possível carregar as avaliações."
+        );
         setLoading(false);
 
         }
@@ -116,7 +135,7 @@ export default function Avaliacoes() {
 
     carregarAvaliacoes();
 
-    }, [idPrestadorAvaliacoes]);
+    }, [idPrestadorAvaliacoes, status]);
 
     
     console.log("Estado avaliacoes:", avaliacoes);
@@ -457,7 +476,25 @@ export default function Avaliacoes() {
                 {ordem === "recentes" ? "Mais recentes" : "Mais antigos"}
             </p>
             {/* Avaliação */}
-            {avaliacoesFiltradas.map((avaliacao) => (
+            {loading && (
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-6 text-gray-500 shadow-sm">
+                Carregando avaliações...
+            </div>
+            )}
+
+            {!loading && erroCarregamento && (
+            <div className="bg-white border border-red-100 rounded-2xl p-6 text-red-600 shadow-sm">
+                {erroCarregamento}
+            </div>
+            )}
+
+            {!loading && !erroCarregamento && avaliacoesFiltradas.length === 0 && (
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-6 text-gray-500 shadow-sm">
+                Nenhuma avaliação encontrada.
+            </div>
+            )}
+
+            {!loading && !erroCarregamento && avaliacoesFiltradas.map((avaliacao) => (
             <div
                 key={avaliacao.id_avaliacao}
                 className="

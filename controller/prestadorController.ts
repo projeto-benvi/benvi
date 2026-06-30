@@ -3,9 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const prestadorController = {
 
-  async listar() {
+  async listar(req?: NextRequest) {
     try {
-      const prestadores = await prestadorService.listarTodos();
+      const searchParams = req?.nextUrl.searchParams;
+      const prestadores = await prestadorService.listarTodos({
+        search: searchParams?.get("search") || searchParams?.get("termo") || undefined,
+        location: searchParams?.get("location") || searchParams?.get("localizacao") || searchParams?.get("cidade") || undefined,
+        categoria: searchParams?.get("categoria") || undefined,
+        apenasVerificados: searchParams?.get("verificados") === "1",
+      });
       return NextResponse.json(prestadores);
     } catch (e) {
       return NextResponse.json({ erro: 'Erro ao listar prestadores' }, { status: 500 });
