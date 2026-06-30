@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useContext } from "react";
 import SearchBar from "@/components/searchBar";
+import Link from "next/link";
 import { AuthContext } from "@/app/context/AuthContext";
 
 // 1. Definição estrita das Interfaces
@@ -78,9 +79,9 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
                   📅
                 </div>
                 <span className="text-xs font-bold text-gray-500">Agendamentos hoje</span>
-                <button type="button" className="cursor-pointer text-xs text-blue-600 font-bold mt-2 inline-flex items-center gap-1 hover:underline">
+                <Link href="/agendaPrestador" className="cursor-pointer text-xs text-blue-600 font-bold mt-2 inline-flex items-center gap-1 hover:underline">
                   Ver agenda ➔
-                </button>
+                </Link>
               </div>
 
               <div className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition">
@@ -88,9 +89,9 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
                   ⭐
                 </div>
                 <span className="text-xs font-bold text-gray-500">Avaliação média</span>
-                <button type="button" className="cursor-pointer text-xs text-blue-600 font-bold mt-2 inline-flex items-center gap-1 hover:underline">
+                <Link href="/avaliacoes" className="cursor-pointer text-xs text-blue-600 font-bold mt-2 inline-flex items-center gap-1 hover:underline">
                   Ver avaliações ➔
-                </button>
+                </Link>
               </div>
 
               <div className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition">
@@ -98,9 +99,9 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
                   📋
                 </div>
                 <span className="text-xs font-bold text-gray-500">Serviços concluídos</span>
-                <button type="button" className="cursor-pointer text-xs text-blue-600 font-bold mt-2 inline-flex items-center gap-1 hover:underline">
+                <Link href="/servicoPrestador" className="cursor-pointer text-xs text-blue-600 font-bold mt-2 inline-flex items-center gap-1 hover:underline">
                   Ver todos ➔
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -108,7 +109,7 @@ export default function InicialPrestador({ agendaHoje }: InicialPrestadorProps) 
             <div className="bg-white border border-gray-100 rounded-2xl p-6 flex-1 flex flex-col shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-base font-bold text-gray-900">Serviços recentes</h2>
-                <button type="button" className="cursor-pointer text-xs text-blue-600 font-bold hover:underline">Ver todos</button>
+                <Link href="/servicoPrestador" className="cursor-pointer text-xs text-blue-600 font-bold hover:underline">Ver todos</Link>
               </div>
 
               <div className="flex flex-col gap-3">

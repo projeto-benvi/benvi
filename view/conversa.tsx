@@ -110,6 +110,13 @@ export default function Conversa() {
     ? "prestador"
     : "usuario";
 
+  const podeSolicitarServico = Boolean(
+    !suporteAtivo &&
+      chatSelecionado &&
+      !isAdmin &&
+      Number(chatSelecionado.idPrestador) !== Number(idUsuarioLogado)
+  );
+
   const nomeChat = (chat: Chat) => chat.nome?.trim() || `Conversa ${chat.idConversa}`;
 
   const exibirNotificacao = (
@@ -214,7 +221,7 @@ export default function Conversa() {
 
     try {
       const response = await fetch(
-        `/api/conversas?idParticipante=${idUsuarioLogado}&tipoParticipante=${tipoParticipanteLogado}`
+        `/api/conversas?idParticipante=${idUsuarioLogado}&tipoParticipante=${isAdmin ? "admin" : tipoParticipanteLogado}`
       );
 
       const dados = await response.json();
@@ -239,7 +246,7 @@ export default function Conversa() {
     const abrirConversaDireta = async () => {
       if (chatDiretoProcessado) return;
       if (!idPrestadorDireto || idPrestadorDireto <= 0) return;
-      if (!idUsuarioLogado || tipoParticipanteLogado !== "usuario") return;
+      if (!idUsuarioLogado || isAdmin) return;
       if (idPrestadorDireto === idUsuarioLogado) {
         setChatDiretoProcessado(true);
         return;
@@ -546,8 +553,8 @@ export default function Conversa() {
       return;
     }
 
-    if (tipoParticipanteLogado !== "usuario") {
-      setErro("A solicitação deve ser feita por um usuário comum.");
+    if (isAdmin || Number(chatSelecionado.idPrestador) === Number(idUsuarioLogado)) {
+      setErro("Esta conversa não permite solicitar serviço.");
       return;
     }
 

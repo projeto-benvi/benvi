@@ -33,8 +33,9 @@ export const servicoController = {
       const id = await servicoService.criar(body);
       return NextResponse.json({ id_servico: id }, { status: 201 });
     } catch (e) {
+      console.error('ERRO AO CRIAR SERVIÇO:', e);
       return NextResponse.json(
-        { erro: 'Erro ao criar serviço', detalhes: String(e) },
+        { erro: 'Erro ao criar serviço', detalhes: e instanceof Error ? e.message : String(e) },
         { status: 500 }
       );
     }

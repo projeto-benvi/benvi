@@ -1,6 +1,37 @@
 import pool from '@/app/lib/dataBase';
 import { Servico } from '@/model/servicoModel';
 
+async function garantirTabelaServico() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS servico (
+      id_servico INT AUTO_INCREMENT PRIMARY KEY,
+      id_prestador INT NOT NULL,
+      id_categoria INT NULL,
+      titulo VARCHAR(255) NOT NULL,
+      descricao TEXT NOT NULL,
+      status_servico VARCHAR(50) NOT NULL DEFAULT 'ativo',
+      data_inicio DATETIME NULL,
+      data_fim DATETIME NULL,
+      tempo_execucao VARCHAR(100) NULL,
+      imagens JSON NULL
+    )
+  `);
+
+  const [colunas]: any = await pool.query('SHOW COLUMNS FROM servico');
+  const nomes = new Set(colunas.map((coluna: { Field: string }) => coluna.Field));
+
+  if (!nomes.has('data_inicio')) await pool.query('ALTER TABLE servico ADD COLUMN data_inicio DATETIME NULL');
+  if (!nomes.has('data_fim')) await pool.query('ALTER TABLE servico ADD COLUMN data_fim DATETIME NULL');
+  if (!nomes.has('imagens')) await pool.query('ALTER TABLE servico ADD COLUMN imagens JSON NULL');
+  if (!nomes.has('tempo_execucao')) await pool.query('ALTER TABLE servico ADD COLUMN tempo_execucao VARCHAR(100) NULL');
+
+  await pool.query('ALTER TABLE servico MODIFY id_categoria INT NULL').catch(() => null);
+  await pool.query('ALTER TABLE servico MODIFY data_inicio DATETIME NULL').catch(() => null);
+  await pool.query('ALTER TABLE servico MODIFY data_fim DATETIME NULL').catch(() => null);
+  await pool.query('ALTER TABLE servico MODIFY tempo_execucao VARCHAR(100) NULL').catch(() => null);
+}
+
+
 export const servicoService = {
 
 // Substitua apenas este método dentro do seu servicoService.ts
@@ -66,6 +97,8 @@ export const servicoService = {
 
 // BUSCA CORRIGIDA: Agora traz os dados do prestador junto com os serviços
   async buscarPorPrestador(idPrestador: number): Promise<any[]> {
+    await garantirTabelaServico();
+
     const [rows]: any = await pool.query(
       `SELECT 
         s.*,
@@ -83,24 +116,33 @@ export const servicoService = {
   },
 
   // Cria un novo serviço
-  async criar(dados: Omit<Servico, 'id_servico'>): Promise<number> {
+  async criar(dados: Omit<Servico, 'id_servico'> & { tempo_execucao?: string }): Promise<number> {
+    await garantirTabelaServico();
 
-    const queryInsert = `
-      INSERT INTO servico (
-        id_prestador, id_categoria, titulo, descricao, status_servico, data_inicio, data_fim, imagens
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    const idPrestador = Number(dados.id_prestador);
+    if (!Number.isInteger(idPrestador) || idPrestador <= 0) {
+      throw new Error('Prestador inválido para criar serviço.');
+    }
 
-    const [result]: any = await pool.query(queryInsert, [
-      dados.id_prestador ?? null,
-      dados.id_categoria ?? null,
-      dados.titulo,
-      dados.descricao,
-      dados.status_servico ?? 'ativo',
-      dados.data_inicio ?? null,
-      dados.data_fim ?? null,
-      JSON.stringify(dados.imagens ?? [])
-    ]);
+    const dataInicio = dados.data_inicio ? new Date(dados.data_inicio) : null;
+    const dataFim = dados.data_fim ? new Date(dados.data_fim) : null;
+
+    const [result]: any = await pool.query(
+      `INSERT INTO servico (
+        id_prestador, id_categoria, titulo, descricao, status_servico, data_inicio, data_fim, tempo_execucao, imagens
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        idPrestador,
+        dados.id_categoria ?? null,
+        dados.titulo || 'Serviço solicitado',
+        dados.descricao || 'Serviço criado a partir de solicitação aceita.',
+        dados.status_servico ?? 'ativo',
+        dataInicio && !Number.isNaN(dataInicio.getTime()) ? dataInicio : null,
+        dataFim && !Number.isNaN(dataFim.getTime()) ? dataFim : null,
+        dados.tempo_execucao ?? null,
+        JSON.stringify(dados.imagens ?? [])
+      ]
+    );
 
     return result.insertId;
   },

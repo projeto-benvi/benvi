@@ -129,6 +129,12 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
                   Conversar no chat
                 </a>
                 <FavoritarPrestadorButton idPrestador={idPrestador} />
+                <a
+                  href={`/avaliacoes?prestador=${idPrestador}`}
+                  className="bg-white text-amber-600 font-bold text-sm px-5 py-2 rounded-xl shadow-sm hover:bg-gray-50 transition-all cursor-pointer"
+                >
+                  Avaliar prestador
+                </a>
               </>
             )}
           </div>

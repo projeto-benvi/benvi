@@ -8,10 +8,18 @@ import {
   Clock3,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 
 
 export default function Avaliacoes() {
+
+    const { data: session } = useSession();
+    const searchParams = useSearchParams();
+    const idPrestadorUrl = Number(searchParams.get("prestador") ?? 0);
+    const idPrestadorLogado = Number((session?.user as any)?.id ?? 0);
+    const idPrestadorAvaliacoes = idPrestadorUrl || idPrestadorLogado;
 
     const [filtroEstrela, setFiltroEstrela] = useState<number | null>(null);
     const [ordem, setOrdem] = useState("recentes");
@@ -108,7 +116,7 @@ export default function Avaliacoes() {
 
     carregarAvaliacoes();
 
-    }, []);
+    }, [idPrestadorAvaliacoes]);
 
     
     console.log("Estado avaliacoes:", avaliacoes);

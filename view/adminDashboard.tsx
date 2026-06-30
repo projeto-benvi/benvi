@@ -69,27 +69,61 @@ export default function AdminDashboard() {
             try {
                 setLoading(true);
 
-                // 1. Resumo numérico geral
-                const resMetrics = await fetch(`/api/usuario?admin=dashboard&id_solicitante=${id_solicitante}`);
-                const dataMetrics = await resMetrics.json();
-                setMetrics(dataMetrics);
+                // Busca usuários e prestadores para calcular as métricas no front
+                const resUsuarios = await fetch(`/api/usuario`);
+                const dataUsuarios = await resUsuarios.json();
+                const listaUsuarios = Array.isArray(dataUsuarios) ? dataUsuarios : [];
 
-                // 2. Lista de utilizadores recentes
-                const resUsers = await fetch(`/api/usuario?admin=usuarios&id_solicitante=${id_solicitante}`);
-                const dataUsers = await resUsers.json();
-                setRecentUsers(Array.isArray(dataUsers) ? dataUsers.slice(0, 5) : []);
+                const resPrestadores = await fetch(`/api/prestador`);
+                const dataPrestadores = await resPrestadores.json();
+                const listaPrestadores = Array.isArray(dataPrestadores) ? dataPrestadores : [];
 
-                // 3. Tickets Recentes do sistema
+                const totalUsuarios = listaUsuarios.length;
+                const totalPrestadores = listaPrestadores.length;
+
+                // Tickets
                 const resTickets = await fetch(`/api/ticketSuporte`);
                 const dataTickets = await resTickets.json();
-                setTickets(Array.isArray(dataTickets) ? dataTickets.slice(0, 6) : []);
+                const listaTickets = Array.isArray(dataTickets) ? dataTickets : [];
 
-                // 4. Cidades Atendidas Reais via cidadeAtendidaController
+                setMetrics({
+                    usuarios: {
+                        total: totalUsuarios,
+                        prestadores: totalPrestadores,
+                        usuarios_comuns: totalUsuarios - totalPrestadores,
+                    },
+                    plataforma: {
+                        total_solicitacoes: 0,
+                        total_agendas: 0,
+                        total_assinaturas_ativas: 0,
+                    },
+                    suporte: {
+                        total_tickets: listaTickets.length,
+                        tickets_pendentes: listaTickets.filter(
+                            (t: any) => t?.status?.toLowerCase() === 'aberto' || t?.status?.toLowerCase() === 'pendente'
+                        ).length,
+                        disponivel: true,
+                    },
+                });
+
+                setRecentUsers(
+                    listaUsuarios.slice(0, 5).map((u: any) => ({
+                        id_usuario: u.id_usuario,
+                        nome: u.nome,
+                        email: u.email,
+                        status_conta: u.status_conta,
+                        is_prestador: listaPrestadores.some((p: any) => p.id_usuario === u.id_usuario),
+                    }))
+                );
+
+                setTickets(listaTickets.slice(0, 6));
+
+                // Cidades Atendidas Reais via cidadeAtendidaController
                 const resCidades = await fetch(`/api/cidadeAtendida`);
                 const dataCidades = await resCidades.json();
                 setCidades(Array.isArray(dataCidades) ? dataCidades : []);
 
-                // 5. Parcerias do sistema
+                // Parcerias do sistema
                 const resParcerias = await fetch(`/api/parceria`);
                 const dataParcerias = await resParcerias.json();
                 setParcerias(Array.isArray(dataParcerias) ? dataParcerias : []);

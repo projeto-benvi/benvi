@@ -158,16 +158,16 @@ export default function ServicoPrestador() {
       setLoading(true);
 
       const [resServicos, resCategorias, resSolicitacoes] = await Promise.all([
-        fetch("/api/servico", {
-          cache: "no-store",
-        }),
-        fetch("/api/categoria", {
-          cache: "no-store",
-        }),
-        fetch(`/api/solicitacaoservico?id_prestador=${idUsuarioLogado}`, {
-          cache: "no-store",
-        }),
-      ]);
+  fetch(`/api/servico?id_prestador=${idUsuarioLogado}`, {
+    cache: "no-store",
+  }),
+  fetch("/api/categoria", {
+    cache: "no-store",
+  }),
+  fetch(`/api/solicitacaoservico?id_prestador=${idUsuarioLogado}`, {
+    cache: "no-store",
+  }),
+]);
 
       if (resServicos.ok) {
         const dadosServicos = await resServicos.json();
@@ -379,6 +379,51 @@ export default function ServicoPrestador() {
 
   async function aceitarSolicitacao(solicitacao: SolicitacaoRetorno) {
     try {
+      const idPrestadorServico = Number(
+        solicitacao.id_prestador || idUsuarioLogado
+      );
+
+      if (!Number.isInteger(idPrestadorServico) || idPrestadorServico <= 0) {
+        dispararAlerta(
+          "Não foi possível identificar o prestador desta solicitação.",
+          "error"
+        );
+        return;
+      }
+
+      const tituloServico = solicitacao.nome_usuario
+        ? `Serviço para ${solicitacao.nome_usuario}`
+        : "Serviço solicitado";
+
+      const servicoResponse = await fetch("/api/servico", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_prestador: idPrestadorServico,
+          id_categoria: null,
+          titulo: tituloServico,
+          descricao:
+            solicitacao.descricao_servico ||
+            solicitacao.complemento ||
+            "Serviço solicitado pelo cliente.",
+          tempo_execucao: "30 a 60 min",
+          status_servico: "pendente",
+          data_inicio:
+            solicitacao.data_agendamento || new Date().toISOString(),
+        }),
+      });
+
+      const dadosServico = await servicoResponse.json().catch(() => ({}));
+
+      if (!servicoResponse.ok) {
+        throw new Error(
+          dadosServico?.detalhes ||
+            dadosServico?.erro ||
+            dadosServico?.error ||
+            "Não foi possível criar o serviço."
+        );
+      }
+
       const response = await fetch(
         `/api/solicitacaoservico/${solicitacao.id_solicitacao}`,
         {
@@ -389,43 +434,77 @@ export default function ServicoPrestador() {
           body: JSON.stringify({
             status: 1,
             id_usuario: solicitacao.id_usuario,
-            id_prestador: solicitacao.id_prestador || Number(idUsuarioLogado),
+            id_prestador: idPrestadorServico,
             complemento: solicitacao.complemento || "Sem complemento",
           }),
         }
       );
 
-      if (response.ok) {
-        setSolicitacoes((prev) =>
-          prev.filter(
-            (item) => item.id_solicitacao !== solicitacao.id_solicitacao
-          )
+      if (!response.ok) {
+        const dadosSolicitacao = await response.json().catch(() => ({}));
+        throw new Error(
+          dadosSolicitacao?.detalhes ||
+            dadosSolicitacao?.erro ||
+            dadosSolicitacao?.error ||
+            "Serviço criado, mas não foi possível atualizar a solicitação."
         );
-
-        const novoServicoPendente: ServicoRetorno = {
-          id_servico: solicitacao.id_solicitacao,
-          id_prestador: Number(idUsuarioLogado),
-          titulo: solicitacao.nome_usuario
-            ? `Serviço para ${solicitacao.nome_usuario}`
-            : "Novo Serviço Aceito",
-          descricao:
-            solicitacao.descricao_servico || "Sem descrição fornecida",
-          status_servico: "pendente",
-          tempo_execucao: "30 a 60 min",
-        };
-
-        setServices((prev) => [novoServicoPendente, ...prev]);
-
-        dispararAlerta(
-          "Solicitação aceita e movida para serviços pendentes!",
-          "success"
-        );
-      } else {
-        dispararAlerta("Não foi possível aceitar esta solicitação.", "error");
       }
+
+      if (solicitacao.data_agendamento) {
+        const inicio = new Date(solicitacao.data_agendamento);
+        const fim = new Date(inicio.getTime() + 60 * 60 * 1000);
+
+        await fetch("/api/agenda", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id_prestador: idPrestadorServico,
+            id_solicitacao: solicitacao.id_solicitacao,
+            horario_inicio: inicio.toISOString(),
+            horario_fim: fim.toISOString(),
+            status: "pendente",
+            titulo: tituloServico,
+            descricao:
+              solicitacao.descricao_servico ||
+              solicitacao.complemento ||
+              "Agendamento criado a partir da solicitação.",
+          }),
+        });
+      }
+
+      setSolicitacoes((prev) =>
+        prev.filter(
+          (item) => item.id_solicitacao !== solicitacao.id_solicitacao
+        )
+      );
+
+      const novoServicoPendente: ServicoRetorno = {
+        id_servico:
+          dadosServico?.id_servico ||
+          dadosServico?.id ||
+          solicitacao.id_solicitacao,
+        id_prestador: idPrestadorServico,
+        titulo: tituloServico,
+        descricao: solicitacao.descricao_servico || "Sem descrição fornecida",
+        status_servico: "pendente",
+        tempo_execucao: "30 a 60 min",
+        data_inicio: solicitacao.data_agendamento,
+      };
+
+      setServices((prev) => [novoServicoPendente, ...prev]);
+
+      dispararAlerta(
+        "Solicitação aceita e salva em serviços pendentes!",
+        "success"
+      );
     } catch (error) {
       console.error(error);
-      dispararAlerta("Erro de conexão ao aceitar solicitação.", "error");
+      dispararAlerta(
+        error instanceof Error
+          ? error.message
+          : "Erro de conexão ao aceitar solicitação.",
+        "error"
+      );
     }
   }
 

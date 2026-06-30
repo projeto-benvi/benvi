@@ -42,6 +42,12 @@ export default function AgendaPrestador() {
   const [loading, setLoading] = useState<boolean>(true);
   const [dataAtual, setDataAtual] = useState(new Date()); 
   const [modalAberto, setModalAberto] = useState(false);
+  const [novoTitulo, setNovoTitulo] = useState("");
+  const [novaData, setNovaData] = useState(new Date().toISOString().slice(0, 10));
+  const [novaHoraInicio, setNovaHoraInicio] = useState("09:00");
+  const [novaHoraFim, setNovaHoraFim] = useState("10:00");
+  const [salvandoAgenda, setSalvandoAgenda] = useState(false);
+  const [erroAgenda, setErroAgenda] = useState("");
   
   // Novos estados para controlar a visualização
   const [tipoVisualizacao, setTipoVisualizacao] = useState<TipoVisualizacao>('semana');
@@ -230,8 +236,77 @@ export default function AgendaPrestador() {
 
     if (session) carregarAgenda();
 
-    return () => controller.abort(); // Cancela a requisição ao mudar de data/tipo
+  return () => controller.abort(); // Cancela a requisição ao mudar de data/tipo
   }, [session, dataAtual, tipoVisualizacao]);
+
+  const salvarNovoAgendamento = async (event: React.FormEvent) => {
+  event.preventDefault();
+  const idPrestador = Number((session?.user as any)?.id ?? 0);
+
+  if (!idPrestador) {
+    setErroAgenda("Não foi possível identificar o prestador logado.");
+    return;
+  }
+
+  if (!novoTitulo.trim() || !novaData || !novaHoraInicio || !novaHoraFim) {
+    setErroAgenda("Preencha título, data e horários.");
+    return;
+  }
+
+  const inicio = new Date(novaData + "T" + novaHoraInicio + ":00");
+  const fim = new Date(novaData + "T" + novaHoraFim + ":00");
+
+  if (inicio >= fim) {
+    setErroAgenda("O horário final precisa ser depois do início.");
+    return;
+  }
+
+  setSalvandoAgenda(true);
+  setErroAgenda("");
+
+  try {
+    const response = await fetch("/api/agenda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_prestador: idPrestador,
+        horario_inicio: inicio.toISOString(),
+        horario_fim: fim.toISOString(),
+        status: "pendente",
+        titulo: novoTitulo.trim(),
+        descricao: "Agendamento criado manualmente pelo prestador.",
+      }),
+    });
+
+    const dados = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(dados?.error || "Não foi possível salvar o agendamento.");
+
+    setAgendamentos((prev) => [
+      ...prev,
+      {
+        id: dados?.id_agenda || Date.now(),
+        servico: novoTitulo.trim(),
+        clienteNome: "Manual",
+        diaSemana: (inicio.getDay() + 6) % 7,
+        horaInicio: novaHoraInicio,
+        horaFim: novaHoraFim,
+        dataCompleta: novaData,
+      },
+    ]);
+
+    setModalAberto(false);
+    setNovoTitulo("");
+    setNovaData(new Date().toISOString().slice(0, 10));
+    setNovaHoraInicio("09:00");
+    setNovaHoraFim("10:00");
+  } catch (error) {
+    setErroAgenda(error instanceof Error ? error.message : "Erro ao salvar agendamento.");
+  } finally {
+    setSalvandoAgenda(false);
+  }
+  };
+
+
 
 
   // ================= UTILS DA GRADE =================
@@ -507,23 +582,23 @@ export default function AgendaPrestador() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <form className="p-6 flex flex-col gap-4">
+            <form onSubmit={salvarNovoAgendamento} className="p-6 flex flex-col gap-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Título / Serviço</label>
-                <input type="text" className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Ex: Manutenção de encanamento" />
+                <input type="text" value={novoTitulo} onChange={(e) => setNovoTitulo(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Ex: Manutenção de encanamento" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Data</label>
-                <input type="date" className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-700" />
+                <input type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-700" />
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Horário Início</label>
-                  <input type="time" className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-700" />
+                  <input type="time" value={novaHoraInicio} onChange={(e) => setNovaHoraInicio(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-700" />
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Horário Fim</label>
-                  <input type="time" className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-700" />
+                  <input type="time" value={novaHoraFim} onChange={(e) => setNovaHoraFim(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-slate-700" />
                 </div>
               </div>
               <button type="button" onClick={() => setModalAberto(false)} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all active:scale-[0.98] shadow-md shadow-blue-200">

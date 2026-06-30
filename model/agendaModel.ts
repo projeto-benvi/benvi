@@ -4,7 +4,7 @@ export class AgendaModel {
  
   constructor(
     public id_prestador: number,
-    public id_solicitacao: number,
+    public id_solicitacao: number | null,
     public horario_inicio: Date,
     public horario_fim: Date,
     public status: string,
