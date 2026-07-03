@@ -28,9 +28,10 @@ export const prestadorController = {
     }
   },
 
-  async criar(req: NextRequest) {
+  async criar(req: NextRequest, idUsuarioAutenticado?: number) {
     try {
       const body = await req.json();
+      if (idUsuarioAutenticado) body.id_usuario = idUsuarioAutenticado;
       const id = await prestadorService.criar(body);
       return NextResponse.json({ id_usuario: id }, { status: 201 });
     } catch (e) {

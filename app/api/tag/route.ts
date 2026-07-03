@@ -5,6 +5,7 @@ import {
   deletarTagController,
   substituirTagsDoPrestadorController,
 } from "@/controller/tagController";
+import { authErrorResponse, requireUser } from "@/app/lib/authz";
 
 export async function GET(req: NextRequest) {
   const idPrestador = req.nextUrl.searchParams.get("id_prestador");
@@ -20,22 +21,37 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return criarTagController(req);
+  try {
+    const user = await requireUser();
+    return criarTagController(req, user.id);
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: "Erro ao criar tag." }, { status: 500 });
+  }
 }
 
 export async function PUT(req: NextRequest) {
-  return substituirTagsDoPrestadorController(req);
+  try {
+    const user = await requireUser();
+    return substituirTagsDoPrestadorController(req, user.id);
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: "Erro ao atualizar tags." }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: NextRequest) {
-  const id = req.nextUrl.searchParams.get("id");
+  try {
+    await requireUser();
+    const id = req.nextUrl.searchParams.get("id");
 
-  if (!id) {
-    return NextResponse.json(
-      { erro: "Parâmetro 'id' é obrigatório." },
-      { status: 400 }
-    );
+    if (!id) {
+      return NextResponse.json(
+        { erro: "Parâmetro 'id' é obrigatório." },
+        { status: 400 }
+      );
+    }
+
+    return deletarTagController(Number(id));
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: "Erro ao deletar tag." }, { status: 500 });
   }
-
-  return deletarTagController(Number(id));
 }

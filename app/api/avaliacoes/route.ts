@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AvaliacaoController } from '@/controller/avaliacaoController';
+import { authErrorResponse, requireUser } from '@/app/lib/authz';
 
 export async function GET() {
 
@@ -25,11 +26,12 @@ export async function GET() {
 export async function POST(request: Request) {
 
   try {
+    const user = await requireUser();
 
     const body = await request.json();
 
     const dadosAvaliacao = {
-      id_usuario: body.id_usuario,
+      id_usuario: user.id,
       id_prestador: body.id_prestador,
       id_servico: body.id_servico,
       nota: body.nota_geral ?? body.nota ?? 5,
@@ -62,6 +64,8 @@ export async function POST(request: Request) {
     );
 
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
 
     return NextResponse.json(
       {

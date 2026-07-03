@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ParceriaController } from '@/controller/parceriaController';
+import { authErrorResponse, requireAdmin } from '@/app/lib/authz';
 
 /**
  * GET /api/parceria
@@ -46,6 +47,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
+        await requireAdmin();
         const body = await request.json();
 
         if (!body.nome_parceiro || !body.cidade || !body.estado || !body.data_inicio) {
@@ -70,6 +72,9 @@ export async function POST(request: NextRequest) {
         );
 
     } catch (error) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
+
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Erro interno' },
             { status: 400 }

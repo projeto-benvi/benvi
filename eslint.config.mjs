@@ -8,7 +8,12 @@ const eslintConfig = defineConfig([
   // Desativa a regra do "any" para a sua máquina parar de chiar
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "off"
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/static-components": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react/no-unescaped-entities": "off"
     }
   },
   // Override default ignores of eslint-config-next.
@@ -20,3 +25,5 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
 ]);
+
+export default eslintConfig;

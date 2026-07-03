@@ -27,9 +27,10 @@ export const servicoController = {
   },
 
   // criar, buscarPorId, atualizar, deletar continuam exatamente iguais
-  async criar(req: NextRequest) {
+  async criar(req: NextRequest, idPrestadorAutenticado?: number) {
     try {
       const body = await req.json();
+      if (idPrestadorAutenticado) body.id_prestador = idPrestadorAutenticado;
       const id = await servicoService.criar(body);
       return NextResponse.json({ id_servico: id }, { status: 201 });
     } catch (e) {

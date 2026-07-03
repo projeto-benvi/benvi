@@ -1,5 +1,21 @@
 # Infraestrutura e Deploy - Benvi
 
+## Estado apos Fase 1
+
+- Build corrigido para Next.js 16.
+- `middleware.ts` migrado para `proxy.ts`.
+- Configuracao invalida `experimental.instrumentationHook` removida.
+- Credenciais MySQL removidas do codigo e movidas para variaveis de ambiente.
+- Pool MySQL configurado com limite de conexoes, timeout, SSL opcional e reutilizacao em desenvolvimento.
+- Migrations automaticas no boot desativadas.
+- Novo comando manual de migrations: `npm run migrate`.
+- Helpers de autorizacao criados em `app/lib/authz.ts`.
+- Rotas privadas principais passaram a obter usuario autenticado no servidor.
+- Operacoes sensiveis de usuario, favoritos, pedidos, solicitacoes, mensagens, notificacoes, tickets, prestadores, servicos, categorias, tags, agenda, assinaturas, parcerias e reportes foram protegidas.
+- Atualizacao comum de usuario nao aceita mais `is_admin`.
+- Upload local em `public/uploads` foi desacoplado; enquanto storage externo nao estiver configurado, uploads retornam erro seguro.
+- `.env.example` e `README_DEPLOY.md` criados.
+
 ## Arquitetura atual
 
 - Framework: Next.js 16.2.6 com App Router, React 19.2.4 e TypeScript.
@@ -7,23 +23,21 @@
 - Backend: Route Handlers em `app/api/**/route.ts`, controllers em `controller/` e services em `service/`.
 - Autenticacao: NextAuth v4 com Credentials e Google OAuth em `app/api/auth/[...nextauth]/route.ts`.
 - Banco: MySQL via `mysql2/promise`, sem ORM.
-- Schema: migrations TypeScript em `app/migrations/`, executadas por `instrumentation.ts` durante inicializacao.
-- Upload: imagens de perfil gravadas em `public/uploads` usando filesystem local.
+- Schema: migrations TypeScript em `app/migrations/`, executadas manualmente via `npm run migrate`.
+- Upload: camada preparada em `app/lib/storage.ts`; sem provedor configurado, uploads retornam erro seguro.
 - Deploy alvo: Vercel, usando `npm run build`.
 
 ## Estado de producao
 
-O projeto ainda nao esta pronto para publicar diretamente.
+O projeto esta pronto para gerar build de producao, mas o deploy depende de configurar MySQL, autenticacao e storage externo na Vercel.
 
-Bloqueios principais:
+Pendencias externas principais:
 
-- `npm run build` falha no type check porque `app/api/conversas/[conversaId]/mensagens/route.ts` esta vazio e nao exporta handlers.
-- `next.config.ts` usa `experimental.instrumentationHook`, opcao invalida no Next 16.
-- `middleware.ts` esta depreciado no Next 16; a convencao recomendada e `proxy`.
-- A conexao MySQL esta hardcoded em `app/lib/dataBase.ts`, incluindo host, usuario, senha e database.
-- Quase todas as APIs nao validam sessao no servidor; muitas confiam em IDs enviados por query/body.
-- Upload local em `public/uploads` nao persiste em ambiente serverless da Vercel.
-- Migrations e alteracoes de schema rodam no boot/runtime, o que e arriscado em serverless.
+- Escolher e configurar provedor MySQL gerenciado.
+- Configurar variaveis de ambiente na Vercel.
+- Escolher e implementar o provedor final de storage.
+- Rodar migrations manualmente em ambiente controlado.
+- Validar fluxos em Preview antes de promover para Production.
 
 ## Checklist de deploy na Vercel
 
@@ -31,12 +45,12 @@ Bloqueios principais:
 - Remover `experimental.instrumentationHook` de `next.config.ts`.
 - Migrar `middleware.ts` para a convencao `proxy` do Next 16 ou validar a compatibilidade atual antes do deploy.
 - Configurar variaveis de ambiente no painel da Vercel.
-- Trocar credenciais hardcoded por `process.env`.
+- Conferir variaveis de banco em `process.env`.
 - Definir `NEXTAUTH_URL` com a URL final de producao.
 - Definir `AUTH_SECRET` ou `NEXTAUTH_SECRET` forte e unico para producao.
 - Garantir que todas as rotas API que usam MySQL rodem em runtime Node.js, nao Edge.
-- Remover migrations automaticas do boot e executar migrations em etapa controlada antes do deploy.
-- Substituir upload local por storage externo.
+- Executar migrations em etapa controlada antes do deploy.
+- Configurar storage externo antes de liberar upload real.
 - Validar todas as rotas administrativas com sessao real e permissao de admin.
 
 Comando de build recomendado:
@@ -85,10 +99,10 @@ Situacao atual:
 
 - Usa `mysql2/promise`.
 - Cria pool em `app/lib/dataBase.ts`.
-- Credenciais estao fixas no codigo.
-- Nao ha limite explicito de conexoes no pool.
-- Nao ha SSL configurado.
-- Migrations rodam no runtime.
+- Credenciais vem de variaveis de ambiente.
+- Ha limite de conexoes configuravel.
+- SSL e opcional por variavel.
+- Migrations nao rodam no runtime.
 
 Recomendacao para Vercel:
 
@@ -145,14 +159,14 @@ Consultas com maior risco de gargalo:
 
 Situacao atual:
 
-- Upload de foto grava em `public/uploads`.
-- Usa `fs`, `writeFile`, `mkdir`, `unlinkSync`.
-- Nao ha validacao forte de MIME type, tamanho, dimensoes ou extensao permitida.
+- Upload de foto passa pela camada `app/lib/storage.ts`.
+- A aplicacao nao grava mais em `public/uploads`.
+- Ha validacao inicial de MIME type e tamanho.
+- Sem provedor configurado, o endpoint retorna erro seguro e nao persiste arquivo.
 
 Problema na Vercel:
 
-- O filesystem de serverless functions e efemero.
-- Arquivos gravados localmente podem sumir entre execucoes e nao sao compartilhados entre instancias.
+- O filesystem de serverless functions e efemero, por isso uploads locais foram desativados.
 
 Recomendacao:
 

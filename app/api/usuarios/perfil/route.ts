@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/app/lib/dataBase';
 import { RowDataPacket } from 'mysql2/promise';
+import { authErrorResponse, requireResourceOwner, requireUser } from '@/app/lib/authz';
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,6 +10,8 @@ export async function GET(req: NextRequest) {
     if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json({ erro: 'id do usuário é obrigatório' }, { status: 400 });
     }
+    const user = await requireUser();
+    requireResourceOwner(user, id);
 
     const [usuarios] = await pool.query<RowDataPacket[]>(
       'SELECT u.id_usuario, u.nome, u.email, u.telefone, u.foto_perfil, u.cidade, p.descricao_profissional FROM usuario u LEFT JOIN prestador p ON p.id_usuario = u.id_usuario WHERE u.id_usuario = ?',
@@ -37,6 +40,9 @@ export async function GET(req: NextRequest) {
       sobre: usuarios[0].descricao_profissional || 'Nenhuma descrição informada ainda.',
     });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+
     return NextResponse.json({ erro: 'Erro ao carregar perfil', detalhes: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }

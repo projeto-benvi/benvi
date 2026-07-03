@@ -1,12 +1,11 @@
 import { usuarioService } from '@/service/usuarioService';
 import { adminService } from '@/service/usuarioService';
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { storageErrorStatus, uploadPublicFile } from '@/app/lib/storage';
 
 // Helper para extrair id_solicitante e retornar erro padronizado
-function getIdSolicitante(req: NextRequest): number | null {
-  const id = Number(new URL(req.url).searchParams.get('id_solicitante'));
+function getIdSolicitante(req: NextRequest, idAutenticado?: number): number | null {
+  const id = idAutenticado ?? Number(new URL(req.url).searchParams.get('id_solicitante'));
   return isNaN(id) || id === 0 ? null : id;
 }
 
@@ -57,7 +56,6 @@ export const usuarioController = {
   async atualizar(id: number, req: NextRequest) {
     try {
       let nome, telefone, cidade, estado, sobreVoce, dataNascimentoString;
-      let is_admin = undefined;
       let avatarFile = null;
       let avatarUrl = undefined;
 
@@ -74,14 +72,8 @@ export const usuarioController = {
         sobreVoce = data.get("sobreVoce")?.toString();
         dataNascimentoString = data.get("dataNascimento")?.toString();
         
-        const adminCheck = data.get("is_admin");
-        if (adminCheck !== null && adminCheck !== undefined) {
-          is_admin = adminCheck.toString() === "true" || adminCheck.toString() === "1";
-        }
-        
         avatarFile = data.get("avatar") as File | null;
       } else {
-        // Se vier do Thunder Client como JSON puro (Ex: {"is_admin": true})
         const body = await req.json();
         nome = body.nome;
         telefone = body.telefone;
@@ -89,26 +81,15 @@ export const usuarioController = {
         estado = body.estado;
         sobreVoce = body.sobreVoce;
         dataNascimentoString = body.dataNascimento;
-        is_admin = body.is_admin;
       }
 
       // 2. Lógica de salvamento físico da foto (mantida exatamente como você criou)
       if (avatarFile && avatarFile.size > 0) {
-        const bytes = await avatarFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        const extensao = avatarFile.name.split('.').pop();
-        const nomeArquivo = `avatar-${id}-${Date.now()}.${extensao}`;
-        
-        const caminhoDiretorio = path.join(process.cwd(), 'public', 'uploads');
-        
-        try {
-          await mkdir(caminhoDiretorio, { recursive: true });
-        } catch (err) {}
-
-        const caminhoCompleto = path.join(caminhoDiretorio, nomeArquivo);
-        await writeFile(caminhoCompleto, buffer);
-        avatarUrl = `/uploads/${nomeArquivo}`;
+        const upload = await uploadPublicFile({
+          file: avatarFile,
+          keyPrefix: `usuarios/${id}/perfil`,
+        });
+        avatarUrl = upload.url;
       }
 
       // 3. Monta dinamicamente os campos que realmente foram enviados para atualizar
@@ -118,7 +99,7 @@ export const usuarioController = {
       if (cidade !== undefined) dadosParaAtualizar.cidade = cidade;
       if (estado !== undefined) dadosParaAtualizar.estado = estado;
       if (sobreVoce !== undefined) dadosParaAtualizar.sobreVoce = sobreVoce;
-      if (is_admin !== undefined) dadosParaAtualizar.is_admin = is_admin; // <-- Crucial para o seu teste
+      // Campo administrativo: nunca pode ser alterado pela rota comum de perfil.
       if (dataNascimentoString) dadosParaAtualizar.dataNascimento = new Date(dataNascimentoString);
       if (avatarUrl) dadosParaAtualizar.avatar = avatarUrl;
 
@@ -132,7 +113,10 @@ export const usuarioController = {
         dadosAtualizados: dadosParaAtualizar
       });
     } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao atualizar usuário', detalhes: String(e) }, { status: 500 });
+      return NextResponse.json(
+        { erro: 'Erro ao atualizar usuário', detalhes: e instanceof Error ? e.message : String(e) },
+        { status: storageErrorStatus(e) }
+      );
     }
   },
 
@@ -147,41 +131,41 @@ export const usuarioController = {
 
   // ─── Admin: leitura / dashboard ─────────────────────────────────────────────
 
-  async adminContarUsuarios(req: NextRequest) {
+  async adminContarUsuarios(req: NextRequest, idAutenticado?: number) {
     try {
-      const id_solicitante = getIdSolicitante(req);
+      const id_solicitante = getIdSolicitante(req, idAutenticado);
       if (!id_solicitante) return NextResponse.json({ erro: 'Informe id_solicitante' }, { status: 400 });
       return NextResponse.json(await adminService.contarUsuarios(id_solicitante));
     } catch (e) { return erroAdmin(e); }
   },
 
-  async adminListarUsuarios(req: NextRequest) {
+  async adminListarUsuarios(req: NextRequest, idAutenticado?: number) {
     try {
-      const id_solicitante = getIdSolicitante(req);
+      const id_solicitante = getIdSolicitante(req, idAutenticado);
       if (!id_solicitante) return NextResponse.json({ erro: 'Informe id_solicitante' }, { status: 400 });
       return NextResponse.json(await adminService.listarTodosUsuarios(id_solicitante));
     } catch (e) { return erroAdmin(e); }
   },
 
-  async adminListarPrestadores(req: NextRequest) {
+  async adminListarPrestadores(req: NextRequest, idAutenticado?: number) {
     try {
-      const id_solicitante = getIdSolicitante(req);
+      const id_solicitante = getIdSolicitante(req, idAutenticado);
       if (!id_solicitante) return NextResponse.json({ erro: 'Informe id_solicitante' }, { status: 400 });
       return NextResponse.json(await adminService.listarTodosPrestadores(id_solicitante));
     } catch (e) { return erroAdmin(e); }
   },
 
-  async adminDashboard(req: NextRequest) {
+  async adminDashboard(req: NextRequest, idAutenticado?: number) {
     try {
-      const id_solicitante = getIdSolicitante(req);
+      const id_solicitante = getIdSolicitante(req, idAutenticado);
       if (!id_solicitante) return NextResponse.json({ erro: 'Informe id_solicitante' }, { status: 400 });
       return NextResponse.json(await adminService.resumoDashboard(id_solicitante));
     } catch (e) { return erroAdmin(e); }
   },
 
-  async adminTicketsPendentes(req: NextRequest) {
+  async adminTicketsPendentes(req: NextRequest, idAutenticado?: number) {
     try {
-      const id_solicitante = getIdSolicitante(req);
+      const id_solicitante = getIdSolicitante(req, idAutenticado);
       if (!id_solicitante) return NextResponse.json({ erro: 'Informe id_solicitante' }, { status: 400 });
       return NextResponse.json(await adminService.listarTicketsPendentes(id_solicitante));
     } catch (e) { return erroAdmin(e); }
@@ -189,9 +173,9 @@ export const usuarioController = {
 
   // ─── Admin: gestão de usuários ───────────────────────────────────────────────
 
-  async adminCriarUsuario(req: NextRequest) {
+  async adminCriarUsuario(req: NextRequest, idAutenticado?: number) {
     try {
-      const id_solicitante = getIdSolicitante(req);
+      const id_solicitante = getIdSolicitante(req, idAutenticado);
       if (!id_solicitante) return NextResponse.json({ erro: 'Informe id_solicitante' }, { status: 400 });
       const body = await req.json();
       const id = await adminService.criarUsuario(id_solicitante, body);
@@ -199,18 +183,18 @@ export const usuarioController = {
     } catch (e) { return erroAdmin(e); }
   },
 
-  async adminDesativarUsuario(id_alvo: number, req: NextRequest) {
+  async adminDesativarUsuario(id_alvo: number, req: NextRequest, idAutenticado?: number) {
     try {
-      const id_solicitante = getIdSolicitante(req);
+      const id_solicitante = getIdSolicitante(req, idAutenticado);
       if (!id_solicitante) return NextResponse.json({ erro: 'Informe id_solicitante' }, { status: 400 });
       await adminService.desativarUsuario(id_solicitante, id_alvo);
       return NextResponse.json({ mensagem: 'Usuário desativado (soft delete)' });
     } catch (e) { return erroAdmin(e); }
   },
 
-  async adminReativarUsuario(id_alvo: number, req: NextRequest) {
+  async adminReativarUsuario(id_alvo: number, req: NextRequest, idAutenticado?: number) {
     try {
-      const id_solicitante = getIdSolicitante(req);
+      const id_solicitante = getIdSolicitante(req, idAutenticado);
       if (!id_solicitante) return NextResponse.json({ erro: 'Informe id_solicitante' }, { status: 400 });
       await adminService.reativarUsuario(id_solicitante, id_alvo);
       return NextResponse.json({ mensagem: 'Usuário reativado com sucesso' });

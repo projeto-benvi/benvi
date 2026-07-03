@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ParceriaController } from '@/controller/parceriaController';
+import { authErrorResponse, requireAdmin } from '@/app/lib/authz';
 
 type Params = Promise<{ id: string }>;
 
@@ -8,10 +9,14 @@ export async function GET(
     { params }: { params: Params }
 ) {
     try {
+        await requireAdmin();
         const { id } = await params;
         const data = await ParceriaController.buscarPorId(Number(id));
         return NextResponse.json(data, { status: 200 });
     } catch (error) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
+
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Parceria não encontrada' },
             { status: 404 }
@@ -24,6 +29,7 @@ export async function PATCH(
     { params }: { params: Params }
 ) {
     try {
+        await requireAdmin();
         const { id } = await params;
         const body   = await request.json();
         await ParceriaController.atualizar(Number(id), body);
@@ -32,6 +38,9 @@ export async function PATCH(
             { status: 200 }
         );
     } catch (error) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
+
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Erro ao atualizar' },
             { status: 400 }
@@ -44,6 +53,7 @@ export async function DELETE(
     { params }: { params: Params }
 ) {
     try {
+        await requireAdmin();
         const { id }   = await params;
         const removido = await ParceriaController.remover(Number(id));
 

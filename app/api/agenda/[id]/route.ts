@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AgendaController } from '@/controller/agendaController';
+import { authErrorResponse, requireUser } from '@/app/lib/authz';
 
 export async function GET(
     _request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await requireUser();
         const { id } = await params;
         const data = await AgendaController.buscarPorId(Number(id));
         return NextResponse.json(data, { status: 200 });
 
     } catch (error) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
+
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Agenda não encontrada' },
             { status: 404 }
@@ -23,6 +28,7 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await requireUser();
         const { id } = await params;
         const body = await request.json();
 
@@ -34,6 +40,9 @@ export async function PATCH(
         );
 
     } catch (error) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
+
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Erro ao atualizar' },
             { status: 400 }
@@ -46,6 +55,7 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        await requireUser();
         const { id } = await params;
         const removido = await AgendaController.remover(Number(id));
 
@@ -62,6 +72,9 @@ export async function DELETE(
         );
 
     } catch (error) {
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
+
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Erro ao remover' },
             { status: 500 }

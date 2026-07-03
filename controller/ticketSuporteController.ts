@@ -2,17 +2,18 @@ import { ticketSuporteService } from '@/service/ticketSuporteService';
 import { NextResponse, NextRequest } from 'next/server';
 
 export const ticketSuporteController = {
-  async criar(req: NextRequest) {
+  async criar(req: NextRequest, idUsuarioAutenticado?: number) {
     try {
       const body = await req.json();
       const { id_usuario, titulo, descricao, categoria, prioridade, id_prestador, id_servico } = body;
+      const idUsuario = idUsuarioAutenticado ?? Number(id_usuario);
 
-      if (!id_usuario || !titulo || !descricao) {
+      if (!idUsuario || !titulo || !descricao) {
         return NextResponse.json({ erro: 'Campos obrigatórios ausentes' }, { status: 400 });
       }
 
       const novoTicket = await ticketSuporteService.criar({
-        id_usuario: Number(id_usuario),
+        id_usuario: idUsuario,
         titulo,
         descricao,
         categoria: categoria || 'geral',
