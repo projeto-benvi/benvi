@@ -65,9 +65,10 @@ export async function runMigrations(): Promise<void> {
     try {
       await migration.fn();
       await pool.query('INSERT INTO _migrations (name) VALUES (?)', [migration.name]);
+      applied.add(migration.name);
       console.log(`Aplicada: ${migration.name}`);
     } catch (err) {
-      console.error(`Erro em ${migration.name}:`, err);
+      console.error(`Erro ao aplicar migration: ${migration.name}`);
       throw err; // interrompe para não criar tabelas em estado inválido
     }
   }

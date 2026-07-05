@@ -58,11 +58,17 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        if (body.arquivo || body.anexo || body.documento || body.comprovante) {
+            return NextResponse.json(
+                { error: 'Upload de documentos privados depende de storage privado e ainda nao esta habilitado.' },
+                { status: 503 }
+            );
+        }
         const id = await ReporteController.criar({
             id_usuario_reportou:  user.id,
             id_usuario_reportado: body.id_usuario_reportado,
             assunto:              body.assunto,
-            arquivo:              body.arquivo,
+            arquivo:              undefined,
             tipo_problema:        body.tipo_problema,
             descricao:            body.descricao,
         });
@@ -82,3 +88,5 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
+

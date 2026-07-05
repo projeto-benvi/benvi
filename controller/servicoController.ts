@@ -1,5 +1,81 @@
 import { servicoService } from '@/service/servicoService';
 import { NextRequest, NextResponse } from 'next/server';
+import { storageErrorStatus, uploadPublicImage, type StorageUploadResult } from '@/app/lib/storage';
+
+type ServicoPayload = Record<string, any>;
+
+const CAMPOS_SERVICO_PERMITIDOS = new Set([
+  'id_prestador',
+  'id_categoria',
+  'titulo',
+  'descricao',
+  'status_servico',
+  'data_inicio',
+  'data_fim',
+  'tempo_execucao',
+  'imagens',
+]);
+
+function filtrarPayloadServico(payload: ServicoPayload) {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([campo]) => CAMPOS_SERVICO_PERMITIDOS.has(campo))
+  );
+}
+
+function formValue(form: FormData, key: string) {
+  const value = form.get(key);
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
+function isUploadFile(value: FormDataEntryValue): value is File {
+  return value instanceof File && value.size > 0;
+}
+
+function extrairArquivosDeImagem(form: FormData) {
+  const arquivos = [
+    ...form.getAll('imagens'),
+    ...form.getAll('fotos'),
+    ...form.getAll('images'),
+  ];
+
+  return arquivos.filter(isUploadFile).slice(0, 5);
+}
+
+function normalizarImagem(upload: StorageUploadResult) {
+  return {
+    url: upload.url,
+    publicId: upload.publicId,
+  };
+}
+
+async function parseServicoRequest(req: NextRequest) {
+  const contentType = req.headers.get('content-type') || '';
+
+  if (!contentType.includes('multipart/form-data')) {
+    return filtrarPayloadServico(await req.json());
+  }
+
+  const form = await req.formData();
+  const payload: ServicoPayload = filtrarPayloadServico({
+    id_categoria: formValue(form, 'id_categoria'),
+    titulo: formValue(form, 'titulo'),
+    descricao: formValue(form, 'descricao'),
+    status_servico: formValue(form, 'status_servico'),
+    data_inicio: formValue(form, 'data_inicio'),
+    data_fim: formValue(form, 'data_fim'),
+    tempo_execucao: formValue(form, 'tempo_execucao'),
+  });
+
+  const arquivos = extrairArquivosDeImagem(form);
+  if (arquivos.length > 0) {
+    const uploads = await Promise.all(
+      arquivos.map((file) => uploadPublicImage({ file, folder: 'services' }))
+    );
+    payload.imagens = uploads.map(normalizarImagem);
+  }
+
+  return payload;
+}
 
 export const servicoController = {
 
@@ -18,26 +94,25 @@ export const servicoController = {
 
       const servicos = await servicoService.buscarPorPrestador(Number(idPrestador));
       return NextResponse.json(servicos);
-    } catch (e) {
+    } catch {
       return NextResponse.json(
-        { erro: 'Erro ao listar serviços', detalhes: String(e) },
+        { erro: 'Erro ao listar serviços' },
         { status: 500 }
       );
     }
   },
 
-  // criar, buscarPorId, atualizar, deletar continuam exatamente iguais
   async criar(req: NextRequest, idPrestadorAutenticado?: number) {
     try {
-      const body = await req.json();
+      const body = await parseServicoRequest(req);
       if (idPrestadorAutenticado) body.id_prestador = idPrestadorAutenticado;
       const id = await servicoService.criar(body);
-      return NextResponse.json({ id_servico: id }, { status: 201 });
+      return NextResponse.json({ id_servico: id, imagens: body.imagens ?? [] }, { status: 201 });
     } catch (e) {
-      console.error('ERRO AO CRIAR SERVIÇO:', e);
+      console.error('Erro ao criar serviço.');
       return NextResponse.json(
-        { erro: 'Erro ao criar serviço', detalhes: e instanceof Error ? e.message : String(e) },
-        { status: 500 }
+        { erro: 'Erro ao criar serviço' },
+        { status: storageErrorStatus(e) }
       );
     }
   },
@@ -49,9 +124,9 @@ export const servicoController = {
         return NextResponse.json({ erro: 'Serviço não encontrado' }, { status: 404 });
       }
       return NextResponse.json(servico);
-    } catch (e) {
+    } catch {
       return NextResponse.json(
-        { erro: 'Erro ao buscar serviço', detalhes: String(e) },
+        { erro: 'Erro ao buscar serviço' },
         { status: 500 }
       );
     }
@@ -59,13 +134,14 @@ export const servicoController = {
 
   async atualizar(id: number, req: NextRequest) {
     try {
-      const body = await req.json();
+      const body = await parseServicoRequest(req);
       await servicoService.atualizar(id, body);
-      return NextResponse.json({ mensagem: 'Atualizado com sucesso' });
+      return NextResponse.json({ mensagem: 'Atualizado com sucesso', imagens: body.imagens });
     } catch (e) {
+      console.error('Erro ao atualizar serviço.');
       return NextResponse.json(
-        { erro: 'Erro ao atualizar serviço', detalhes: String(e) },
-        { status: 500 }
+        { erro: 'Erro ao atualizar serviço' },
+        { status: storageErrorStatus(e) }
       );
     }
   },
@@ -74,9 +150,9 @@ export const servicoController = {
     try {
       await servicoService.deletar(id);
       return NextResponse.json({ mensagem: 'Deletado com sucesso' });
-    } catch (e: any) {
+    } catch {
       return NextResponse.json(
-        { erro: 'Erro ao deletar serviço', detalhes: e.message || String(e) },
+        { erro: 'Erro ao deletar serviço' },
         { status: 500 }
       );
     }

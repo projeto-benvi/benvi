@@ -1,4 +1,7 @@
-
+export type ImagemServico = string | {
+  url: string;
+  publicId?: string;
+};
 
 export class Servico {
   id_servico?: number;
@@ -9,7 +12,7 @@ export class Servico {
   status_servico?: string;
   data_inicio?: Date;
   data_fim?: Date;
-  imagens?: string[];
+  imagens?: ImagemServico[];
 
   constructor(dados: {
     id_servico?: number;
@@ -20,7 +23,7 @@ export class Servico {
     status_servico?: string;
     data_inicio?: Date;
     data_fim?: Date;
-    imagens?: string[];
+    imagens?: ImagemServico[];
   }) {
     this.id_servico = dados.id_servico;
     this.id_prestador = dados.id_prestador;
@@ -32,5 +35,4 @@ export class Servico {
     this.data_fim = dados.data_fim;
     this.imagens = dados.imagens ?? [];
   }
-
 }

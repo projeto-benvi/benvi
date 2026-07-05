@@ -1,7 +1,7 @@
 import { usuarioService } from '@/service/usuarioService';
 import { adminService } from '@/service/usuarioService';
 import { NextRequest, NextResponse } from 'next/server';
-import { storageErrorStatus, uploadPublicFile } from '@/app/lib/storage';
+import { storageErrorStatus, uploadPublicImage } from '@/app/lib/storage';
 
 // Helper para extrair id_solicitante e retornar erro padronizado
 function getIdSolicitante(req: NextRequest, idAutenticado?: number): number | null {
@@ -71,7 +71,6 @@ export const usuarioController = {
         estado = data.get("estado")?.toString();
         sobreVoce = data.get("sobreVoce")?.toString();
         dataNascimentoString = data.get("dataNascimento")?.toString();
-        
         avatarFile = data.get("avatar") as File | null;
       } else {
         const body = await req.json();
@@ -83,11 +82,10 @@ export const usuarioController = {
         dataNascimentoString = body.dataNascimento;
       }
 
-      // 2. Lógica de salvamento físico da foto (mantida exatamente como você criou)
       if (avatarFile && avatarFile.size > 0) {
-        const upload = await uploadPublicFile({
+        const upload = await uploadPublicImage({
           file: avatarFile,
-          keyPrefix: `usuarios/${id}/perfil`,
+          folder: 'avatars',
         });
         avatarUrl = upload.url;
       }
@@ -113,8 +111,9 @@ export const usuarioController = {
         dadosAtualizados: dadosParaAtualizar
       });
     } catch (e) {
+      console.error('Erro ao atualizar usuário.');
       return NextResponse.json(
-        { erro: 'Erro ao atualizar usuário', detalhes: e instanceof Error ? e.message : String(e) },
+        { erro: 'Erro ao atualizar usuário' },
         { status: storageErrorStatus(e) }
       );
     }

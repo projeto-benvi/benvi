@@ -12,6 +12,13 @@ export const ticketSuporteController = {
         return NextResponse.json({ erro: 'Campos obrigatórios ausentes' }, { status: 400 });
       }
 
+      if (body.arquivo || body.anexo || body.documento || body.comprovante) {
+        return NextResponse.json(
+          { erro: 'Upload de documentos privados depende de storage privado e ainda nao esta habilitado.' },
+          { status: 503 }
+        );
+      }
+
       const novoTicket = await ticketSuporteService.criar({
         id_usuario: idUsuario,
         titulo,

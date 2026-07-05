@@ -2,7 +2,7 @@
 
 ## Estado atual
 
-O projeto esta preparado para build na Vercel depois da configuracao das variaveis de ambiente. O deploy automatico nao foi executado.
+O projeto esta preparado para build na Vercel usando Railway MySQL e Cloudinary para imagens publicas. O deploy automatico nao foi executado.
 
 Comandos principais:
 
@@ -16,7 +16,7 @@ npm run migrate
 ## Rodar localmente
 
 1. Copie `.env.example` para `.env.local`.
-2. Preencha as variaveis de banco e autenticacao.
+2. Preencha as variaveis reais de autenticacao, Railway MySQL e Cloudinary.
 3. Execute:
 
 ```bash
@@ -32,51 +32,36 @@ Autenticacao:
 - `GOOGLE_CLIENT_ID`, se login Google estiver ativo
 - `GOOGLE_CLIENT_SECRET`, se login Google estiver ativo
 
-MySQL:
+Railway MySQL:
 
 - `DB_HOST`
 - `DB_PORT`
 - `DB_USER`
 - `DB_PASSWORD`
 - `DB_NAME`
-- `DB_CONNECTION_LIMIT`
-- `DB_QUEUE_LIMIT`
-- `DB_CONNECT_TIMEOUT_MS`
 - `DB_SSL`
-- `DB_SSL_REJECT_UNAUTHORIZED`
-- `DB_SSL_CA`, se o provedor exigir CA
 
-Storage:
+Cloudinary:
 
-- `STORAGE_PROVIDER`
-- `STORAGE_PUBLIC_BASE_URL`
-- `STORAGE_MAX_FILE_SIZE_MB`
-- Variaveis especificas do provedor escolhido: Vercel Blob, Cloudinary, S3 ou R2.
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
-## MySQL
+## Railway MySQL
 
 A aplicacao usa `mysql2/promise` com pool compartilhado em `app/lib/dataBase.ts`.
 
-Recomendacao inicial:
+Configuracao recomendada:
 
-- MySQL gerenciado com TLS.
-- `DB_CONNECTION_LIMIT=5` no inicio.
-- Banco na mesma regiao ou proximo da Vercel.
-- Backups automaticos ativos.
-- Slow query log ativo.
-
-Opcoes compativeis:
-
-- PlanetScale
-- Railway
-- Aiven
-- AWS RDS
-- Google Cloud SQL
-- DigitalOcean Managed MySQL
+- Criar o MySQL no Railway.
+- Copiar host, porta, usuario, senha e database para as variaveis `DB_*`.
+- Usar `DB_SSL=true` somente se a conexao Railway escolhida exigir SSL.
+- Manter limite baixo de conexoes no pool da aplicacao.
+- Rodar migrations manualmente antes de promover deploy para producao.
 
 ## Migrations
 
-Migrations nao rodam mais no boot da aplicacao.
+Migrations nao rodam no boot, build ou deploy automaticamente.
 
 Execute manualmente em ambiente controlado:
 
@@ -86,58 +71,66 @@ npm run migrate
 
 Fluxo recomendado:
 
-1. Rodar migrations em staging.
+1. Rodar migrations em Preview/staging quando houver banco de teste.
 2. Fazer backup/snapshot do banco de producao.
-3. Rodar migrations em producao.
-4. Fazer deploy na Vercel.
+3. Rodar `npm run migrate` contra o banco Railway correto.
+4. Fazer deploy Preview na Vercel.
+5. Validar e promover para Production.
 
-## Storage de arquivos
+## Cloudinary
 
-Uploads locais em `public/uploads` foram desativados para producao serverless.
+O Cloudinary esta configurado apenas para imagens publicas:
 
-Enquanto `STORAGE_PROVIDER` estiver vazio ou `disabled`, tentativas de upload retornam erro seguro informando que o storage nao esta configurado.
+- Foto de perfil: `benvi/avatars`
+- Imagens de servicos: `benvi/services`
+- Imagens de portfolio: pasta reservada `benvi/portfolio`, caso o fluxo seja criado
 
-Escolha um provedor antes de publicar uploads reais:
+Validações aplicadas:
 
-- Vercel Blob
-- Cloudinary
-- S3
-- Cloudflare R2
+- Apenas imagens `jpg`, `jpeg`, `png` e `webp`.
+- Tamanho maximo de 5 MB por arquivo.
+- Nome aleatorio gerado no servidor.
+- MySQL salva URL segura e `publicId` quando o fluxo precisa rastrear o arquivo.
 
-## Checklist Vercel
+Documentos pessoais ou sensiveis, como RG, CPF, comprovante de residencia e anexos privados, nao sao enviados ao Cloudinary. Esses fluxos retornam erro seguro ate existir storage privado.
 
-- Configurar todas as variaveis de ambiente.
-- Rodar `npm run build`.
-- Rodar `npm run lint`.
-- Rodar `npm run migrate` contra o banco correto.
-- Criar deploy Preview.
-- Testar autenticação, cadastro, busca, perfil, pedidos, mensagens, notificações e painel admin.
-- Promover para Production somente apos validação.
+## Testar upload localmente
 
-## Teste pos-deploy
+1. Preencha as tres variaveis `CLOUDINARY_*` no `.env.local`.
+2. Rode `npm run dev`.
+3. Teste foto de perfil.
+4. Teste criacao de servico com ate 5 imagens.
+5. Confirme no Cloudinary as pastas `benvi/avatars` e `benvi/services`.
+6. Confirme no banco se a URL HTTPS foi salva.
 
-- Login por credenciais.
-- Login Google, se ativo.
-- Cadastro de usuario.
-- Criação/edição de prestador.
-- Busca de prestadores/serviços.
-- Solicitação de serviço.
-- Mensagens entre cliente e prestador.
-- Favoritos.
-- Notificações.
-- Rotas admin com usuario admin.
-- Upload deve falhar com mensagem segura enquanto storage estiver desabilitado.
+## Configurar variaveis na Vercel
+
+No painel da Vercel, configure as mesmas variaveis de `.env.example` nos ambientes Preview e Production. Use valores reais apenas no painel da Vercel e no `.env.local`, nunca no repositorio.
+
+## Checklist de deploy Preview
+
+- `npm run build` passa localmente.
+- `npm run lint` passa ou possui apenas avisos aceitos.
+- `npm run migrate` foi validado contra o banco correto.
+- Variaveis `DB_*`, `CLOUDINARY_*`, `NEXTAUTH_URL` e secrets foram cadastradas na Vercel.
+- Login por credenciais funciona.
+- Login Google funciona, se ativo.
+- Cadastro e edicao de perfil funcionam.
+- Upload de avatar funciona.
+- Criacao de servico com imagens funciona.
+- Documentos privados retornam erro seguro.
+- Busca, solicitacoes, mensagens, notificacoes e admin foram testados.
 
 ## Rollback
 
 1. Reverter para o deployment anterior no painel da Vercel.
-2. Se migration alterou schema/dados, restaurar snapshot ou executar rollback planejado.
-3. Conferir logs da Vercel e metricas do banco.
+2. Se migrations foram executadas, restaurar snapshot do Railway ou aplicar rollback planejado.
+3. Conferir logs da Vercel e metricas do Railway.
 4. Corrigir em branch separada e publicar novo Preview antes de promover.
 
-## Pendencias de decisao
+## Pendencias antes de Production
 
-- Escolher provedor MySQL definitivo.
-- Escolher provedor de storage.
-- Decidir se mensagens devem continuar por polling ou evoluir para realtime externo.
-- Integrar gateway real de pagamento antes de cobrar assinaturas.
+- Confirmar `DB_SSL` correto para a conexao Railway usada.
+- Configurar backups automaticos no Railway.
+- Definir storage privado futuro para documentos pessoais/sensiveis.
+- Integrar gateway real de pagamento antes de cobrar usuarios.

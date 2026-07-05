@@ -1,322 +1,197 @@
 # Infraestrutura e Deploy - Benvi
 
-## Estado apos Fase 1
-
-- Build corrigido para Next.js 16.
-- `middleware.ts` migrado para `proxy.ts`.
-- Configuracao invalida `experimental.instrumentationHook` removida.
-- Credenciais MySQL removidas do codigo e movidas para variaveis de ambiente.
-- Pool MySQL configurado com limite de conexoes, timeout, SSL opcional e reutilizacao em desenvolvimento.
-- Migrations automaticas no boot desativadas.
-- Novo comando manual de migrations: `npm run migrate`.
-- Helpers de autorizacao criados em `app/lib/authz.ts`.
-- Rotas privadas principais passaram a obter usuario autenticado no servidor.
-- Operacoes sensiveis de usuario, favoritos, pedidos, solicitacoes, mensagens, notificacoes, tickets, prestadores, servicos, categorias, tags, agenda, assinaturas, parcerias e reportes foram protegidas.
-- Atualizacao comum de usuario nao aceita mais `is_admin`.
-- Upload local em `public/uploads` foi desacoplado; enquanto storage externo nao estiver configurado, uploads retornam erro seguro.
-- `.env.example` e `README_DEPLOY.md` criados.
-
 ## Arquitetura atual
 
 - Framework: Next.js 16.2.6 com App Router, React 19.2.4 e TypeScript.
-- Frontend: telas em `app/`, componentes em `components/` e camada visual em `view/`.
+- Frontend: paginas em `app/`, componentes em `components/` e views em `view/`.
 - Backend: Route Handlers em `app/api/**/route.ts`, controllers em `controller/` e services em `service/`.
-- Autenticacao: NextAuth v4 com Credentials e Google OAuth em `app/api/auth/[...nextauth]/route.ts`.
-- Banco: MySQL via `mysql2/promise`, sem ORM.
-- Schema: migrations TypeScript em `app/migrations/`, executadas manualmente via `npm run migrate`.
-- Upload: camada preparada em `app/lib/storage.ts`; sem provedor configurado, uploads retornam erro seguro.
-- Deploy alvo: Vercel, usando `npm run build`.
+- Autenticacao: NextAuth v4 com Credentials e Google OAuth.
+- Banco: Railway MySQL via `mysql2/promise`, sem ORM.
+- Schema: migrations TypeScript em `app/migrations/`.
+- Upload publico: Cloudinary via `app/lib/storage.ts`.
+- Upload privado: bloqueado ate existir storage privado.
+- Deploy alvo: Vercel com `npm run build`.
 
-## Estado de producao
+## Railway MySQL
 
-O projeto esta pronto para gerar build de producao, mas o deploy depende de configurar MySQL, autenticacao e storage externo na Vercel.
-
-Pendencias externas principais:
-
-- Escolher e configurar provedor MySQL gerenciado.
-- Configurar variaveis de ambiente na Vercel.
-- Escolher e implementar o provedor final de storage.
-- Rodar migrations manualmente em ambiente controlado.
-- Validar fluxos em Preview antes de promover para Production.
-
-## Checklist de deploy na Vercel
-
-- Corrigir o build ate `npm run build` finalizar com sucesso.
-- Remover `experimental.instrumentationHook` de `next.config.ts`.
-- Migrar `middleware.ts` para a convencao `proxy` do Next 16 ou validar a compatibilidade atual antes do deploy.
-- Configurar variaveis de ambiente no painel da Vercel.
-- Conferir variaveis de banco em `process.env`.
-- Definir `NEXTAUTH_URL` com a URL final de producao.
-- Definir `AUTH_SECRET` ou `NEXTAUTH_SECRET` forte e unico para producao.
-- Garantir que todas as rotas API que usam MySQL rodem em runtime Node.js, nao Edge.
-- Executar migrations em etapa controlada antes do deploy.
-- Configurar storage externo antes de liberar upload real.
-- Validar todas as rotas administrativas com sessao real e permissao de admin.
-
-Comando de build recomendado:
-
-```bash
-npm run build
-```
-
-Comando local de producao:
-
-```bash
-npm run start
-```
-
-`vercel.json`:
-
-- Nao e obrigatorio para o deploy basico de Next.js na Vercel.
-- Pode ser usado depois para limites de duracao, headers de seguranca ou redirects.
-- Nao deve ser usado para tentar manter processos permanentes, workers ou WebSockets tradicionais.
-
-## Variaveis de ambiente
-
-Checklist minimo:
+A conexao usa exclusivamente:
 
 - `DB_HOST`
 - `DB_PORT`
 - `DB_USER`
 - `DB_PASSWORD`
 - `DB_NAME`
-- `AUTH_SECRET` ou `NEXTAUTH_SECRET`
+- `DB_SSL`
+
+Configuracao aplicada:
+
+- Pool reutilizavel em modulo compartilhado.
+- `mysql2/promise`.
+- Limite baixo de conexoes.
+- Timeout de conexao.
+- SSL ativado somente com `DB_SSL=true`.
+- Sem credenciais fixas no codigo.
+- Migrations nao rodam no boot, build ou deploy.
+
+Checklist Railway:
+
+- Ativar backups automaticos.
+- Confirmar se a URL escolhida exige SSL e definir `DB_SSL` corretamente.
+- Usar banco na regiao mais proxima possivel da Vercel.
+- Monitorar conexoes ativas, CPU, memoria e queries lentas.
+- Criar snapshot antes de rodar migrations em producao.
+
+## Cloudinary
+
+Variaveis usadas exclusivamente:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+Pastas configuradas:
+
+- `benvi/avatars` para foto de perfil.
+- `benvi/services` para imagens de servicos.
+- `benvi/portfolio` reservada para portfolio quando o fluxo existir.
+
+Regras de upload:
+
+- Apenas imagens publicas.
+- Tipos aceitos: JPG, JPEG, PNG e WEBP.
+- Tamanho maximo: 5 MB por arquivo.
+- Nome aleatorio gerado no servidor.
+- Banco salva URL HTTPS e `publicId` quando necessario.
+- Sem uso de `public/uploads` ou filesystem local em producao.
+
+Documentos pessoais/sensiveis:
+
+- RG, CPF, comprovante de residencia, PDFs privados e anexos sensiveis nao devem ir para Cloudinary.
+- Rotas de reporte/ticket retornam erro seguro quando recebem anexo privado.
+- Para liberar esse fluxo, implementar storage privado com URLs assinadas e controle de permissao.
+
+## Checklist de variaveis de ambiente
+
+App:
+
 - `NEXTAUTH_URL`
-- `GOOGLE_CLIENT_ID`, se Google login estiver ativo
-- `GOOGLE_CLIENT_SECRET`, se Google login estiver ativo
-- Variaveis do storage de arquivos, quando substituir upload local
+- `AUTH_SECRET` ou `NEXTAUTH_SECRET`
+- `GOOGLE_CLIENT_ID`, se Google estiver ativo
+- `GOOGLE_CLIENT_SECRET`, se Google estiver ativo
+
+Banco:
+
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `DB_SSL`
+
+Storage publico:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
 Cuidados:
 
-- Nunca commitar `.env.local`, `.env.production` ou qualquer `.env*`.
-- O `.gitignore` ja ignora `.env*`.
-- Se algum segredo ja foi commitado historicamente, rotacionar o segredo no provedor.
-- Variaveis sem `NEXT_PUBLIC_` ficam apenas no servidor. Nao usar `NEXT_PUBLIC_` para senhas, tokens ou credenciais.
+- Nunca commitar `.env.local`, `.env.production` ou credenciais reais.
+- Cadastrar variaveis separadamente em Preview e Production na Vercel.
+- Usar secrets diferentes entre local, Preview e Production quando possivel.
 
-## Configuracao recomendada do MySQL
+## Migrations
 
-Situacao atual:
+Comando manual:
 
-- Usa `mysql2/promise`.
-- Cria pool em `app/lib/dataBase.ts`.
-- Credenciais vem de variaveis de ambiente.
-- Ha limite de conexoes configuravel.
-- SSL e opcional por variavel.
-- Migrations nao rodam no runtime.
-
-Recomendacao para Vercel:
-
-- Usar MySQL gerenciado com conexoes TLS, por exemplo PlanetScale, Railway, Aiven, AWS RDS, Google Cloud SQL ou DigitalOcean Managed MySQL.
-- Para serverless, preferir provedor/driver com estrategia serverless ou proxy de conexao.
-- Se mantiver `mysql2`, configurar `connectionLimit` baixo, `queueLimit`, timeouts e SSL.
-- Evitar criar conexoes avulsas por request; manter o pool em modulo compartilhado.
-- Nao rodar migrations automaticamente em cada cold start.
-
-Exemplo de variaveis:
-
-```text
-DB_HOST=
-DB_PORT=3306
-DB_USER=
-DB_PASSWORD=
-DB_NAME=
-DB_SSL=true
+```bash
+npm run migrate
 ```
 
-Indices recomendados:
+Fluxo recomendado:
 
-- `usuario(email)` unico ja existe pelo schema.
-- `usuario(cpf)` unico ja existe pelo schema.
-- `usuario(cidade)`
-- `usuario(status_conta)`
-- `prestador(status_verificado, impulsiona_perfil)`
-- `prestador(categoria_principal)`
-- `tag(id_categoria, id_prestador)`
-- `servico(id_prestador)`
-- `servico(id_categoria, status_servico)`
-- `solicitacaoservico(id_usuario, data_solicitacao)`
-- `solicitacaoservico(id_prestador, status, data_solicitacao)`
-- `agenda(id_prestador, horario_inicio, horario_fim)`
-- `avaliacao(id_prestador, data_avaliacao)`
-- `avaliacao(id_usuario, data_avaliacao)`
-- `conversas(idUsuario, ultimaMensagemEm)`
-- `conversas(idPrestador, ultimaMensagemEm)`
-- `mensagens(idConversa, criadoEm)`
-- `notificacao(id_usuario, visualizada, data_envio)`
-- `favorito(id_usuario, id_prestador)` ja existe como unico.
-- `ticketsuporte(id_usuario, data_atualizacao)`
-- `ticketsuporte(status, data_atualizacao)`
+1. Validar se as migrations nao contem operacoes destrutivas.
+2. Fazer backup/snapshot do Railway.
+3. Rodar `npm run migrate` contra o banco correto.
+4. Validar tabelas principais.
+5. Fazer deploy Preview na Vercel.
 
-Consultas com maior risco de gargalo:
+## Checklist de deploy na Vercel
 
-- Busca/listagem de prestadores com joins, agregacoes, `GROUP_CONCAT`, avaliacoes e servicos.
-- Listagem de servicos e prestadores sem paginacao consistente.
-- Mensagens por conversa ordenadas por data.
-- Notificacoes ordenadas por visualizacao e data.
-- Dashboards administrativos com varios `COUNT(*)`.
+- Instalar dependencias com `npm install`.
+- Rodar `npm run build`.
+- Rodar `npm run lint`.
+- Rodar ou validar `npm run migrate` em ambiente controlado.
+- Cadastrar variaveis `DB_*`, `CLOUDINARY_*`, `NEXTAUTH_URL` e secrets.
+- Garantir `NEXTAUTH_URL` correto para Preview/Production.
+- Criar deploy Preview.
+- Testar login, cadastro, perfil, busca, solicitacoes, servicos, mensagens, notificacoes e admin.
+- Testar upload de avatar e imagens de servico.
+- Confirmar que anexos privados retornam erro seguro.
+- Promover para Production somente apos validação.
 
-## Upload de imagens e documentos
+`vercel.json` nao e obrigatorio para o deploy basico. A Vercel detecta Next.js automaticamente.
 
-Situacao atual:
+## Processos nao compativeis com Vercel serverless
 
-- Upload de foto passa pela camada `app/lib/storage.ts`.
-- A aplicacao nao grava mais em `public/uploads`.
-- Ha validacao inicial de MIME type e tamanho.
-- Sem provedor configurado, o endpoint retorna erro seguro e nao persiste arquivo.
+- Workers permanentes.
+- WebSockets tradicionais mantidos dentro da propria aplicacao.
+- Filas locais.
+- Uploads em filesystem local.
+- Migrations automaticas em cold start.
 
-Problema na Vercel:
-
-- O filesystem de serverless functions e efemero, por isso uploads locais foram desativados.
-
-Recomendacao:
-
-- Usar Vercel Blob, S3, Cloudflare R2, Cloudinary ou similar.
-- Validar tamanho maximo, MIME type real e extensoes.
-- Gerar nomes aleatorios, nao derivados apenas de usuario/data.
-- Salvar no banco apenas a URL/chave do arquivo.
-- Considerar URLs assinadas para documentos privados.
-
-## Autenticacao e autorizacao
-
-Situacao atual:
-
-- NextAuth usa JWT por 7 dias.
-- Middleware protege algumas paginas, mas exclui `/api`.
-- Rotas API geralmente nao chamam `getServerSession` ou `getToken`.
-- Muitos endpoints usam `id_usuario`, `idUsuario`, `id_solicitante` ou `is_admin` enviados pelo cliente.
-- Endpoints administrativos verificam admin consultando o banco pelo `id_solicitante`, mas esse ID vem da query string.
-
-Riscos:
-
-- Um usuario pode tentar consultar/alterar dados de outro usuario mudando IDs no request.
-- Rotas administrativas podem ser atacadas se o atacante descobrir/forjar um ID de admin.
-- Atualizacao de usuario aceita `is_admin` em payload/formData.
-- APIs de favoritos, pedidos, mensagens, tickets e notificacoes precisam checar dono do recurso.
-
-Recomendacao:
-
-- Em toda API privada, obter usuario autenticado no servidor via NextAuth.
-- Ignorar IDs de usuario enviados pelo cliente quando o recurso for do proprio usuario.
-- Validar permissao por recurso: dono, prestador participante ou admin.
-- Criar helpers centralizados: `requireUser`, `requireAdmin`, `requireResourceOwner`.
-- Manter middleware/proxy para UX, mas tratar API como fronteira real de seguranca.
-
-## Mensagens, notificacoes, pagamentos e jobs
-
-Mensagens:
-
-- Implementadas por tabelas `conversas` e `mensagens`.
-- Nao ha WebSocket real detectado.
-- Provavelmente funciona via polling/fetch.
-- Para tempo real, usar Pusher, Ably, Supabase Realtime ou WebSocket fora da Vercel.
-
-Notificacoes:
-
-- Persistidas no MySQL.
-- Criadas durante fluxos como solicitacao, agenda e tickets.
-- Nao ha push/email/worker detectado.
-
-Pagamentos:
-
-- Existe entidade `assinaturaplano`.
-- Nao foi detectada integracao real com gateway de pagamento.
-- Antes de cobrar usuarios, integrar gateway, webhooks assinados e tabela de eventos.
-
-Jobs agendados:
-
-- Nao ha cron/worker real identificado.
-- Se precisar expirar assinaturas, lembretes ou limpeza, usar Vercel Cron, GitHub Actions, fila gerenciada ou worker externo.
+Para esses casos, usar servico externo: fila gerenciada, Vercel Cron, worker fora da Vercel, Pusher/Ably/Supabase Realtime ou storage dedicado.
 
 ## Plano de backup
 
-- Usar backup automatico do provedor MySQL.
-- Definir retencao minima de 7 a 30 dias no lancamento.
-- Fazer snapshot manual antes de cada deploy com migrations.
-- Testar restauracao em banco de staging.
-- Exportar schema e dados criticos antes de alteracoes estruturais.
-- Para arquivos, usar storage com versionamento ou lifecycle policy.
+- Backups automaticos do Railway habilitados.
+- Snapshot manual antes de cada migration em producao.
+- Retencao minima recomendada: 7 a 30 dias.
+- Teste periodico de restore em banco de staging.
+- Export do schema antes de mudancas estruturais.
+- No Cloudinary, revisar backups/versionamento conforme plano contratado.
 
 ## Monitoramento basico
 
-- Vercel Analytics para trafego e Web Vitals.
-- Logs da Vercel para erros de functions.
-- Sentry ou similar para erros frontend/backend.
-- Monitoramento do MySQL: conexoes ativas, queries lentas, CPU, memoria, storage.
-- Alertas para erro 5xx, falha de login, falha de pagamento, falha de upload e saturacao de conexoes.
-- Ativar slow query log no banco gerenciado.
+- Logs de Functions da Vercel.
+- Vercel Analytics/Web Vitals, se habilitado.
+- Alertas do Railway para conexoes, CPU, memoria e storage.
+- Slow query log ou relatorio de queries lentas no MySQL.
+- Sentry ou equivalente para erros frontend/backend.
+- Alertas para falha de login, falha de upload, erro 5xx e saturacao de conexoes.
 
 ## Checklist de seguranca
 
-- Remover credenciais hardcoded do codigo.
-- Rotacionar qualquer segredo que ja tenha ficado no repositorio.
-- Proteger todas as APIs privadas com sessao e autorizacao.
-- Remover capacidade de atualizar `is_admin` por endpoint comum.
-- Validar body/query com schema, por exemplo Zod.
-- Aplicar rate limit em login, cadastro, mensagens, upload e tickets.
-- Validar upload por tamanho e tipo.
-- Sanitizar mensagens e textos exibidos.
-- Evitar retornar detalhes internos de erro em producao.
-- Configurar headers de seguranca.
-- Revisar CORS se APIs forem chamadas fora do mesmo dominio.
-- Garantir TLS no MySQL.
+- Sem credenciais hardcoded no codigo.
+- `.env.local` fora do git.
+- APIs privadas usando sessao server-side.
+- IDs de usuario vindos do cliente nao definem identidade.
+- Campos administrativos como `is_admin` bloqueados em rotas comuns.
+- Upload validado por MIME type, extensao e tamanho.
+- Documentos privados bloqueados ate existir storage privado.
+- Respostas de erro sem senha, host, usuario ou stack trace.
+- Backups ativos antes de Production.
+- Revisar rate limit para login, cadastro, upload, mensagens e tickets.
 
 ## Plano de rollback
 
 Antes do deploy:
 
-- Criar snapshot do banco.
-- Registrar commit/tag da versao atual.
-- Validar build local e em preview da Vercel.
-- Rodar migrations em staging.
+- Criar snapshot do Railway.
+- Registrar commit publicado.
+- Validar build e Preview.
 
-Durante o deploy:
+Se o deploy falhar:
 
-- Publicar primeiro em Preview.
-- Testar login, cadastro, busca de prestadores, solicitacao, mensagens, upload e admin.
-- Promover para Production somente apos checklist.
+1. Reverter para deployment anterior no painel da Vercel.
+2. Se migrations foram executadas, restaurar snapshot ou aplicar rollback planejado.
+3. Conferir logs da Vercel e metricas do Railway.
+4. Corrigir em branch separada.
+5. Publicar novo Preview antes de promover novamente.
 
-Se der problema:
+## Pendencias conhecidas
 
-- Reverter para o deployment anterior pelo painel da Vercel.
-- Se houve migration destrutiva, restaurar snapshot ou executar migration de rollback planejada.
-- Desabilitar temporariamente rotas problematicas via feature flag quando possivel.
-- Conferir logs de erro e conexoes do banco antes de novo deploy.
-
-## Plano de acao priorizado
-
-### Fase 1 - Necessario antes de publicar
-
-| Prioridade | Area/arquivo | Motivo | Risco de nao corrigir | Sugestao pratica |
-|---|---|---|---|---|
-| Critica | `app/api/conversas/[conversaId]/mensagens/route.ts` | Build falha porque a rota esta vazia | Deploy bloqueado | Exportar `GET`/`POST` validos ou remover a rota se nao for usada |
-| Critica | `app/lib/dataBase.ts` | Credenciais MySQL hardcoded | Vazamento de segredo e impossibilidade de usar banco remoto | Usar `process.env`, SSL e limites de pool |
-| Critica | APIs em `app/api/**` | Falta autorizacao server-side | Vazamento/alteracao de dados entre usuarios | Validar sessao e permissao em cada endpoint privado |
-| Critica | `controller/usuarioController.ts` | Endpoint comum aceita `is_admin` | Escalada de privilegio | Bloquear campos administrativos fora de rota admin validada por sessao |
-| Alta | `instrumentation.ts` e `app/migrations` | Migrations rodam no runtime | Cold start lento, disputa entre instancias e alteracao inesperada em producao | Executar migrations em etapa manual/CI antes do deploy |
-| Alta | Upload em `public/uploads` | Filesystem serverless nao persiste | Fotos somem ou ficam inconsistentes | Migrar para Vercel Blob, S3, R2 ou Cloudinary |
-| Alta | `next.config.ts` | Config experimental invalida | Warnings e risco de incompatibilidade | Remover `experimental.instrumentationHook` |
-| Alta | `middleware.ts` | Convencao depreciada no Next 16 | Quebra futura e warnings | Migrar para `proxy` conforme docs locais do Next |
-| Alta | Vercel env | Faltam `NEXTAUTH_URL` e DB vars | Login OAuth/callbacks e banco falham | Configurar variaveis por ambiente no painel Vercel |
-| Media | `eslint.config.mjs` | Config nao e exportada | Lint analisa `.next` e falha inutilmente | Exportar a config corretamente e ignorar artefatos gerados |
-
-### Fase 2 - Melhorias importantes logo apos o lancamento
-
-| Prioridade | Area/arquivo | Motivo | Risco de nao corrigir | Sugestao pratica |
-|---|---|---|---|---|
-| Alta | MySQL | Serverless pode abrir conexoes demais | Erros `too many connections` | Usar pool limitado, provedor serverless/proxy ou pooler |
-| Alta | Services de busca | Consultas com joins/agregacoes | Lentidao na busca de prestadores | Adicionar indices e paginacao |
-| Alta | Login/cadastro/upload | Endpoints sensiveis | Brute force e abuso | Rate limit e validacao com schema |
-| Media | Erros API | Algumas rotas retornam detalhes internos | Exposicao de informacao tecnica | Padronizar respostas e logs |
-| Media | Notificacoes/mensagens | Sem tempo real confiavel | UX limitada | Manter polling com intervalo controlado ou usar serviço realtime |
-| Media | Backups | Plano precisa ser operacionalizado | Perda de dados em incidente | Ativar backup automatico e testar restore |
-
-### Fase 3 - Melhorias para escalar a plataforma
-
-| Prioridade | Area/arquivo | Motivo | Risco de nao corrigir | Sugestao pratica |
-|---|---|---|---|---|
-| Alta | Banco/schema | Migrations proprias crescem em complexidade | Drift de schema | Considerar Prisma/Drizzle/Knex ou padronizar runner de migrations |
-| Alta | Busca | Marketplace depende de descoberta | Busca lenta ou pouco relevante | Criar estrategia de ranking, filtros indexados e possivelmente search engine |
-| Media | Pagamentos | Assinatura ainda nao tem gateway robusto | Cobrancas inconsistentes | Integrar gateway com webhooks assinados e idempotencia |
-| Media | Observabilidade | Debug em producao fica dificil | MTTR alto | Sentry, tracing e metricas de banco |
-| Media | Storage | Arquivos podem crescer | Custo/desorganizacao | Versionamento, lifecycle e thumbnails |
-| Baixa | CI/CD | Deploy manual pode errar | Regressao por falta de checagem | Pipeline com build, lint, typecheck e smoke tests |
+- Confirmar `DB_SSL` ideal para a conexao Railway escolhida.
+- Escolher/implementar storage privado para documentos pessoais/sensiveis.
+- Definir estrategia realtime futura para mensagens, se necessario.
+- Integrar gateway real de pagamento antes de cobrar assinaturas.
