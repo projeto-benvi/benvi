@@ -34,6 +34,26 @@ export class StorageValidationError extends Error {
   }
 }
 
+export class StorageUploadError extends Error {
+  constructor() {
+    super("Falha ao enviar imagem para o storage.");
+    this.name = "StorageUploadError";
+  }
+}
+
+function logStorageUploadError(error: unknown, contexto: Record<string, unknown>) {
+  const erro = error as { name?: string; code?: string | number; http_code?: number; message?: string; stack?: string };
+
+  console.error("Erro ao enviar imagem para o storage.", {
+    tipo: erro?.name ?? typeof error,
+    codigo: erro?.code,
+    httpCode: erro?.http_code,
+    mensagem: erro?.message,
+    stack: erro?.stack,
+    ...contexto,
+  });
+}
+
 function requireCloudinaryEnv(name: "CLOUDINARY_CLOUD_NAME" | "CLOUDINARY_API_KEY" | "CLOUDINARY_API_SECRET") {
   const value = process.env[name];
   if (!value) throw new StorageNotConfiguredError();
@@ -88,7 +108,11 @@ async function uploadBuffer(buffer: Buffer, folder: PublicImageFolder, publicId:
       },
       (error, result) => {
         if (error || !result) {
-          reject(new Error("Falha ao enviar imagem para o storage."));
+          logStorageUploadError(error, {
+            folder: cloudinaryFolder(folder),
+            publicId,
+          });
+          reject(new StorageUploadError());
           return;
         }
 
@@ -117,5 +141,6 @@ export async function uploadPublicImage(input: StorageUploadInput): Promise<Stor
 export function storageErrorStatus(error: unknown) {
   if (error instanceof StorageValidationError) return 400;
   if (error instanceof StorageNotConfiguredError) return 503;
+  if (error instanceof StorageUploadError) return 503;
   return 500;
 }

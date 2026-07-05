@@ -3,6 +3,20 @@ import { Usuario } from '@/model/usuario';
 import bcrypt from 'bcryptjs';
 import { RowDataPacket } from 'mysql2/promise';
 
+function logErroSqlAtualizacaoUsuario(error: unknown, contexto: Record<string, unknown>) {
+  const erro = error as { name?: string; code?: string; errno?: number; sqlState?: string; message?: string; stack?: string };
+
+  console.error('Erro SQL ao atualizar usuário.', {
+    tipo: erro?.name ?? typeof error,
+    codigo: erro?.code,
+    errno: erro?.errno,
+    sqlState: erro?.sqlState,
+    mensagem: erro?.message,
+    stack: erro?.stack,
+    ...contexto,
+  });
+}
+
 export const usuarioService = {
   async listarTodos(): Promise<Usuario[]> {
     const [rows] = await pool.query(
@@ -73,10 +87,23 @@ async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
 
   // ─── AJUSTADO: Atualização inteligente integrada ao Banco de Dados ───
   async atualizar(id: number, dados: Record<string, any>): Promise<void> {
-    // 1. Mapeia a propriedade 'avatar' vinda do controller para a coluna 'foto_perfil' do MySQL
+    const camposUsuarioPermitidos = new Set([
+      'nome',
+      'telefone',
+      'cidade',
+      'foto_perfil',
+      'data_nascimento',
+    ]);
+
+    // 1. Mapeia propriedades vindas do controller/frontend para colunas reais do MySQL
     if ('avatar' in dados) {
       dados.foto_perfil = dados.avatar;
       delete dados.avatar;
+    }
+
+    if ('dataNascimento' in dados) {
+      dados.data_nascimento = dados.dataNascimento;
+      delete dados.dataNascimento;
     }
 
     // 2. Se houver biografia (sobreVoce), salvamos na tabela 'prestador' separadamente
@@ -86,10 +113,19 @@ async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
 
       if (sobreVoce !== undefined) {
         // Atualiza a descrição na tabela do prestador caso ele exista
-        await pool.query(
-          'UPDATE prestador SET descricao_profissional = ? WHERE id_usuario = ?',
-          [sobreVoce, id]
-        );
+        const sqlPrestador = 'UPDATE prestador SET descricao_profissional = ? WHERE id_usuario = ?';
+
+        try {
+          await pool.query(sqlPrestador, [sobreVoce, id]);
+        } catch (error) {
+          logErroSqlAtualizacaoUsuario(error, {
+            etapa: 'prestador.descricao_profissional',
+            camposRecebidos: ['sobreVoce'],
+            sql: sqlPrestador,
+            quantidadeParametros: 2,
+          });
+          throw error;
+        }
       }
     }
 
@@ -100,12 +136,30 @@ async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
       }
     });
 
+    Object.keys(dados).forEach((key) => {
+      if (!camposUsuarioPermitidos.has(key)) {
+        delete dados[key];
+      }
+    });
+
     // Se restou algum campo para atualizar na tabela 'usuario'
     if (Object.keys(dados).length > 0) {
       const campos = Object.keys(dados).map((k) => `${k} = ?`).join(', ');
       const valores = [...Object.values(dados), id];
+      const sqlUsuario = `UPDATE usuario SET ${campos} WHERE id_usuario = ?`;
 
-      await pool.query(`UPDATE usuario SET ${campos} WHERE id_usuario = ?`, valores);
+      try {
+        await pool.query(sqlUsuario, valores);
+      } catch (error) {
+        logErroSqlAtualizacaoUsuario(error, {
+          etapa: 'usuario',
+          camposRecebidos: Object.keys(dados),
+          sql: sqlUsuario,
+          quantidadeParametros: valores.length,
+          quantidadePlaceholders: (sqlUsuario.match(/\?/g) ?? []).length,
+        });
+        throw error;
+      }
     }
   },
 

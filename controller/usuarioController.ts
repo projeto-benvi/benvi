@@ -17,6 +17,18 @@ function erroAdmin(e: unknown) {
   return NextResponse.json({ erro: msg }, { status });
 }
 
+function logErroAtualizacaoUsuario(error: unknown, contexto: Record<string, unknown>) {
+  const erro = error as { name?: string; code?: string; message?: string; stack?: string };
+
+  console.error('Erro ao atualizar usuário.', {
+    tipo: erro?.name ?? typeof error,
+    codigo: erro?.code,
+    mensagem: erro?.message,
+    stack: erro?.stack,
+    ...contexto,
+  });
+}
+
 export const usuarioController = {
 
   // ─── CRUD padrão ────────────────────────────────────────────────────────────
@@ -54,17 +66,20 @@ export const usuarioController = {
   },
 
   async atualizar(id: number, req: NextRequest) {
+    let camposRecebidos: string[] = [];
+    let camposNormalizados: string[] = [];
+    let contentType = req.headers.get("content-type") || "";
+
     try {
       let nome, telefone, cidade, estado, sobreVoce, dataNascimentoString;
       let avatarFile = null;
       let avatarUrl = undefined;
 
       // 1. Detecta dinamicamente o tipo de requisição (JSON ou FormData)
-      const contentType = req.headers.get("content-type") || "";
-
       if (contentType.includes("multipart/form-data")) {
         // Se vier do Front-end (com ou sem foto de perfil)
         const data = await req.formData();
+        camposRecebidos = Array.from(new Set(Array.from(data.keys())));
         nome = data.get("nome")?.toString();
         telefone = data.get("telefone")?.toString();
         cidade = data.get("cidade")?.toString();
@@ -74,6 +89,7 @@ export const usuarioController = {
         avatarFile = data.get("avatar") as File | null;
       } else {
         const body = await req.json();
+        camposRecebidos = Object.keys(body ?? {});
         nome = body.nome;
         telefone = body.telefone;
         cidade = body.cidade;
@@ -100,6 +116,7 @@ export const usuarioController = {
       // Campo administrativo: nunca pode ser alterado pela rota comum de perfil.
       if (dataNascimentoString) dadosParaAtualizar.dataNascimento = new Date(dataNascimentoString);
       if (avatarUrl) dadosParaAtualizar.avatar = avatarUrl;
+      camposNormalizados = Object.keys(dadosParaAtualizar);
 
       // Executa a query no banco através do seu service
       await usuarioService.atualizar(id, dadosParaAtualizar);
@@ -111,7 +128,12 @@ export const usuarioController = {
         dadosAtualizados: dadosParaAtualizar
       });
     } catch (e) {
-      console.error('Erro ao atualizar usuário.');
+      logErroAtualizacaoUsuario(e, {
+        idUsuario: id,
+        contentType,
+        camposRecebidos,
+        camposNormalizados,
+      });
       return NextResponse.json(
         { erro: 'Erro ao atualizar usuário' },
         { status: storageErrorStatus(e) }
