@@ -3,7 +3,10 @@ import { SolicitacaoServicoController } from '@/controller/solicitacaoservicoCon
 import { authErrorResponse, requireUser } from '@/app/lib/authz';
 
 function assertSolicitacaoAccess(user: { id: number; isAdmin: boolean }, data: any) {
-    if (!user.isAdmin && Number(data?.id_usuario) !== user.id && Number(data?.id_prestador) !== user.id) {
+    const idUsuario = Number(data?.id_usuario ?? data?.usuario?.id_usuario);
+    const idPrestador = Number(data?.id_prestador ?? data?.prestador?.id_usuario);
+
+    if (!user.isAdmin && idUsuario !== user.id && idPrestador !== user.id) {
         throw new Error('Voce nao tem permissao para acessar esta solicitacao.');
     }
 }

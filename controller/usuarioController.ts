@@ -68,7 +68,7 @@ export const usuarioController = {
   async atualizar(id: number, req: NextRequest) {
     let camposRecebidos: string[] = [];
     let camposNormalizados: string[] = [];
-    let contentType = req.headers.get("content-type") || "";
+    const contentType = req.headers.get("content-type") || "";
 
     try {
       let nome, telefone, cidade, estado, sobreVoce, dataNascimentoString;

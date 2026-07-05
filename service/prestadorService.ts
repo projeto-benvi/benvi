@@ -247,22 +247,30 @@ export const prestadorService = {
 
   async criar(dados: PrestadorComTags): Promise<number> {
     const impulsiona_valor = (dados.is_vulneravel ?? true) ? true : (dados.impulsiona_perfil ?? false);
+    const descricaoProfissional =
+      typeof dados.descricao_profissional === 'string' && dados.descricao_profissional.trim()
+        ? dados.descricao_profissional.trim()
+        : null;
+    const categoriaPrincipal =
+      typeof dados.categoria_principal === 'string' && dados.categoria_principal.trim()
+        ? dados.categoria_principal.trim()
+        : null;
 
     await pool.query(
       `INSERT INTO prestador
       (id_usuario, descricao_profissional, status_verificado, status_social, impulsiona_perfil, categoria_principal, is_vulneravel)
       VALUES (?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
-        descricao_profissional = VALUES(descricao_profissional),
-        categoria_principal = VALUES(categoria_principal),
+        descricao_profissional = COALESCE(NULLIF(VALUES(descricao_profissional), ''), descricao_profissional),
+        categoria_principal = COALESCE(NULLIF(VALUES(categoria_principal), ''), categoria_principal),
         is_vulneravel = VALUES(is_vulneravel)`,
       [
         dados.id_usuario,
-        dados.descricao_profissional ?? null,
+        descricaoProfissional,
         dados.status_verificado ?? false,
         dados.status_social ?? 'ativo',
         impulsiona_valor,
-        dados.categoria_principal ?? null,
+        categoriaPrincipal,
         dados.is_vulneravel ?? false
       ]
     );

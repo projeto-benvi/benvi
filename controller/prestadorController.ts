@@ -32,6 +32,19 @@ export const prestadorController = {
     try {
       const body = await req.json();
       if (idUsuarioAutenticado) body.id_usuario = idUsuarioAutenticado;
+      const descricaoProfissional =
+        typeof body.descricao_profissional === 'string'
+          ? body.descricao_profissional
+          : typeof body.descricao === 'string'
+            ? body.descricao
+            : typeof body.sobreVoce === 'string'
+              ? body.sobreVoce
+              : undefined;
+
+      if (descricaoProfissional !== undefined) {
+        body.descricao_profissional = descricaoProfissional.trim();
+      }
+
       const id = await prestadorService.criar(body);
       return NextResponse.json({ id_usuario: id }, { status: 201 });
     } catch (e) {

@@ -20,7 +20,21 @@ export async function GET(req: NextRequest) {
     if (usuarios.length === 0) return NextResponse.json({ erro: 'Usuário não encontrado' }, { status: 404 });
 
     const [servicos] = await pool.query<RowDataPacket[]>(
-      'SELECT s.id_solicitacao AS id, COALESCE(s.descricao_servico, "Serviço contratado") AS titulo, u.nome AS profissional, s.data_solicitacao AS data, CASE WHEN s.status = 1 THEN "Concluido" ELSE "Avaliar" END AS status, u.foto_perfil AS imagemUrl FROM solicitacaoservico s INNER JOIN usuario u ON u.id_usuario = s.id_prestador WHERE s.id_usuario = ? ORDER BY s.data_solicitacao DESC LIMIT 10',
+      `SELECT
+        s.id_solicitacao AS id,
+        CONCAT('Serviço com ', u.nome) AS titulo,
+        COALESCE(s.descricao_servico, s.complemento, 'Serviço contratado') AS descricao,
+        COALESCE(p.categoria_principal, 'Serviço') AS categoria,
+        u.nome AS profissional,
+        s.data_solicitacao AS data,
+        CASE WHEN s.status = 1 THEN 'Concluido' ELSE 'Avaliar' END AS status,
+        u.foto_perfil AS imagemUrl
+       FROM solicitacaoservico s
+       INNER JOIN usuario u ON u.id_usuario = s.id_prestador
+       LEFT JOIN prestador p ON p.id_usuario = s.id_prestador
+       WHERE s.id_usuario = ?
+       ORDER BY s.data_solicitacao DESC
+       LIMIT 10`,
       [id]
     );
 

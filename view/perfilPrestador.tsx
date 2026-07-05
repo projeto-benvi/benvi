@@ -6,6 +6,7 @@ import { servicoService } from "@/service/servicoService";
 import { prestadorService } from "@/service/prestadorService"; 
 import BotaoVoltarDinamico from "@/components/BotaoVoltarDinamico";
 import FavoritarPrestadorButton from "@/components/FavoritarPrestadorButton";
+import { CategoriaIcon } from "@/components/CategoriaIcon";
 import * as avaliacaoModulo from "@/service/avaliacaoService";
 const AvaliacaoService = (avaliacaoModulo as any).AvaliacaoService || (avaliacaoModulo as any).avaliacaoService;
 
@@ -210,12 +211,6 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
             <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-sm font-bold text-gray-800">Serviços concluídos</h2>
-                <a 
-                  href={`/servicos-prestador?id=${idPrestador}`}
-                  className="text-xs font-bold text-blue-500 hover:underline cursor-pointer"
-                >
-                  Ver tudo
-                </a>
               </div>
 
               <div className="flex flex-col gap-4">
@@ -223,23 +218,20 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
                   <p className="text-sm text-gray-400 italic">Nenhum serviço registrado para este profissional.</p>
                 ) : (
                   servicosDoPerfil.map((servico: any) => {
-                    let listaImagens: string[] = [];
-                    try {
-                      if (servico.imagens) {
-                        listaImagens = typeof servico.imagens === "string" ? JSON.parse(servico.imagens) : servico.imagens;
-                      }
-                    } catch (e) {
-                      listaImagens = [];
-                    }
-                    const imgPlaceholder = listaImagens[0] || "https://images.unsplash.com/photo-1608613304899-ea8098577e38?w=150";
+                    const categoriaServico =
+                      servico.nome_categoria ||
+                      servico.categoria_principal ||
+                      prestador.categoria_principal;
 
                     return (
                       <div key={servico.id_servico} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition">
                         <div className="flex items-center gap-4">
-                          <img src={imgPlaceholder} alt={servico.titulo} className="w-16 h-16 rounded-xl object-cover" />
+                          <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                            <CategoriaIcon nome={categoriaServico} className="w-8 h-8" />
+                          </div>
                           <div>
                             <h3 className="text-sm font-bold text-gray-800">{servico.titulo}</h3>
-                            <p className="text-xs text-gray-500">{prestador.cidade}</p>
+                            <p className="text-xs text-gray-500">{categoriaServico}</p>
                             <p className="text-[11px] text-gray-400 mt-0.5">
                               {servico.data_fim ? new Date(servico.data_fim).toLocaleDateString("pt-BR") : "Recentemente"}
                             </p>

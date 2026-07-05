@@ -61,28 +61,43 @@ async function garantirTabelaCategoria() {
 
 export async function listarCategorias() {
   await garantirTabelaCategoria();
-  await popularCategoriasIniciais();
+
+  const [[contagem]]: any = await pool.query("SELECT COUNT(*) AS total FROM categoria");
+  if (Number(contagem?.total ?? 0) === 0) {
+    await popularCategoriasIniciais();
+  }
 
   const [rows] = await pool.query(`
+    WITH categorias_unicas AS (
+      SELECT
+        MIN(id_categoria) AS id_categoria,
+        MIN(TRIM(nome_categoria)) AS nome_categoria,
+        MAX(descricao) AS descricao
+      FROM categoria
+      GROUP BY LOWER(TRIM(nome_categoria))
+    )
     SELECT
       c.id_categoria,
       c.nome_categoria,
       c.descricao,
       COUNT(DISTINCT pc.id_prestador) AS total_prestadores
-    FROM categoria c
+    FROM categorias_unicas c
     LEFT JOIN (
       SELECT
         p.id_usuario AS id_prestador,
-        c2.id_categoria
+        MIN(c2.id_categoria) AS id_categoria
       FROM prestador p
       INNER JOIN categoria c2
-        ON p.categoria_principal = c2.nome_categoria
+        ON LOWER(TRIM(p.categoria_principal)) = LOWER(TRIM(c2.nome_categoria))
         OR CAST(p.categoria_principal AS CHAR) = CAST(c2.id_categoria AS CHAR)
+      GROUP BY p.id_usuario, LOWER(TRIM(c2.nome_categoria))
       UNION
       SELECT
         t.id_prestador,
-        t.id_categoria
+        MIN(c3.id_categoria) AS id_categoria
       FROM tag t
+      INNER JOIN categoria c3 ON c3.id_categoria = t.id_categoria
+      GROUP BY t.id_prestador, LOWER(TRIM(c3.nome_categoria))
     ) pc ON pc.id_categoria = c.id_categoria
     GROUP BY c.id_categoria, c.nome_categoria, c.descricao
     ORDER BY c.nome_categoria ASC
@@ -143,7 +158,7 @@ export async function popularCategoriasIniciais() {
 
   for (const cat of CATEGORIAS_INICIAIS) {
     const [existente]: any = await pool.query(
-      "SELECT id_categoria FROM categoria WHERE nome_categoria = ?",
+      "SELECT id_categoria FROM categoria WHERE LOWER(TRIM(nome_categoria)) = LOWER(TRIM(?)) LIMIT 1",
       [cat.nome_categoria]
     );
 

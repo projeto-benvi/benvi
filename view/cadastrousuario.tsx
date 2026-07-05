@@ -277,6 +277,10 @@ export default function CadastroUnificado() {
     setCarregando(true);
 
     try {
+      const logou = await fazerLoginAutomatico();
+
+      if (!logou) return;
+
       const res = await fetch("/api/prestador", {
         method: "POST",
         headers: {
@@ -301,10 +305,6 @@ export default function CadastroUnificado() {
         });
         return;
       }
-
-      const logou = await fazerLoginAutomatico();
-
-      if (!logou) return;
 
       router.push("/");
       router.refresh();

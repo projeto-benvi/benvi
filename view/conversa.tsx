@@ -119,6 +119,26 @@ export default function Conversa() {
   );
 
   const nomeChat = (chat: Chat) => chat.nome?.trim() || `Conversa ${chat.idConversa}`;
+  const fotoChat = (chat?: Chat | null) => chat?.fotoPerfil?.trim() || "";
+  const inicialChat = (chat?: Chat | null) => (chat?.nome?.trim()?.[0] || "?").toUpperCase();
+
+  const renderAvatarChat = (chat?: Chat | null, tamanho = "h-12 w-12") => {
+    const foto = fotoChat(chat);
+
+    return (
+      <div className={`${tamanho} rounded-full bg-gray-300 shrink-0 overflow-hidden flex items-center justify-center`}>
+        {foto ? (
+          <img
+            src={foto}
+            alt={chat?.nome ? `Foto de ${chat.nome}` : "Foto do contato"}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="text-sm font-semibold text-gray-500">{inicialChat(chat)}</span>
+        )}
+      </div>
+    );
+  };
 
   const exibirNotificacao = (
     titulo: string,
@@ -950,7 +970,7 @@ export default function Conversa() {
                 hover:bg-[#F7F7F7]
                 ${chatSelecionado?.idConversa === chat.idConversa ? "bg-blue-50" : ""}
               `}>
-                <div className="h-12 w-12 rounded-full bg-gray-300 shrink-0" />
+                {renderAvatarChat(chat)}
 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between">
@@ -1007,7 +1027,17 @@ export default function Conversa() {
           <div className="h-20 border-b border-[#CDCDCD] px-6 flex items-center justify-between">
 
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-gray-300" />
+              {suporteAtivo ? (
+                <div className="h-12 w-12 rounded-full shrink-0 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={logo.src}
+                    alt="Suporte"
+                    className="w-8 h-8 object-contain"
+                  />
+                </div>
+              ) : (
+                renderAvatarChat(chatSelecionado)
+              )}
 
               <div>
                 <h2 className="font-semibold text-[15px]">
