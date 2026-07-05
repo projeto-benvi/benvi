@@ -11,6 +11,7 @@
 - Upload publico: Cloudinary via `app/lib/storage.ts`.
 - Upload privado: bloqueado ate existir storage privado.
 - Deploy alvo: Vercel com `npm run build`.
+- Categorias: endpoint publico com cache curto em memoria por instancia; invalida em criacao/edicao/remocao.
 
 ## Railway MySQL
 
@@ -108,6 +109,10 @@ Comando manual:
 npm run migrate
 ```
 
+Atualizacao obrigatoria para Preview atual:
+
+- Rodar as migrations `023_production_readiness_indexes` e `024_runtime_schema_guards_to_migrations` antes de validar Preview. Elas substituem ajustes de schema que antes eram tentados durante requests e criam indices importantes para reduzir latencia.
+
 Fluxo recomendado:
 
 1. Validar se as migrations nao contem operacoes destrutivas.
@@ -128,6 +133,8 @@ Fluxo recomendado:
 - Testar login, cadastro, perfil, busca, solicitacoes, servicos, mensagens, notificacoes e admin.
 - Testar upload de avatar e imagens de servico.
 - Confirmar que anexos privados retornam erro seguro.
+- Confirmar que `/api/categoria` responde sem 500 e com latencia normal depois da primeira conexao fria.
+- Confirmar que agenda, alertas, avaliacoes e tickets funcionam sem tentar criar ou alterar tabelas durante requests.
 - Promover para Production somente apos validação.
 
 `vercel.json` nao e obrigatorio para o deploy basico. A Vercel detecta Next.js automaticamente.
@@ -172,6 +179,8 @@ Para esses casos, usar servico externo: fila gerenciada, Vercel Cron, worker for
 - Respostas de erro sem senha, host, usuario ou stack trace.
 - Backups ativos antes de Production.
 - Revisar rate limit para login, cadastro, upload, mensagens e tickets.
+- Confirmar que criacao publica de usuario nao aceita `is_admin`, `nivel_acesso` ou `status_conta` do cliente.
+- Confirmar que notificacoes por ID so podem ser acessadas pelo dono ou admin.
 
 ## Plano de rollback
 
@@ -195,3 +204,4 @@ Se o deploy falhar:
 - Escolher/implementar storage privado para documentos pessoais/sensiveis.
 - Definir estrategia realtime futura para mensagens, se necessario.
 - Integrar gateway real de pagamento antes de cobrar assinaturas.
+- Implantar rate limiting persistente com Upstash/Vercel KV/servico equivalente antes de campanha publica.

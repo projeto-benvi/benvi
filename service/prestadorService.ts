@@ -10,38 +10,8 @@ type FiltrosPrestador = {
   apenasVerificados?: boolean;
 };
 
-async function garantirTabelaTagPrestador() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS tag (
-      id_tag INT AUTO_INCREMENT PRIMARY KEY,
-      id_prestador INT NOT NULL,
-      id_categoria INT NOT NULL,
-      data_vinculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE KEY uq_prestador_categoria (id_prestador, id_categoria)
-    )
-  `);
-
-  const [colunas]: any = await pool.query('SHOW COLUMNS FROM tag');
-  const nomes = new Set(colunas.map((coluna: { Field: string }) => coluna.Field));
-
-  if (!nomes.has('id_prestador') || !nomes.has('id_categoria')) {
-    await pool.query('DROP TABLE tag');
-    await pool.query(`
-      CREATE TABLE tag (
-        id_tag INT AUTO_INCREMENT PRIMARY KEY,
-        id_prestador INT NOT NULL,
-        id_categoria INT NOT NULL,
-        data_vinculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uq_prestador_categoria (id_prestador, id_categoria)
-      )
-    `);
-  }
-}
-
 async function salvarTagsPrestador(idPrestador: number, idsCategorias: unknown) {
   if (!Array.isArray(idsCategorias)) return;
-
-  await garantirTabelaTagPrestador();
 
   const idsUnicos = Array.from(
     new Set(idsCategorias.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))

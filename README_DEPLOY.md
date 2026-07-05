@@ -69,6 +69,11 @@ Execute manualmente em ambiente controlado:
 npm run migrate
 ```
 
+Migrations mais recentes:
+
+- `023_production_readiness_indexes`: adiciona colunas de compatibilidade usadas pelos services e indices para categorias, prestadores, servicos, solicitacoes, conversas, mensagens, notificacoes, avaliacoes e tickets.
+- `024_runtime_schema_guards_to_migrations`: move ajustes restantes de schema de agenda, alertas, avaliacoes e tickets para migration manual, incluindo `ticketsuporte_interacao`.
+
 Fluxo recomendado:
 
 1. Rodar migrations em Preview/staging quando houver banco de teste.
@@ -120,6 +125,8 @@ No painel da Vercel, configure as mesmas variaveis de `.env.example` nos ambient
 - Criacao de servico com imagens funciona.
 - Documentos privados retornam erro seguro.
 - Busca, solicitacoes, mensagens, notificacoes e admin foram testados.
+- `/api/categoria` responde sem executar DDL em runtime; categorias usam cache publico curto por instancia.
+- Services nao devem criar ou alterar tabelas durante requests; qualquer ajuste de schema deve entrar em nova migration e ser executado manualmente.
 
 ## Rollback
 
@@ -134,3 +141,4 @@ No painel da Vercel, configure as mesmas variaveis de `.env.example` nos ambient
 - Configurar backups automaticos no Railway.
 - Definir storage privado futuro para documentos pessoais/sensiveis.
 - Integrar gateway real de pagamento antes de cobrar usuarios.
+- Definir rate limit externo para login, cadastro, uploads, mensagens e tickets antes de trafego alto.

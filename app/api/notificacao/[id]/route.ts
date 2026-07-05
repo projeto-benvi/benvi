@@ -1,10 +1,23 @@
 import { notificacaoController } from '@/controller/notificacaoController';
 import { NextRequest, NextResponse } from 'next/server';
-import { authErrorResponse, requireUser } from '@/app/lib/authz';
+import { AuthorizationError, authErrorResponse, requireUser, type AuthenticatedUser } from '@/app/lib/authz';
+import { notificacaoService } from '@/service/notificacaoService';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
+
+async function assertNotificationAccess(id: number, user: AuthenticatedUser) {
+  const notificacao = await notificacaoService.buscarPorId(id);
+
+  if (!notificacao) {
+    throw new AuthorizationError('Notificacao nao encontrada.', 404);
+  }
+
+  if (!user.isAdmin && Number(notificacao.id_usuario) !== user.id) {
+    throw new AuthorizationError('Voce nao tem permissao para acessar esta notificacao.', 403);
+  }
+}
 
 export async function GET(
   _: NextRequest,
@@ -12,8 +25,10 @@ export async function GET(
 ) {
   try {
     const params = await context.params;
-    await requireUser();
-    return notificacaoController.buscarPorId(Number(params.id));
+    const user = await requireUser();
+    const id = Number(params.id);
+    await assertNotificationAccess(id, user);
+    return notificacaoController.buscarPorId(id);
   } catch (error) {
     return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao buscar notificacao.' }, { status: 500 });
   }
@@ -25,8 +40,10 @@ export async function PATCH(
 ) {
   try {
     const params = await context.params;
-    await requireUser();
-    return notificacaoController.marcarComoVisualizada(Number(params.id));
+    const user = await requireUser();
+    const id = Number(params.id);
+    await assertNotificationAccess(id, user);
+    return notificacaoController.marcarComoVisualizada(id);
   } catch (error) {
     return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao atualizar notificacao.' }, { status: 500 });
   }
@@ -38,8 +55,10 @@ export async function DELETE(
 ) {
   try {
     const params = await context.params;
-    await requireUser();
-    return notificacaoController.deletar(Number(params.id));
+    const user = await requireUser();
+    const id = Number(params.id);
+    await assertNotificationAccess(id, user);
+    return notificacaoController.deletar(id);
   } catch (error) {
     return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao deletar notificacao.' }, { status: 500 });
   }

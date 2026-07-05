@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  listarCategorias,
+  listarCategoriasComFallback,
   buscarCategoriaPorId,
   criarCategoria,
   atualizarCategoria,
@@ -9,15 +9,15 @@ import {
 
 export async function listarCategoriasController() {
   try {
-    const categorias = await listarCategorias();
+    const categorias = await listarCategoriasComFallback();
     return NextResponse.json(categorias);
   } catch (error) {
-
-    console.error("====== 🚨 ERRO REAL DO BANCO DE DADOS 🚨 ======");
-    console.error(error);
-    console.error("===============================================");
-
-
+    const erro = error as { name?: string; code?: string; message?: string };
+    console.error("Erro ao listar categorias.", {
+      tipo: erro?.name ?? typeof error,
+      codigo: erro?.code,
+      mensagem: erro?.message,
+    });
 
     return NextResponse.json(
       { erro: "Erro ao listar categorias." },

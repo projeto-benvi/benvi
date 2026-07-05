@@ -48,10 +48,12 @@ export const usuarioController = {
     const id = await usuarioService.criar(body);
     return NextResponse.json({ id_usuario: id }, { status: 201 });
   } catch (e: any) {
-    return NextResponse.json({ 
-      erro: 'Erro ao criar usuário', 
-      detalhes: e?.message || String(e)  // ← manda mensagem limpa
-    }, { status: 500 });
+    const codigo = e?.code;
+    const status = codigo === 'ER_DUP_ENTRY' ? 409 : 500;
+
+    return NextResponse.json({
+      erro: codigo === 'ER_DUP_ENTRY' ? 'Já existe uma conta com esses dados.' : 'Erro ao criar usuário',
+    }, { status });
   }
 },
 

@@ -18,6 +18,8 @@ import { up as createAssinaturaPlano } from './018_create_assinaturaPlano';
 import { up as createParceria } from './019_create_parceria';
 import { up as createCidadeAtendida } from './020_create_cidadeAtendida';
 import { up as createFavorito } from './021_create_favorito';
+import { up as productionReadinessIndexes } from './023_production_readiness_indexes';
+import { up as runtimeSchemaGuardsToMigrations } from './024_runtime_schema_guards_to_migrations';
 
 
 const migrations = [
@@ -35,14 +37,13 @@ const migrations = [
   { name: '014_create_conversa', fn: createConversa },
   { name: '015_create_mensagem', fn: createConversaMensagem },
   { name: '016_create_ticketSuporte', fn: createTicketSuporte },
-  { name: '017_create_reporte', fn: createReporte},
-  { name: '018_create_assinaturaPlano', fn: createAssinaturaPlano },
-  { name: '019_create_parceria', fn: createParceria },
   { name: '017_create_reporte', fn: createReporte },
   { name: '018_create_assinaturaPlano', fn: createAssinaturaPlano },
   { name: '019_create_parceria', fn: createParceria }, 
   { name: '020_create_cidadeAtendida', fn: createCidadeAtendida },
-  { name: '021_create_favorito', fn: createFavorito }
+  { name: '021_create_favorito', fn: createFavorito },
+  { name: '023_production_readiness_indexes', fn: productionReadinessIndexes },
+  { name: '024_runtime_schema_guards_to_migrations', fn: runtimeSchemaGuardsToMigrations }
 ];
 
 export async function runMigrations(): Promise<void> {

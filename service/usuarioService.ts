@@ -59,6 +59,10 @@ export const usuarioService = {
 
 async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
   try {
+    if (!dados.nome || !dados.email || !dados.senha) {
+      throw new Error('Campos obrigatórios ausentes para criar usuário.');
+    }
+
     const senhaHash = await bcrypt.hash(dados.senha, 10);
     const [result]: any = await pool.query(
       `INSERT INTO usuario 
@@ -73,14 +77,20 @@ async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
         dados.cpf ?? null,
         dados.data_nascimento ?? null,
         dados.cidade ?? null,
-        dados.nivel_acesso ?? 1,
-        dados.status_conta ?? 'ativo',
-        dados.is_admin ?? false,
+        1,
+        'ativo',
+        false,
       ]
     );
     return result.insertId;
   } catch (e) {
-    console.error("❌ ERRO SQL criar usuário:", e); // ← vai aparecer no terminal
+    const erro = e as { name?: string; code?: string; errno?: number; message?: string };
+    console.error("Erro SQL ao criar usuário.", {
+      tipo: erro?.name ?? typeof e,
+      codigo: erro?.code,
+      errno: erro?.errno,
+      mensagem: erro?.message,
+    });
     throw e;
   }
 },
@@ -339,8 +349,21 @@ export const adminService = {
   async atualizarUsuario(id_solicitante: number, id_alvo: number, dados: Record<string, any>): Promise<void> {
     await this._verificarAdmin(id_solicitante);
 
-    const camposBloqueados = ['id_usuario', 'senha', 'data_criacao'];
-    camposBloqueados.forEach((c) => delete dados[c]);
+    const camposPermitidos = new Set([
+      'nome',
+      'email',
+      'telefone',
+      'foto_perfil',
+      'cidade',
+      'nivel_acesso',
+      'status_conta',
+      'is_admin',
+      'data_nascimento',
+    ]);
+
+    dados = Object.fromEntries(
+      Object.entries(dados).filter(([campo]) => camposPermitidos.has(campo))
+    );
 
     if (Object.keys(dados).length === 0) {
       throw new Error('Nenhum campo válido para atualizar');

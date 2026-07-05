@@ -9,13 +9,8 @@ interface DadosNovaMensagem {
   conteudo: string;
 }
 
-async function garantirTabelaMensagem() {
-  await pool.query("ALTER TABLE mensagens ADD COLUMN lida TINYINT(1) DEFAULT 0").catch(() => null);
-}
-
 export class MensagemService {
   async enviarMensagem(dados: DadosNovaMensagem) {
-    await garantirTabelaMensagem();
     const { idConversa, idRemetente, conteudo } = dados;
     const agora = new Date();
     const conexao = await pool.getConnection();
@@ -54,7 +49,6 @@ export class MensagemService {
   }
 
   async listarMensagensPorConversa(idConversa: number) {
-    await garantirTabelaMensagem();
     const [historico] = await pool.execute<RowDataPacket[]>(
       'SELECT * FROM mensagens WHERE idConversa = ? ORDER BY criadoEm ASC',
       [idConversa]

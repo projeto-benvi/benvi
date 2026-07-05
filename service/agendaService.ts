@@ -3,22 +3,6 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { AgendaModel } from '@/model/agendaModel';
 import { notificacaoService } from '@/service/notificacaoService';
 
-async function garantirTabelaAgenda() {
-  await pool.query(
-    'CREATE TABLE IF NOT EXISTS agenda (' +
-      'id_agenda INT AUTO_INCREMENT PRIMARY KEY,' +
-      'id_prestador INT NOT NULL,' +
-      'id_solicitacao INT NULL,' +
-      'horario_inicio DATETIME NOT NULL,' +
-      'horario_fim DATETIME NOT NULL,' +
-      "status VARCHAR(50) NOT NULL DEFAULT 'pendente'," +
-      'titulo VARCHAR(255) NOT NULL,' +
-      'descricao TEXT NULL' +
-    ')'
-  );
-  await pool.query('ALTER TABLE agenda MODIFY id_solicitacao INT NULL').catch(() => null);
-}
-
 function consultaBase(where = '') {
   return 'SELECT a.*, ' +
     'u_prestador.nome AS nome_prestador, u_prestador.foto_perfil AS foto_prestador, ' +
@@ -45,26 +29,22 @@ async function validarConflito(idPrestador: number, inicio: Date, fim: Date, ign
 
 export const AgendaService = {
   async listar() {
-    await garantirTabelaAgenda();
     const [rows] = await pool.query<RowDataPacket[]>(consultaBase());
     return rows;
   },
 
   async buscarPorId(id: number) {
-    await garantirTabelaAgenda();
     const [rows] = await pool.query<RowDataPacket[]>(consultaBase('WHERE a.id_agenda = ?'), [id]);
     if (rows.length === 0) throw new Error('Agenda não encontrada');
     return rows[0];
   },
 
   async listarPorPrestador(id_prestador: number) {
-    await garantirTabelaAgenda();
     const [rows] = await pool.query<RowDataPacket[]>(consultaBase('WHERE a.id_prestador = ?'), [id_prestador]);
     return rows;
   },
 
   async listarPorSolicitacao(id_solicitacao: number) {
-    await garantirTabelaAgenda();
     const [rows] = await pool.query<RowDataPacket[]>(consultaBase('WHERE a.id_solicitacao = ?'), [id_solicitacao]);
     return rows;
   },
@@ -78,8 +58,6 @@ export const AgendaService = {
     titulo: string;
     descricao?: string;
   }): Promise<number> {
-    await garantirTabelaAgenda();
-
     const inicio = new Date(dados.horario_inicio);
     const fim = new Date(dados.horario_fim);
     const agora = new Date();
@@ -129,7 +107,6 @@ export const AgendaService = {
   },
 
   async atualizar(id: number, dados: Partial<AgendaModel>): Promise<void> {
-    await garantirTabelaAgenda();
     const atual = await this.buscarPorId(id);
     const inicio = dados.horario_inicio ? new Date(dados.horario_inicio) : new Date(atual.horario_inicio);
     const fim = dados.horario_fim ? new Date(dados.horario_fim) : new Date(atual.horario_fim);
@@ -167,7 +144,6 @@ export const AgendaService = {
   },
 
   async remover(id: number): Promise<boolean> {
-    await garantirTabelaAgenda();
     const [result] = await pool.query<ResultSetHeader>('DELETE FROM agenda WHERE id_agenda = ?', [id]);
     return result.affectedRows > 0;
   },
