@@ -15,6 +15,7 @@ import iconCarta from "@/assets/icons/iconCarta.svg";
 import iconCpf from "@/assets/icons/iconCpf.svg";
 import iconTelefone from "@/assets/icons/iconTelefone.svg";
 import iconCadeado from "@/assets/icons/iconCadeado.svg";
+import iconCalendario from "@/assets/icons/iconCalendario.svg";
 
 import {
   FaWrench,
@@ -500,7 +501,7 @@ export default function CadastroUnificado() {
               <div>
                 <div className="relative">
                   <Image
-                    src={iconCpf}
+                    src={iconCalendario}
                     alt="Nascimento"
                     width={20}
                     height={20}
