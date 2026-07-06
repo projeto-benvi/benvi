@@ -25,6 +25,16 @@ function requireEnv(name: RequiredDbEnv): string {
   return value;
 }
 
+function requireDbHost(): string {
+  const host = requireEnv("DB_HOST").trim();
+
+  if (host.includes("://") || host.includes("@") || host.includes("/") || host.includes("?") || host.includes(":")) {
+    throw new Error("DB_HOST deve conter apenas o host do MySQL, sem protocolo, usuario, senha, porta, caminho ou query string.");
+  }
+
+  return host;
+}
+
 function buildSslConfig(): PoolOptions["ssl"] {
   if (!boolEnv(process.env.DB_SSL)) return undefined;
 
@@ -35,7 +45,7 @@ function buildSslConfig(): PoolOptions["ssl"] {
 
 function createPool(): Pool {
   return mysql.createPool({
-    host: requireEnv("DB_HOST"),
+    host: requireDbHost(),
     user: requireEnv("DB_USER"),
     password: requireEnv("DB_PASSWORD"),
     database: requireEnv("DB_NAME"),
