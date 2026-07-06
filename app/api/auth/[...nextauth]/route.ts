@@ -5,49 +5,55 @@ import { usuarioService } from '@/service/usuarioService';
 import pool from '@/app/lib/dataBase';
 import { RowDataPacket } from 'mysql2/promise';
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: 'credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Senha', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+const providers: NextAuthOptions['providers'] = [
+  CredentialsProvider({
+    name: 'credentials',
+    credentials: {
+      email: { label: 'Email', type: 'email' },
+      password: { label: 'Senha', type: 'password' },
+    },
+    async authorize(credentials) {
+      if (!credentials?.email || !credentials?.password) return null;
 
-        const usuario = await usuarioService.validarLogin(
-          credentials.email,
-          credentials.password
-        );
+      const usuario = await usuarioService.validarLogin(
+        credentials.email,
+        credentials.password
+      );
 
-        if (!usuario) return null;
+      if (!usuario) return null;
 
-        const [prestadorRows] = await pool.query<RowDataPacket[]>(
-          'SELECT id_usuario FROM prestador WHERE id_usuario = ?',
-          [usuario.id_usuario]
-        );
+      const [prestadorRows] = await pool.query<RowDataPacket[]>(
+        'SELECT id_usuario FROM prestador WHERE id_usuario = ?',
+        [usuario.id_usuario]
+      );
 
-        return {
-          id: String(usuario.id_usuario),
-          name: usuario.nome,
-          email: usuario.email,
-          image: usuario.foto_perfil ?? null,
-          role: usuario.is_admin ? 'admin' : String(usuario.nivel_acesso),
-          nivelAcesso: usuario.nivel_acesso,
-          isAdmin: usuario.is_admin,
-          isPrestador: prestadorRows.length > 0,
-          telefone: usuario.telefone ?? null,
-          cidade: usuario.cidade ?? null,
-        };
-      },
-    }),
+      return {
+        id: String(usuario.id_usuario),
+        name: usuario.nome,
+        email: usuario.email,
+        image: usuario.foto_perfil ?? null,
+        role: usuario.is_admin ? 'admin' : String(usuario.nivel_acesso),
+        nivelAcesso: usuario.nivel_acesso,
+        isAdmin: usuario.is_admin,
+        isPrestador: prestadorRows.length > 0,
+        telefone: usuario.telefone ?? null,
+        cidade: usuario.cidade ?? null,
+      };
+    },
+  }),
+];
 
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    })
+  );
+}
+
+export const authOptions: NextAuthOptions = {
+  providers,
 
   callbacks: {
     async signIn({ account, profile, user }) {

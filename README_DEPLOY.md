@@ -41,6 +41,8 @@ Railway MySQL:
 - `DB_NAME`
 - `DB_SSL`
 
+`DB_HOST` deve conter somente o host do Railway MySQL. Nao cole URL completa, protocolo `mysql://`, usuario, senha, porta, nome do banco ou query string nesse campo.
+
 Cloudinary:
 
 - `CLOUDINARY_CLOUD_NAME`
@@ -55,6 +57,7 @@ Configuracao recomendada:
 
 - Criar o MySQL no Railway.
 - Copiar host, porta, usuario, senha e database para as variaveis `DB_*`.
+- Em `DB_HOST`, usar somente o host exibido pelo Railway; a porta fica exclusivamente em `DB_PORT`.
 - Usar `DB_SSL=true` somente se a conexao Railway escolhida exigir SSL.
 - Manter limite baixo de conexoes no pool da aplicacao.
 - Rodar migrations manualmente antes de promover deploy para producao.
@@ -131,16 +134,27 @@ Documentos pessoais ou sensiveis, como RG, CPF, comprovante de residencia e anex
 
 No painel da Vercel, configure as mesmas variaveis de `.env.example` nos ambientes Preview e Production. Use valores reais apenas no painel da Vercel e no `.env.local`, nunca no repositorio.
 
+Para Preview, defina `NEXTAUTH_URL` com a URL exata do deployment Preview que sera testado. Para Production, troque para o dominio final. Cookies seguros sao aplicados pelo NextAuth em HTTPS.
+
+Se Google OAuth estiver ativo, cadastre no Google Cloud os callbacks do NextAuth:
+
+- `https://SEU-PREVIEW.vercel.app/api/auth/callback/google`
+- `https://SEU-DOMINIO-FINAL/api/auth/callback/google`
+
+Se `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` nao forem configurados, o provider Google fica desabilitado e o login por credenciais continua disponivel.
+
 ## Checklist de deploy Preview
 
 - `npm run build` passa localmente.
 - `npm run lint` passa ou possui apenas avisos aceitos.
-- `npm run migrate` foi validado contra o banco correto.
+- `npm run migrate` foi validado contra o banco correto, sem rodar automaticamente em build, boot ou deploy.
 - Variaveis `DB_*`, `CLOUDINARY_*`, `NEXTAUTH_URL` e secrets foram cadastradas na Vercel.
+- `DB_HOST` contem apenas o host do Railway, sem URL completa.
 - Login por credenciais funciona.
 - Login Google funciona, se ativo.
 - Cadastro e edicao de perfil funcionam.
 - Upload de avatar funciona.
+- Se Cloudinary nao estiver configurado, upload retorna erro seguro e paginas continuam carregando.
 - Criacao de servico com imagens funciona.
 - Documentos privados retornam erro seguro.
 - Busca, solicitacoes, mensagens, notificacoes e admin foram testados.

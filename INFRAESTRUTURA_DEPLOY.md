@@ -31,6 +31,7 @@ Configuracao aplicada:
 - Limite baixo de conexoes.
 - Timeout de conexao.
 - SSL ativado somente com `DB_SSL=true`.
+- `DB_HOST` validado como host puro, sem protocolo, credenciais, porta, database ou query string.
 - Sem credenciais fixas no codigo.
 - Migrations nao rodam no boot, build ou deploy.
 
@@ -100,6 +101,10 @@ Cuidados:
 - Nunca commitar `.env.local`, `.env.production` ou credenciais reais.
 - Cadastrar variaveis separadamente em Preview e Production na Vercel.
 - Usar secrets diferentes entre local, Preview e Production quando possivel.
+- Em `DB_HOST`, cadastrar somente o host do Railway MySQL; a porta fica em `DB_PORT`.
+- Em Preview, `NEXTAUTH_URL` deve apontar para a URL exata do deployment testado.
+- Se Google OAuth estiver ativo, cadastrar callbacks `https://SEU-PREVIEW.vercel.app/api/auth/callback/google` e `https://SEU-DOMINIO-FINAL/api/auth/callback/google`.
+- Se Google OAuth nao estiver configurado, o provider fica desabilitado e o login por credenciais permanece ativo.
 
 ## Migrations
 
@@ -129,10 +134,12 @@ Fluxo recomendado:
 - Rodar `npm run lint`.
 - Rodar ou validar `npm run migrate` em ambiente controlado.
 - Cadastrar variaveis `DB_*`, `CLOUDINARY_*`, `NEXTAUTH_URL` e secrets.
+- Confirmar que `DB_HOST` contem apenas o host do Railway, sem URL completa.
 - Garantir `NEXTAUTH_URL` correto para Preview/Production.
 - Criar deploy Preview.
 - Testar login, cadastro, perfil, busca, solicitacoes, servicos, mensagens, notificacoes e admin.
 - Testar upload de avatar e imagens de servico.
+- Confirmar que uploads retornam erro seguro quando Cloudinary nao estiver configurado.
 - Confirmar que anexos privados retornam erro seguro.
 - Confirmar que `/api/categoria` responde sem 500 e com latencia normal depois da primeira conexao fria.
 - Confirmar que agenda, alertas, avaliacoes e tickets funcionam sem tentar criar ou alterar tabelas durante requests.
