@@ -11,6 +11,8 @@ import { useAuth } from "@/hooks/useAuth";
 interface Servico {
   id: number;
   titulo: string;
+  descricao?: string;
+  categoria?: string;
   profissional: string;
   data: string;
   status: "Concluido" | "Avaliar";
@@ -200,11 +202,6 @@ export default function PerfilUsuario() {
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-gray-800">Serviços contratados</h3>
-                {servicos.length > 0 && (
-                  <button className="text-xs font-bold text-blue-500 hover:underline cursor-pointer">
-                    Ver todos
-                  </button>
-                )}
               </div>
 
               <div className="flex flex-col gap-3">
@@ -218,10 +215,10 @@ export default function PerfilUsuario() {
                   servicos.map((servico) => (
                     <div
                       key={servico.id}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                      className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-colors hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-xl overflow-hidden relative flex-shrink-0 bg-gray-100 border border-gray-100">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden relative flex-shrink-0 bg-gray-100 border border-gray-100">
                           {servico.imagemUrl ? (
                             <img
                               src={servico.imagemUrl}
@@ -234,12 +231,36 @@ export default function PerfilUsuario() {
                             </div>
                           )}
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-gray-800">{servico.titulo}</span>
-                          <span className="text-xs font-medium text-gray-400 mt-0.5">
-                            {servico.profissional}
-                          </span>
-                          <span className="text-[11px] text-gray-400 mt-0.5">{servico.data}</span>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-sm font-bold text-gray-800">
+                              {servico.titulo}
+                            </h4>
+                            {servico.categoria && (
+                              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-600">
+                                {servico.categoria}
+                              </span>
+                            )}
+                          </div>
+
+                          <p
+                            className="mt-1 max-w-[560px] text-sm leading-relaxed text-gray-600"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {servico.descricao || "Serviço contratado."}
+                          </p>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-400">
+                            <span className="font-medium text-gray-500">{servico.profissional}</span>
+                            <span aria-hidden="true">•</span>
+                            <span>{servico.data}</span>
+                          </div>
                         </div>
                       </div>
 

@@ -7,6 +7,7 @@ import {
   atualizarCategoriaController,
   deletarCategoriaController,
 } from "@/controller/categoriaController";
+import { authErrorResponse, requireAdmin } from "@/app/lib/authz";
 
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
@@ -19,45 +20,60 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  return criarCategoriaController(req);
+  try {
+    await requireAdmin();
+    return criarCategoriaController(req);
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: "Erro ao criar categoria." }, { status: 500 });
+  }
 }
 
 export async function PUT(req: NextRequest) {
-  const id = req.nextUrl.searchParams.get("id");
+  try {
+    await requireAdmin();
+    const id = req.nextUrl.searchParams.get("id");
 
-  if (!id) {
-    return NextResponse.json(
-      {
-        erro: "Parâmetro 'id' é obrigatório.",
-      },
-      {
-        status: 400,
-      }
+    if (!id) {
+      return NextResponse.json(
+        {
+          erro: "Parâmetro 'id' é obrigatório.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    return atualizarCategoriaController(
+      Number(id),
+      req
     );
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: "Erro ao atualizar categoria." }, { status: 500 });
   }
-
-  return atualizarCategoriaController(
-    Number(id),
-    req
-  );
 }
 
 export async function DELETE(req: NextRequest) {
-  const id = req.nextUrl.searchParams.get("id");
+  try {
+    await requireAdmin();
+    const id = req.nextUrl.searchParams.get("id");
 
-  if (!id) {
-    return NextResponse.json(
-      {
-        erro: "Parâmetro 'id' é obrigatório.",
-      },
-      {
-        status: 400,
-      }
+    if (!id) {
+      return NextResponse.json(
+        {
+          erro: "Parâmetro 'id' é obrigatório.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    return deletarCategoriaController(
+      Number(id)
     );
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: "Erro ao deletar categoria." }, { status: 500 });
   }
-
-  return deletarCategoriaController(
-    Number(id)
-  );
 }
 

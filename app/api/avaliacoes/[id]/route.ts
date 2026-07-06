@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { AvaliacaoController } from '@/controller/avaliacaoController';
+import { authErrorResponse, requireUser } from '@/app/lib/authz';
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await requireUser();
     const { id } = await params;
     const body = await request.json();
 
     const idAvaliacao = await AvaliacaoController.criar(
-      Number(body.id_usuario ?? id),
+      user.id,
       Number(body.id_prestador ?? body.idPrestador ?? body.prestadorId),
       Number(body.id_servico),
       Number(body.nota_geral ?? body.nota ?? 5),
@@ -26,6 +28,9 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Erro interno'
@@ -41,6 +46,7 @@ export async function GET(
 ) {
 
   try {
+    await requireUser();
 
     const { id } = await params;
 
@@ -62,6 +68,9 @@ export async function GET(
     );
 
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+
 
     return NextResponse.json(
       {
@@ -81,6 +90,7 @@ export async function PUT(
 ) {
 
   try {
+    await requireUser();
 
     const { id } = await params;
 
@@ -100,6 +110,9 @@ export async function PUT(
     );
 
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+
 
     return NextResponse.json(
       {
@@ -119,6 +132,7 @@ export async function DELETE(
 ) {
 
   try {
+    await requireUser();
 
     const { id } = await params;
 
@@ -134,6 +148,8 @@ export async function DELETE(
     );
 
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
 
     return NextResponse.json(
       {

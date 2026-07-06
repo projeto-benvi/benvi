@@ -18,9 +18,10 @@ export async function listarTagsPorPrestadorController(idPrestador: number) {
   }
 }
 
-export async function criarTagController(req: NextRequest) {
+export async function criarTagController(req: NextRequest, idPrestadorAutenticado?: number) {
   try {
     const dados = await req.json();
+    if (idPrestadorAutenticado) dados.id_prestador = idPrestadorAutenticado;
 
     if (!dados.id_prestador) {
       return NextResponse.json(
@@ -51,9 +52,10 @@ export async function criarTagController(req: NextRequest) {
   }
 }
 
-export async function substituirTagsDoPrestadorController(req: NextRequest) {
+export async function substituirTagsDoPrestadorController(req: NextRequest, idPrestadorAutenticado?: number) {
   try {
     const dados = await req.json();
+    if (idPrestadorAutenticado) dados.id_prestador = idPrestadorAutenticado;
 
     if (!dados.id_prestador || !Array.isArray(dados.id_categorias)) {
       return NextResponse.json(

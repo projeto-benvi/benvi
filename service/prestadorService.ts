@@ -10,38 +10,8 @@ type FiltrosPrestador = {
   apenasVerificados?: boolean;
 };
 
-async function garantirTabelaTagPrestador() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS tag (
-      id_tag INT AUTO_INCREMENT PRIMARY KEY,
-      id_prestador INT NOT NULL,
-      id_categoria INT NOT NULL,
-      data_vinculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE KEY uq_prestador_categoria (id_prestador, id_categoria)
-    )
-  `);
-
-  const [colunas]: any = await pool.query('SHOW COLUMNS FROM tag');
-  const nomes = new Set(colunas.map((coluna: { Field: string }) => coluna.Field));
-
-  if (!nomes.has('id_prestador') || !nomes.has('id_categoria')) {
-    await pool.query('DROP TABLE tag');
-    await pool.query(`
-      CREATE TABLE tag (
-        id_tag INT AUTO_INCREMENT PRIMARY KEY,
-        id_prestador INT NOT NULL,
-        id_categoria INT NOT NULL,
-        data_vinculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uq_prestador_categoria (id_prestador, id_categoria)
-      )
-    `);
-  }
-}
-
 async function salvarTagsPrestador(idPrestador: number, idsCategorias: unknown) {
   if (!Array.isArray(idsCategorias)) return;
-
-  await garantirTabelaTagPrestador();
 
   const idsUnicos = Array.from(
     new Set(idsCategorias.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))
@@ -247,22 +217,30 @@ export const prestadorService = {
 
   async criar(dados: PrestadorComTags): Promise<number> {
     const impulsiona_valor = (dados.is_vulneravel ?? true) ? true : (dados.impulsiona_perfil ?? false);
+    const descricaoProfissional =
+      typeof dados.descricao_profissional === 'string' && dados.descricao_profissional.trim()
+        ? dados.descricao_profissional.trim()
+        : null;
+    const categoriaPrincipal =
+      typeof dados.categoria_principal === 'string' && dados.categoria_principal.trim()
+        ? dados.categoria_principal.trim()
+        : null;
 
     await pool.query(
       `INSERT INTO prestador
       (id_usuario, descricao_profissional, status_verificado, status_social, impulsiona_perfil, categoria_principal, is_vulneravel)
       VALUES (?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
-        descricao_profissional = VALUES(descricao_profissional),
-        categoria_principal = VALUES(categoria_principal),
+        descricao_profissional = COALESCE(NULLIF(VALUES(descricao_profissional), ''), descricao_profissional),
+        categoria_principal = COALESCE(NULLIF(VALUES(categoria_principal), ''), categoria_principal),
         is_vulneravel = VALUES(is_vulneravel)`,
       [
         dados.id_usuario,
-        dados.descricao_profissional ?? null,
+        descricaoProfissional,
         dados.status_verificado ?? false,
         dados.status_social ?? 'ativo',
         impulsiona_valor,
-        dados.categoria_principal ?? null,
+        categoriaPrincipal,
         dados.is_vulneravel ?? false
       ]
     );

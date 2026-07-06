@@ -1,6 +1,9 @@
 import pool from "@/app/lib/dataBase";
 import { Categoria } from "@/model/categoria";
 
+const CACHE_TTL_MS = 60_000;
+let categoriasCache: { expiresAt: number; rows: any[] } | null = null;
+
 export const CATEGORIAS_INICIAIS = [
   { nome_categoria: "Eletricista", descricao: "Instala e mantém redes elétricas, fiação, quadros de força e iluminação." },
   { nome_categoria: "Encanador", descricao: "Monta sistemas de água fria, água quente, esgoto e gás." },
@@ -34,66 +37,50 @@ export const CATEGORIAS_INICIAIS = [
   { nome_categoria: "Social Media / Gestor de Redes Sociais", descricao: "Gerenciamento de perfis profissionais e estratégias de engajamento." },
 ];
 
-async function garantirTabelaCategoria() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS categoria (
-      id_categoria INT PRIMARY KEY AUTO_INCREMENT,
-      nome_categoria VARCHAR(100) NOT NULL,
-      descricao TEXT
-    )
-  `);
-
-  const [descricao]: any = await pool.query("SHOW COLUMNS FROM categoria LIKE 'descricao'");
-  if (descricao.length === 0) {
-    await pool.query("ALTER TABLE categoria ADD COLUMN descricao TEXT NULL");
-  }
-
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS tag (
-      id_tag INT AUTO_INCREMENT PRIMARY KEY,
-      id_prestador INT NOT NULL,
-      id_categoria INT NOT NULL,
-      data_vinculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE KEY uq_prestador_categoria (id_prestador, id_categoria)
-    )
-  `);
-}
-
 export async function listarCategorias() {
-  await garantirTabelaCategoria();
-  await popularCategoriasIniciais();
+  if (categoriasCache && categoriasCache.expiresAt > Date.now()) {
+    return categoriasCache.rows;
+  }
 
   const [rows] = await pool.query(`
     SELECT
-      c.id_categoria,
-      c.nome_categoria,
-      c.descricao,
-      COUNT(DISTINCT pc.id_prestador) AS total_prestadores
+      MIN(c.id_categoria) AS id_categoria,
+      MIN(TRIM(c.nome_categoria)) AS nome_categoria,
+      MAX(c.descricao) AS descricao,
+      COUNT(DISTINCT p.id_usuario) + COUNT(DISTINCT t.id_prestador) AS total_prestadores
     FROM categoria c
-    LEFT JOIN (
-      SELECT
-        p.id_usuario AS id_prestador,
-        c2.id_categoria
-      FROM prestador p
-      INNER JOIN categoria c2
-        ON p.categoria_principal = c2.nome_categoria
-        OR CAST(p.categoria_principal AS CHAR) = CAST(c2.id_categoria AS CHAR)
-      UNION
-      SELECT
-        t.id_prestador,
-        t.id_categoria
-      FROM tag t
-    ) pc ON pc.id_categoria = c.id_categoria
-    GROUP BY c.id_categoria, c.nome_categoria, c.descricao
-    ORDER BY c.nome_categoria ASC
+    LEFT JOIN prestador p
+      ON BINARY p.categoria_principal = BINARY c.nome_categoria
+      OR BINARY p.categoria_principal = BINARY CAST(c.id_categoria AS CHAR)
+    LEFT JOIN tag t
+      ON t.id_categoria = c.id_categoria
+    GROUP BY LOWER(TRIM(c.nome_categoria))
+    ORDER BY nome_categoria ASC
   `);
 
-  return rows;
+  const categorias = rows as any[];
+  categoriasCache = {
+    expiresAt: Date.now() + CACHE_TTL_MS,
+    rows: categorias,
+  };
+
+  return categorias;
+}
+
+export async function listarCategoriasComFallback() {
+  const categorias = (await listarCategorias()) as any[];
+
+  if (categorias.length > 0) return categorias;
+
+  return CATEGORIAS_INICIAIS.map((categoria, index) => ({
+    id_categoria: index + 1,
+    nome_categoria: categoria.nome_categoria,
+    descricao: categoria.descricao,
+    total_prestadores: 0,
+  }));
 }
 
 export async function buscarCategoriaPorId(id: number) {
-  await garantirTabelaCategoria();
-
   const [rows]: any = await pool.query(
     "SELECT * FROM categoria WHERE id_categoria = ?",
     [id]
@@ -103,13 +90,13 @@ export async function buscarCategoriaPorId(id: number) {
 }
 
 export async function criarCategoria(dados: Categoria) {
-  await garantirTabelaCategoria();
-
   const [result]: any = await pool.query(
     `INSERT INTO categoria (nome_categoria, descricao)
      VALUES (?, ?)`,
     [dados.nome_categoria, dados.descricao || null]
   );
+
+  categoriasCache = null;
 
   return {
     id_categoria: result.insertId,
@@ -118,8 +105,6 @@ export async function criarCategoria(dados: Categoria) {
 }
 
 export async function atualizarCategoria(id: number, dados: Categoria) {
-  await garantirTabelaCategoria();
-
   await pool.query(
     `UPDATE categoria
      SET nome_categoria = ?, descricao = ?
@@ -127,11 +112,14 @@ export async function atualizarCategoria(id: number, dados: Categoria) {
     [dados.nome_categoria, dados.descricao || null, id]
   );
 
+  categoriasCache = null;
+
   return buscarCategoriaPorId(id);
 }
 
 export async function deletarCategoria(id: number) {
   await pool.query("DELETE FROM categoria WHERE id_categoria = ?", [id]);
+  categoriasCache = null;
 
   return {
     mensagem: "Categoria deletada com sucesso.",
@@ -139,11 +127,9 @@ export async function deletarCategoria(id: number) {
 }
 
 export async function popularCategoriasIniciais() {
-  await garantirTabelaCategoria();
-
   for (const cat of CATEGORIAS_INICIAIS) {
     const [existente]: any = await pool.query(
-      "SELECT id_categoria FROM categoria WHERE nome_categoria = ?",
+      "SELECT id_categoria FROM categoria WHERE LOWER(TRIM(nome_categoria)) = LOWER(TRIM(?)) LIMIT 1",
       [cat.nome_categoria]
     );
 
@@ -155,6 +141,8 @@ export async function popularCategoriasIniciais() {
       );
     }
   }
+
+  categoriasCache = null;
 
   return { mensagem: "Categorias sincronizadas com sucesso no banco de dados!" };
 }

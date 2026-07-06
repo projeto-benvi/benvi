@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
 import pool from "@/app/lib/dataBase";
+import { authErrorResponse, requireUser } from "@/app/lib/authz";
 
 export async function GET(request: Request) {
   try {
-    // 1. Captura o idUsuario enviado pela URL do Front-end
-    const { searchParams } = new URL(request.url);
-    const idUsuario = searchParams.get("idUsuario");
-
-    if (!idUsuario) {
-      return NextResponse.json(
-        { error: "Usuário não autenticado ou ID ausente." }, 
-        { status: 400 }
-      );
-    }
+    const user = await requireUser();
 
     // 2. Query SQL que junta os dados da solicitação com o Nome e Foto do Prestador (tabela usuario)
     const sql = `
@@ -36,11 +28,14 @@ export async function GET(request: Request) {
     `;
 
     // 3. Executa a busca passando o ID de forma segura contra SQL Injection
-    const [rows] = await pool.query(sql, [idUsuario]);
+    const [rows] = await pool.query(sql, [user.id]);
 
     // Retorna a lista de serviços encontrados
     return NextResponse.json(rows);
   } catch (error: any) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+
     console.error("Erro na API /api/meus-pedidos:", error);
     return NextResponse.json(
       { error: "Erro interno no servidor ao buscar serviços contratados." }, 

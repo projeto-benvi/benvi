@@ -1,4 +1,4 @@
-// middleware.ts (raiz do projeto)
+// proxy.ts (raiz do projeto)
 
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
@@ -17,7 +17,7 @@ const ROTAS_PRIVADAS = [
 // Rotas que usuário logado não deve acessar
 const ROTAS_SO_DESLOGADO = ['/login', '/cadastro'];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const token = await getToken({
     req,
     secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,

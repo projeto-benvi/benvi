@@ -1,5 +1,6 @@
 import { usuarioController } from '@/controller/usuarioController';
 import { NextRequest, NextResponse } from 'next/server';
+import { authErrorResponse, requireAdmin } from '@/app/lib/authz';
 
 // GET  /api/usuario                                    → lista todos (público)
 // GET  /api/usuario?admin=contagem&id_solicitante=1    → contagem admin
@@ -11,21 +12,36 @@ import { NextRequest, NextResponse } from 'next/server';
 // POST /api/usuario?admin=criar&id_solicitante=1       → cria usuário como admin
 
 export async function GET(req: NextRequest) {
-  const admin = new URL(req.url).searchParams.get('admin');
+  try {
+    const admin = new URL(req.url).searchParams.get('admin');
 
-  if (admin === 'contagem')    return usuarioController.adminContarUsuarios(req);
-  if (admin === 'usuarios')    return usuarioController.adminListarUsuarios(req);
-  if (admin === 'prestadores') return usuarioController.adminListarPrestadores(req);
-  if (admin === 'dashboard')   return usuarioController.adminDashboard(req);
-  if (admin === 'tickets')     return usuarioController.adminTicketsPendentes(req);
+    if (admin) {
+      const user = await requireAdmin();
+      if (admin === 'contagem')    return usuarioController.adminContarUsuarios(req, user.id);
+      if (admin === 'usuarios')    return usuarioController.adminListarUsuarios(req, user.id);
+      if (admin === 'prestadores') return usuarioController.adminListarPrestadores(req, user.id);
+      if (admin === 'dashboard')   return usuarioController.adminDashboard(req, user.id);
+      if (admin === 'tickets')     return usuarioController.adminTicketsPendentes(req, user.id);
+    }
 
-  return usuarioController.listar();
+    await requireAdmin();
+    return usuarioController.listar();
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao listar usuarios.' }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const admin = new URL(req.url).searchParams.get('admin');
+  try {
+    const admin = new URL(req.url).searchParams.get('admin');
 
-  if (admin === 'criar') return usuarioController.adminCriarUsuario(req);
+    if (admin === 'criar') {
+      const user = await requireAdmin();
+      return usuarioController.adminCriarUsuario(req, user.id);
+    }
 
-  return usuarioController.criar(req);
+    return usuarioController.criar(req);
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao criar usuario.' }, { status: 500 });
+  }
 }

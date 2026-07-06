@@ -1,9 +1,18 @@
 import { servicoController } from '@/controller/servicoController';
-import { NextRequest } from 'next/server';
+import pool from '@/app/lib/dataBase';
+import { NextRequest, NextResponse } from 'next/server';
+import { AuthenticatedUser, AuthorizationError, authErrorResponse, requireResourceOwner, requireUser } from '@/app/lib/authz';
 
 type RouteContext = {
   params: Promise<{ id: string }>; // Definindo params como uma Promise
 };
+
+async function assertServicoOwner(idServico: number, user: AuthenticatedUser) {
+  const [rows]: any = await pool.query('SELECT id_prestador FROM servico WHERE id_servico = ?', [idServico]);
+  const servico = rows[0];
+  if (!servico) throw new AuthorizationError('Servico nao encontrado.', 404);
+  requireResourceOwner(user, servico.id_prestador);
+}
 
 export async function GET(
   _: NextRequest,
@@ -17,23 +26,44 @@ export async function PUT(
   req: NextRequest,
   { params }: RouteContext
 ) {
-  const resolvedParams = await params;
-  return servicoController.atualizar(Number(resolvedParams.id), req);
+  try {
+    const user = await requireUser();
+    const resolvedParams = await params;
+    const idServico = Number(resolvedParams.id);
+    await assertServicoOwner(idServico, user);
+    return servicoController.atualizar(idServico, req);
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao atualizar servico.' }, { status: 500 });
+  }
 }
 
 export async function PATCH(
   req: NextRequest,
   { params }: RouteContext
 ) {
-  const resolvedParams = await params;
-  // Repassa para o método atualizar do seu controller
-  return servicoController.atualizar(Number(resolvedParams.id), req);
+  try {
+    const user = await requireUser();
+    const resolvedParams = await params;
+    const idServico = Number(resolvedParams.id);
+    await assertServicoOwner(idServico, user);
+    // Repassa para o método atualizar do seu controller
+    return servicoController.atualizar(idServico, req);
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao atualizar servico.' }, { status: 500 });
+  }
 }
 
 export async function DELETE(
   _: NextRequest,
   { params }: RouteContext
 ) {
-  const resolvedParams = await params; // <--- Isso resolve o erro do NaN!
-  return servicoController.deletar(Number(resolvedParams.id));
+  try {
+    const user = await requireUser();
+    const resolvedParams = await params; // <--- Isso resolve o erro do NaN!
+    const idServico = Number(resolvedParams.id);
+    await assertServicoOwner(idServico, user);
+    return servicoController.deletar(idServico);
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao deletar servico.' }, { status: 500 });
+  }
 }

@@ -2,9 +2,9 @@ import { favoritoService } from '@/service/favoritoService';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const favoritoController = {
-  async listar(req: NextRequest) {
+  async listar(req: NextRequest, idUsuarioAutenticado?: number) {
     try {
-      const idUsuario = Number(req.nextUrl.searchParams.get('id_usuario'));
+      const idUsuario = idUsuarioAutenticado ?? Number(req.nextUrl.searchParams.get('id_usuario'));
       const termo = req.nextUrl.searchParams.get('termo') ?? undefined;
       const categoria = req.nextUrl.searchParams.get('categoria') ?? undefined;
       const cidade = req.nextUrl.searchParams.get('cidade') ?? undefined;
@@ -59,9 +59,10 @@ export const favoritoController = {
     }
   },
 
-  async criar(req: NextRequest) {
+  async criar(req: NextRequest, idUsuarioAutenticado?: number) {
     try {
       const body = await req.json();
+      if (idUsuarioAutenticado) body.id_usuario = idUsuarioAutenticado;
 
       if (!body.id_usuario || !body.id_prestador) {
         return NextResponse.json(
@@ -96,9 +97,9 @@ export const favoritoController = {
     }
   },
 
-  async deletarPorUsuarioPrestador(req: NextRequest) {
+  async deletarPorUsuarioPrestador(req: NextRequest, idUsuarioAutenticado?: number) {
     try {
-      const idUsuario = Number(req.nextUrl.searchParams.get('id_usuario'));
+      const idUsuario = idUsuarioAutenticado ?? Number(req.nextUrl.searchParams.get('id_usuario'));
       const idPrestador = Number(req.nextUrl.searchParams.get('id_prestador'));
 
       if (!idUsuario || Number.isNaN(idUsuario) || !idPrestador || Number.isNaN(idPrestador)) {
