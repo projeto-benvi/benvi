@@ -1,6 +1,8 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import pool from "@/app/lib/dataBase";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { RowDataPacket } from "mysql2/promise";
 
 export type AuthenticatedUser = {
   id: number;
@@ -27,11 +29,33 @@ export async function requireUser(): Promise<AuthenticatedUser> {
     throw new AuthorizationError("Autenticacao obrigatoria.", 401);
   }
 
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT
+       u.is_admin,
+       u.nivel_acesso,
+       u.status_conta,
+       CASE
+         WHEN p.id_usuario IS NOT NULL AND COALESCE(p.status_social, 'ativo') = 'ativo' THEN 1
+         ELSE 0
+       END AS is_prestador
+     FROM usuario u
+     LEFT JOIN prestador p ON p.id_usuario = u.id_usuario
+     WHERE u.id_usuario = ?
+     LIMIT 1`,
+    [id]
+  );
+
+  const usuario = rows[0];
+
+  if (!usuario || String(usuario.status_conta || "").toLowerCase() !== "ativo") {
+    throw new AuthorizationError("Autenticacao obrigatoria.", 401);
+  }
+
   return {
     id,
-    isAdmin: Boolean((session.user as any).isAdmin),
-    isPrestador: Boolean((session.user as any).isPrestador),
-    nivelAcesso: Number((session.user as any).nivelAcesso) || undefined,
+    isAdmin: Boolean(usuario.is_admin),
+    isPrestador: Boolean(usuario.is_prestador),
+    nivelAcesso: Number(usuario.nivel_acesso) || undefined,
   };
 }
 

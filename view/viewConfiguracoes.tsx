@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   User, 
@@ -24,7 +25,9 @@ import {
   Mail,
   Phone,
   Upload,
-  Briefcase
+  Briefcase,
+  Trash2,
+  AlertOctagon
 } from "lucide-react";
 
 type TicketSuporteResumo = {
@@ -49,10 +52,6 @@ type CategoriaVinculada = {
 export default function ConfiguracoesView() {
   const searchParams = useSearchParams();
   const { user, logado, atualizarSessao } = useAuth();
-
-  useEffect(() => {
-    console.log('user:', user);
-  }, [user]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadSuporteRef = useRef<HTMLInputElement>(null);
@@ -121,6 +120,10 @@ export default function ConfiguracoesView() {
   const [suporteArquivo, setSuporteArquivo] = useState<File | null>(null);
   const [ticketsSuporte, setTicketsSuporte] = useState<TicketSuporteResumo[]>([]);
   const [carregandoTicketsSuporte, setCarregandoTicketsSuporte] = useState(false);
+  const [fraseExclusao, setFraseExclusao] = useState("");
+  const [senhaExclusao, setSenhaExclusao] = useState("");
+  const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
+  const [excluindoConta, setExcluindoConta] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -405,6 +408,35 @@ export default function ConfiguracoesView() {
     }
   };
 
+  const handleExcluirConta = async () => {
+    setExcluindoConta(true);
+    setErroMensagem("");
+
+    try {
+      const response = await fetch("/api/usuario/me", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fraseConfirmacao: fraseExclusao,
+          senhaAtual: senhaExclusao,
+        }),
+      });
+
+      const dados = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(dados.erro || "Erro ao excluir conta.");
+      }
+
+      await signOut({ callbackUrl: "/" });
+    } catch (error) {
+      setErroMensagem(error instanceof Error ? error.message : "Erro ao excluir conta.");
+      setModalExclusaoAberto(false);
+    } finally {
+      setExcluindoConta(false);
+    }
+  };
+
   if (!logado) {
     return (
       <div className="flex items-center justify-center h-[60vh] text-gray-500">
@@ -681,6 +713,59 @@ export default function ConfiguracoesView() {
                 <button type="button" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition cursor-pointer">
                   Atualizar senha
                 </button>
+              </div>
+
+              <div className="pt-6 border-t border-red-100">
+                <div className="border border-red-100 bg-red-50/40 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                      <AlertOctagon size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-red-700">Zona de perigo</h3>
+                      <p className="text-xs text-red-500 mt-1">
+                        A exclusão desativa sua conta, remove seu perfil da busca pública e encerra o acesso. Histórico necessário para segurança e auditoria pode ser preservado.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold text-red-700">Digite EXCLUIR MINHA CONTA</label>
+                      <input
+                        type="text"
+                        value={fraseExclusao}
+                        onChange={(e) => setFraseExclusao(e.target.value)}
+                        className="w-full border border-red-100 bg-white rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-red-400 transition"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold text-red-700">Senha atual</label>
+                      <input
+                        type="password"
+                        value={senhaExclusao}
+                        onChange={(e) => setSenhaExclusao(e.target.value)}
+                        placeholder="Obrigatória para contas com senha"
+                        className="w-full border border-red-100 bg-white rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-red-400 transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-[11px] text-red-500">
+                      Contas Google/OAuth sem senha local usam a frase de confirmação e a sessão autenticada como confirmação forte.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={fraseExclusao !== "EXCLUIR MINHA CONTA" || excluindoConta}
+                      onClick={() => setModalExclusaoAberto(true)}
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <Trash2 size={14} />
+                      Excluir minha conta
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1123,6 +1208,45 @@ export default function ConfiguracoesView() {
 
         </div>
       </div>
+
+      {modalExclusaoAberto && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-red-100 rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                <AlertOctagon size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Confirmar exclusão da conta</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Esta ação desativa sua conta imediatamente, oculta seu perfil público e encerra a sessão atual.
+                </p>
+              </div>
+            </div>
+
+            {erroMensagem && <p className="text-xs text-red-500 font-bold">{erroMensagem}</p>}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setModalExclusaoAberto(false)}
+                className="px-4 py-2 text-sm font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-xl transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={excluindoConta}
+                onClick={handleExcluirConta}
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {excluindoConta && <Loader2 size={14} className="animate-spin" />}
+                Confirmar exclusão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

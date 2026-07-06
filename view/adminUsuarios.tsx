@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Search, Eye, AlertTriangle, UserX, UserCheck, X, ChevronLeft, ChevronRight,
-    Users, UserPlus
+    Users, UserPlus, ShieldCheck, ShieldOff
 } from 'lucide-react';
 
 interface UsuarioPlataforma {
@@ -17,6 +17,7 @@ interface UsuarioPlataforma {
     data_cadastro?: string;
     status_conta: string;
     is_prestador: boolean;
+    is_admin?: boolean;
 }
 
 interface MetricsUsuarios {
@@ -27,7 +28,6 @@ interface MetricsUsuarios {
 }
 
 export default function AdminUsuarios() {
-    const id_solicitante = 1;
     const router = useRouter();
 
     const [usuarios, setUsuarios] = useState<UsuarioPlataforma[]>([]);
@@ -45,7 +45,7 @@ export default function AdminUsuarios() {
     const [usuariosSelecionados, setUsuariosSelecionados] = useState<number[]>([]);
 
     const [usuarioSelecionado, setUsuarioSelecionado] = useState<UsuarioPlataforma | null>(null);
-    const [tipoAcao, setTipoAcao] = useState<'desativar' | 'reativar' | 'sinalizar' | null>(null);
+    const [tipoAcao, setTipoAcao] = useState<'desativar' | 'reativar' | 'sinalizar' | 'promoverAdmin' | 'removerAdmin' | null>(null);
     const [motivoAcao, setMotivoAcao] = useState('');
     const [submittingAcao, setSubmittingAcao] = useState(false);
 
@@ -146,10 +146,34 @@ export default function AdminUsuarios() {
                 return;
             }
 
+            if (tipoAcao === 'promoverAdmin' || tipoAcao === 'removerAdmin') {
+                const response = await fetch(`/api/admin/usuarios/${usuarioSelecionado.id_usuario}/admin`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        acao: tipoAcao === 'promoverAdmin' ? 'promover' : 'remover',
+                    }),
+                });
+
+                const resData = await response.json().catch(() => ({}));
+
+                if (response.ok) {
+                    alert(resData.mensagem || 'Permissão atualizada com sucesso.');
+                    setUsuarioSelecionado(null);
+                    setTipoAcao(null);
+                    setMotivoAcao('');
+                    fetchUsuarios();
+                    return;
+                }
+
+                alert(`Aviso do Servidor: ${resData.erro || resData.error || 'Erro interno na rota do servidor.'}`);
+                return;
+            }
+
             const queryParam = tipoAcao === 'desativar' ? 'desativar' : 'reativar';
 
             const response = await fetch(
-                `/api/usuario/${usuarioSelecionado.id_usuario}?admin=${queryParam}&id_solicitante=${id_solicitante}`,
+                `/api/usuario/${usuarioSelecionado.id_usuario}?admin=${queryParam}`,
                 {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -343,6 +367,7 @@ export default function AdminUsuarios() {
                                 <th className="p-4">ID</th>
                                 <th className="p-4">Status</th>
                                 <th className="p-4">Tipo</th>
+                                <th className="p-4">Permissão</th>
                                 <th className="p-4">Email</th>
                                 <th className="p-4 text-center">Ações</th>
                             </tr>
@@ -399,6 +424,13 @@ export default function AdminUsuarios() {
                                                     {usuario.is_prestador ? 'prestador' : 'cliente'}
                                                 </span>
                                             </td>
+                                            <td className="p-4">
+                                                <span className={`px-2.5 py-1 text-xs font-bold rounded-md ${
+                                                    usuario.is_admin ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'
+                                                }`}>
+                                                    {usuario.is_admin ? 'admin' : 'usuário'}
+                                                </span>
+                                            </td>
                                             <td className="p-4 text-slate-600 text-xs">{usuario.email}</td>
                                             <td className="p-4 text-center">
                                                 <div className="flex justify-center gap-2 text-slate-400">
@@ -434,6 +466,23 @@ export default function AdminUsuarios() {
                                                             <UserX size={16} />
                                                         </button>
                                                     )}
+                                                    {usuario.is_admin ? (
+                                                        <button
+                                                            onClick={() => { setUsuarioSelecionado(usuario); setTipoAcao('removerAdmin'); }}
+                                                            className="hover:text-sky-700 p-1 transition"
+                                                            title="Remover administrador"
+                                                        >
+                                                            <ShieldOff size={16} />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => { setUsuarioSelecionado(usuario); setTipoAcao('promoverAdmin'); }}
+                                                            className="hover:text-sky-600 p-1 transition"
+                                                            title="Tornar administrador"
+                                                        >
+                                                            <ShieldCheck size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -441,7 +490,7 @@ export default function AdminUsuarios() {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={7} className="text-center p-8 text-slate-400 text-xs">
+                                    <td colSpan={8} className="text-center p-8 text-slate-400 text-xs">
                                         {loading ? "Carregando usuários..." : "Nenhum usuário encontrado."}
                                     </td>
                                 </tr>
@@ -513,16 +562,23 @@ export default function AdminUsuarios() {
                             {tipoAcao === 'desativar' && <><UserX className="text-rose-600" size={20} /> Desativar Usuário</>}
                             {tipoAcao === 'reativar'  && <><UserCheck className="text-emerald-600" size={20} /> Reativar Usuário</>}
                             {tipoAcao === 'sinalizar' && <><AlertTriangle className="text-amber-500" size={20} /> Enviar Advertência</>}
+                            {tipoAcao === 'promoverAdmin' && <><ShieldCheck className="text-sky-600" size={20} /> Tornar administrador</>}
+                            {tipoAcao === 'removerAdmin' && <><ShieldOff className="text-sky-700" size={20} /> Remover administrador</>}
                         </h3>
 
                         <p className="text-sm text-slate-400 mt-1">
                             {tipoAcao === 'sinalizar'
                                 ? <>Uma notificação de advertência será enviada para <strong className="text-slate-700">{usuarioSelecionado.nome}</strong>.</>
-                                : <>Você aplicará uma alteração na conta de <strong className="text-slate-700">{usuarioSelecionado.nome}</strong> (ID: {usuarioSelecionado.id_usuario}).</>
+                                : tipoAcao === 'promoverAdmin'
+                                    ? <>Você dará permissão administrativa para <strong className="text-slate-700">{usuarioSelecionado.nome}</strong>.</>
+                                    : tipoAcao === 'removerAdmin'
+                                        ? <>Você removerá a permissão administrativa de <strong className="text-slate-700">{usuarioSelecionado.nome}</strong>. A ação será bloqueada se for o último admin ativo.</>
+                                        : <>Você aplicará uma alteração na conta de <strong className="text-slate-700">{usuarioSelecionado.nome}</strong> (ID: {usuarioSelecionado.id_usuario}).</>
                             }
                         </p>
 
                         <form onSubmit={handleConfirmarAcao} className="mt-4 space-y-4">
+                            {tipoAcao !== 'promoverAdmin' && tipoAcao !== 'removerAdmin' && (
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
                                     {tipoAcao === 'sinalizar' ? 'Mensagem da advertência' : 'Motivo / Justificativa'}{' '}
@@ -540,6 +596,7 @@ export default function AdminUsuarios() {
                                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition resize-none"
                                 />
                             </div>
+                            )}
 
                             <div className="flex gap-2 justify-end pt-2">
                                 <button
@@ -557,14 +614,18 @@ export default function AdminUsuarios() {
                                             ? 'bg-rose-600 hover:bg-rose-700'
                                             : tipoAcao === 'reativar'
                                                 ? 'bg-emerald-600 hover:bg-emerald-700'
-                                                : 'bg-amber-500 hover:bg-amber-600'
+                                                : tipoAcao === 'sinalizar'
+                                                    ? 'bg-amber-500 hover:bg-amber-600'
+                                                    : 'bg-sky-600 hover:bg-sky-700'
                                     }`}
                                 >
                                     {submittingAcao
                                         ? 'Salvando...'
                                         : tipoAcao === 'desativar' ? 'Confirmar Desativação'
                                         : tipoAcao === 'reativar'  ? 'Confirmar Reativação'
-                                        : 'Enviar Advertência'
+                                        : tipoAcao === 'sinalizar' ? 'Enviar Advertência'
+                                        : tipoAcao === 'promoverAdmin' ? 'Tornar administrador'
+                                        : 'Remover administrador'
                                     }
                                 </button>
                             </div>

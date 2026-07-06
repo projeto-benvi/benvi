@@ -67,6 +67,9 @@ export const prestadorService = {
       whereParts.push('p.status_verificado = 1');
     }
 
+    whereParts.push("u.status_conta = 'ativo'");
+    whereParts.push("COALESCE(p.status_social, 'ativo') = 'ativo'");
+
     const whereClause = whereParts.length ? ` WHERE ${whereParts.join(' AND ')}` : '';
 
     const [rows] = await pool.query(
@@ -145,6 +148,8 @@ export const prestadorService = {
         INNER JOIN categoria c ON c.id_categoria = t.id_categoria
         GROUP BY t.id_prestador
        ) tags ON tags.id_prestador = p.id_usuario
+       WHERE u.status_conta = 'ativo'
+         AND COALESCE(p.status_social, 'ativo') = 'ativo'
        GROUP BY 
         u.id_usuario, 
         u.nome, 
@@ -188,7 +193,9 @@ export const prestadorService = {
         WHERE LOWER(s.status_servico) IN ('concluido', 'concluído')
         GROUP BY s.id_prestador
        ) sv ON sv.id_prestador = p.id_usuario
-       WHERE p.id_usuario = ?`, [id]
+       WHERE p.id_usuario = ?
+         AND u.status_conta = 'ativo'
+         AND COALESCE(p.status_social, 'ativo') = 'ativo'`, [id]
     );
 
     const prestador = rows[0];
@@ -210,7 +217,9 @@ export const prestadorService = {
       `SELECT p.*, u.nome, u.email, u.telefone, u.foto_perfil, u.cidade, u.status_conta
        FROM prestador p
        INNER JOIN usuario u ON p.id_usuario = u.id_usuario
-       WHERE p.id_usuario = ?`, [id_usuario]
+       WHERE p.id_usuario = ?
+         AND u.status_conta = 'ativo'
+         AND COALESCE(p.status_social, 'ativo') = 'ativo'`, [id_usuario]
     );
     return rows[0] ?? null;
   },

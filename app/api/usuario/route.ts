@@ -3,13 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authErrorResponse, requireAdmin } from '@/app/lib/authz';
 
 // GET  /api/usuario                                    → lista todos (público)
-// GET  /api/usuario?admin=contagem&id_solicitante=1    → contagem admin
-// GET  /api/usuario?admin=usuarios&id_solicitante=1    → lista usuários admin
-// GET  /api/usuario?admin=prestadores&id_solicitante=1 → lista prestadores admin
-// GET  /api/usuario?admin=dashboard&id_solicitante=1   → resumo dashboard admin
-// GET  /api/usuario?admin=tickets&id_solicitante=1     → tickets pendentes admin
+// GET  /api/usuario?admin=contagem    → contagem admin
+// GET  /api/usuario?admin=usuarios    → lista usuários admin
+// GET  /api/usuario?admin=prestadores → lista prestadores admin
+// GET  /api/usuario?admin=dashboard   → resumo dashboard admin
+// GET  /api/usuario?admin=tickets     → tickets pendentes admin
 // POST /api/usuario                                    → cria usuário (público)
-// POST /api/usuario?admin=criar&id_solicitante=1       → cria usuário como admin
+// POST /api/usuario?admin=criar                       → cria usuário como admin
 
 export async function GET(req: NextRequest) {
   try {

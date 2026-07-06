@@ -1,7 +1,7 @@
 import pool from '@/app/lib/dataBase';
 import { Usuario } from '@/model/usuario';
 import bcrypt from 'bcryptjs';
-import { RowDataPacket } from 'mysql2/promise';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 function logErroSqlAtualizacaoUsuario(error: unknown, contexto: Record<string, unknown>) {
   const erro = error as { name?: string; code?: string; errno?: number; sqlState?: string; message?: string; stack?: string };
@@ -59,11 +59,11 @@ export const usuarioService = {
 
 async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
   try {
-    if (!dados.nome || !dados.email || !dados.senha) {
+    if (!dados.nome || !dados.email) {
       throw new Error('Campos obrigatórios ausentes para criar usuário.');
     }
 
-    const senhaHash = await bcrypt.hash(dados.senha, 10);
+    const senhaHash = dados.senha ? await bcrypt.hash(dados.senha, 10) : '';
     const [result]: any = await pool.query(
       `INSERT INTO usuario 
         (nome, email, senha, telefone, foto_perfil, cpf, data_nascimento, cidade, nivel_acesso, status_conta, is_admin)
@@ -175,13 +175,100 @@ async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
 
   async deletar(id: number): Promise<void> {
     await pool.query('DELETE FROM usuario WHERE id_usuario = ?', [id]);
+  },
+
+  async excluirPropriaConta(idUsuario: number, dados: { fraseConfirmacao?: unknown; senhaAtual?: unknown }): Promise<void> {
+    const frase = typeof dados.fraseConfirmacao === 'string' ? dados.fraseConfirmacao.trim() : '';
+    const senhaAtual = typeof dados.senhaAtual === 'string' ? dados.senhaAtual : '';
+
+    if (frase !== 'EXCLUIR MINHA CONTA') {
+      throw new Error('CONFIRMACAO_INVALIDA');
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const [usuarios] = await connection.query<RowDataPacket[]>(
+        'SELECT id_usuario, senha, is_admin, status_conta FROM usuario WHERE id_usuario = ? FOR UPDATE',
+        [idUsuario]
+      );
+      const usuario = usuarios[0];
+
+      if (!usuario) throw new Error('USUARIO_NAO_ENCONTRADO');
+      if (String(usuario.status_conta).toLowerCase() === 'excluido') throw new Error('CONTA_JA_EXCLUIDA');
+
+      if (Boolean(usuario.is_admin)) {
+        const [admins] = await connection.query<RowDataPacket[]>(
+          "SELECT COUNT(*) AS total FROM usuario WHERE is_admin = true AND status_conta = 'ativo' AND deleted_at IS NULL"
+        );
+        if (Number(admins[0]?.total ?? 0) <= 1) throw new Error('ULTIMO_ADMIN');
+      }
+
+      const senhaHash = String(usuario.senha ?? '');
+      if (senhaHash.length > 0) {
+        const senhaVaziaValida = await bcrypt.compare('', senhaHash).catch(() => false);
+        if (!senhaVaziaValida) {
+          if (!senhaAtual) throw new Error('SENHA_OBRIGATORIA');
+          const senhaCorreta = await bcrypt.compare(senhaAtual, senhaHash);
+          if (!senhaCorreta) throw new Error('SENHA_INVALIDA');
+        }
+      }
+
+      await connection.query(
+        `UPDATE usuario
+            SET status_conta = 'excluido',
+                deleted_at = NOW(),
+                deleted_by_user = true,
+                motivo_exclusao = ?,
+                telefone = NULL,
+                foto_perfil = NULL,
+                cidade = NULL
+          WHERE id_usuario = ?`,
+        ['solicitacao_do_usuario', idUsuario]
+      );
+
+      await connection.query(
+        `UPDATE prestador
+            SET status_social = 'excluido',
+                status_verificado = false,
+                impulsiona_perfil = false
+          WHERE id_usuario = ?`,
+        [idUsuario]
+      );
+
+      await connection.query(
+        "UPDATE servico SET status_servico = 'inativo' WHERE id_prestador = ? AND LOWER(status_servico) NOT IN ('concluido', 'concluído')",
+        [idUsuario]
+      );
+
+      await connection.query(
+        "UPDATE agenda SET status = 'cancelado' WHERE id_prestador = ? AND LOWER(status) NOT IN ('cancelado', 'concluido', 'concluído')",
+        [idUsuario]
+      );
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      const err = error as { name?: string; code?: string; message?: string };
+      console.error('Erro seguro ao excluir propria conta.', {
+        tipo: err?.name ?? typeof error,
+        codigo: err?.code,
+        mensagem: err?.message,
+        idUsuario,
+      });
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 };
 
 export const adminService = {
   async _verificarAdmin(id_solicitante: number): Promise<void> {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT is_admin FROM usuario WHERE id_usuario = ?',
+      'SELECT is_admin, status_conta, deleted_at FROM usuario WHERE id_usuario = ?',
       [id_solicitante]
     );
 
@@ -189,7 +276,7 @@ export const adminService = {
       throw new Error('Acesso negado: usuário não encontrado');
     }
 
-    if (!rows[0].is_admin) {
+    if (!rows[0].is_admin || String(rows[0].status_conta).toLowerCase() !== 'ativo' || rows[0].deleted_at) {
       throw new Error('Acesso negado: você não tem permissão de administrador');
     }
   },
@@ -339,7 +426,7 @@ export const adminService = {
         dados.cidade ?? null,
         dados.nivel_acesso ?? 1,
         dados.status_conta ?? 'ativo',
-        dados.is_admin ?? false,
+        false,
       ]
     );
 
@@ -357,7 +444,6 @@ export const adminService = {
       'cidade',
       'nivel_acesso',
       'status_conta',
-      'is_admin',
       'data_nascimento',
     ]);
 
@@ -382,6 +468,58 @@ export const adminService = {
       `UPDATE usuario SET ${setClauses} WHERE id_usuario = ?`,
       valores
     );
+  },
+
+  async alterarPermissaoAdministrador(id_solicitante: number, id_alvo: number, tornarAdmin: boolean): Promise<{ is_admin: boolean }> {
+    await this._verificarAdmin(id_solicitante);
+
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const [alvos] = await connection.query<RowDataPacket[]>(
+        'SELECT id_usuario, is_admin, status_conta FROM usuario WHERE id_usuario = ? FOR UPDATE',
+        [id_alvo]
+      );
+      const alvo = alvos[0];
+
+      if (!alvo) throw new Error('USUARIO_NAO_ENCONTRADO');
+
+      if (!tornarAdmin && Boolean(alvo.is_admin)) {
+        const [admins] = await connection.query<RowDataPacket[]>(
+          "SELECT COUNT(*) AS total FROM usuario WHERE is_admin = true AND status_conta = 'ativo' AND deleted_at IS NULL"
+        );
+        if (Number(admins[0]?.total ?? 0) <= 1) throw new Error('ULTIMO_ADMIN');
+      }
+
+      await connection.query<ResultSetHeader>(
+        'UPDATE usuario SET is_admin = ? WHERE id_usuario = ?',
+        [tornarAdmin, id_alvo]
+      );
+
+      await connection.query(
+        'INSERT INTO admin_auditoria (id_admin, id_usuario_afetado, acao) VALUES (?, ?, ?)',
+        [id_solicitante, id_alvo, tornarAdmin ? 'promover_admin' : 'remover_admin']
+      );
+
+      await connection.commit();
+
+      return { is_admin: tornarAdmin };
+    } catch (error) {
+      await connection.rollback();
+      const err = error as { name?: string; code?: string; message?: string };
+      console.error('Erro seguro ao alterar permissao administrativa.', {
+        tipo: err?.name ?? typeof error,
+        codigo: err?.code,
+        mensagem: err?.message,
+        idAdmin: id_solicitante,
+        idUsuarioAfetado: id_alvo,
+      });
+      throw error;
+    } finally {
+      connection.release();
+    }
   },
   
   async desativarUsuario(id_solicitante: number, id_alvo: number): Promise<void> {

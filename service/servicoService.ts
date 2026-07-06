@@ -29,7 +29,10 @@ export const servicoService = {
        FROM servico s
        LEFT JOIN prestador p ON s.id_prestador = p.id_usuario
        LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
-       LEFT JOIN categoria c ON s.id_categoria = c.id_categoria`
+       LEFT JOIN categoria c ON s.id_categoria = c.id_categoria
+       WHERE u.status_conta = 'ativo'
+         AND COALESCE(p.status_social, 'ativo') = 'ativo'
+         AND LOWER(s.status_servico) <> 'inativo'`
     );
     return rows as any[];
   },
@@ -60,7 +63,10 @@ export const servicoService = {
        LEFT JOIN prestador p ON s.id_prestador = p.id_usuario
        LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
        LEFT JOIN categoria c ON s.id_categoria = c.id_categoria
-       WHERE s.id_servico = ?`, [id]
+       WHERE s.id_servico = ?
+         AND u.status_conta = 'ativo'
+         AND COALESCE(p.status_social, 'ativo') = 'ativo'
+         AND LOWER(s.status_servico) <> 'inativo'`, [id]
     );
     return rows[0] ?? null;
   },
@@ -79,6 +85,9 @@ export const servicoService = {
        LEFT JOIN prestador p ON s.id_prestador = p.id_usuario
        LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
        WHERE s.id_prestador = ?
+         AND u.status_conta = 'ativo'
+         AND COALESCE(p.status_social, 'ativo') = 'ativo'
+         AND LOWER(s.status_servico) <> 'inativo'
        ORDER BY s.data_inicio DESC, s.id_servico DESC`, [idPrestador]
     );
     return rows as any[];

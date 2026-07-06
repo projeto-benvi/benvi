@@ -45,6 +45,9 @@ export const usuarioController = {
   async criar(req: NextRequest) {
   try {
     const body = await req.json();
+    if (!body?.nome || !body?.email || !body?.senha) {
+      return NextResponse.json({ erro: 'Nome, e-mail e senha são obrigatórios.' }, { status: 400 });
+    }
     const id = await usuarioService.criar(body);
     return NextResponse.json({ id_usuario: id }, { status: 201 });
   } catch (e: any) {

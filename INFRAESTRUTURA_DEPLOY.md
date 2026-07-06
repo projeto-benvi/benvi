@@ -112,6 +112,7 @@ npm run migrate
 Atualizacao obrigatoria para Preview atual:
 
 - Rodar as migrations `023_production_readiness_indexes` e `024_runtime_schema_guards_to_migrations` antes de validar Preview. Elas substituem ajustes de schema que antes eram tentados durante requests e criam indices importantes para reduzir latencia.
+- Rodar tambem `025_admin_alerts_account_deletion` para habilitar auditoria admin, alertas em massa e exclusao logica de conta.
 
 Fluxo recomendado:
 
@@ -135,6 +136,9 @@ Fluxo recomendado:
 - Confirmar que anexos privados retornam erro seguro.
 - Confirmar que `/api/categoria` responde sem 500 e com latencia normal depois da primeira conexao fria.
 - Confirmar que agenda, alertas, avaliacoes e tickets funcionam sem tentar criar ou alterar tabelas durante requests.
+- Confirmar que o dashboard admin consegue promover/remover admins sem remover o ultimo administrador ativo.
+- Confirmar que alertas internos em massa mostram estimativa e criam notificacoes para o publico correto.
+- Confirmar que exclusao propria oculta perfil publico, encerra sessao e bloqueia novo login.
 - Promover para Production somente apos validação.
 
 `vercel.json` nao e obrigatorio para o deploy basico. A Vercel detecta Next.js automaticamente.
@@ -181,6 +185,17 @@ Para esses casos, usar servico externo: fila gerenciada, Vercel Cron, worker for
 - Revisar rate limit para login, cadastro, upload, mensagens e tickets.
 - Confirmar que criacao publica de usuario nao aceita `is_admin`, `nivel_acesso` ou `status_conta` do cliente.
 - Confirmar que notificacoes por ID so podem ser acessadas pelo dono ou admin.
+- Usar rota administrativa exclusiva para alterar `is_admin`; rotas comuns e edicao de perfil nao aceitam campos administrativos.
+- Exclusao de conta e logica e rastreavel; nao usar delete fisico de usuario em producao.
+
+## Politica tecnica de contas e alertas
+
+- Administradores: promocoes/remocoes usam sessao server-side e registram `admin_auditoria` sem dados sensiveis.
+- Alertas rapidos: envio interno em massa registra `alerta_envio` e cria notificacoes em lote para usuarios ativos.
+- Limite serverless: envios com publico muito grande devem ser migrados para fila/worker antes de producao ampla.
+- Exclusao propria: `usuario.status_conta='excluido'`, `deleted_at` preenchido, perfil publico oculto, prestador/servicos/agenda desativados.
+- Dados preservados: mensagens, solicitacoes, avaliacoes e relacoes historicas continuam para integridade e auditoria.
+- Esta politica e tecnica; nao substitui revisao juridica/LGPD.
 
 ## Plano de rollback
 

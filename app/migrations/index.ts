@@ -20,6 +20,7 @@ import { up as createCidadeAtendida } from './020_create_cidadeAtendida';
 import { up as createFavorito } from './021_create_favorito';
 import { up as productionReadinessIndexes } from './023_production_readiness_indexes';
 import { up as runtimeSchemaGuardsToMigrations } from './024_runtime_schema_guards_to_migrations';
+import { up as adminAlertsAccountDeletion } from './025_admin_alerts_account_deletion';
 
 
 const migrations = [
@@ -43,7 +44,8 @@ const migrations = [
   { name: '020_create_cidadeAtendida', fn: createCidadeAtendida },
   { name: '021_create_favorito', fn: createFavorito },
   { name: '023_production_readiness_indexes', fn: productionReadinessIndexes },
-  { name: '024_runtime_schema_guards_to_migrations', fn: runtimeSchemaGuardsToMigrations }
+  { name: '024_runtime_schema_guards_to_migrations', fn: runtimeSchemaGuardsToMigrations },
+  { name: '025_admin_alerts_account_deletion', fn: adminAlertsAccountDeletion }
 ];
 
 export async function runMigrations(): Promise<void> {

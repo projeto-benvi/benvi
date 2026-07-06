@@ -50,6 +50,18 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
+    async signIn({ account, profile, user }) {
+      if (account?.provider !== 'google') return true;
+
+      const email = profile?.email ?? user?.email;
+      if (!email) return false;
+
+      const usuarioExistente = await usuarioService.buscarPorEmail(email);
+      if (!usuarioExistente) return true;
+
+      return String(usuarioExistente.status_conta || '').toLowerCase() === 'ativo';
+    },
+
     async jwt({ token, user, account, trigger }) {
       // Login inicial com credentials
       if (user) {

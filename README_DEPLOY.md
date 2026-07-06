@@ -73,6 +73,25 @@ Migrations mais recentes:
 
 - `023_production_readiness_indexes`: adiciona colunas de compatibilidade usadas pelos services e indices para categorias, prestadores, servicos, solicitacoes, conversas, mensagens, notificacoes, avaliacoes e tickets.
 - `024_runtime_schema_guards_to_migrations`: move ajustes restantes de schema de agenda, alertas, avaliacoes e tickets para migration manual, incluindo `ticketsuporte_interacao`.
+- `025_admin_alerts_account_deletion`: adiciona auditoria administrativa, rastreio de alertas em massa e colunas de exclusao logica de conta.
+
+## Politica tecnica de exclusao de conta
+
+- A exclusao propria usa `DELETE /api/usuario/me` e identifica o usuario pela sessao server-side.
+- Nao ha delete fisico cego de usuario.
+- A conta recebe `status_conta='excluido'`, `deleted_at`, `deleted_by_user` e motivo tecnico.
+- Perfil de prestador, servicos ativos e agenda futura sao ocultados/desativados.
+- Foto publica deixa de ser exibida no perfil; remocao fisica no Cloudinary exige `public_id` rastreavel por fluxo.
+- Mensagens, solicitacoes, avaliacoes e registros relacionados permanecem para integridade, disputas, auditoria e obrigacoes futuras.
+- O ultimo administrador ativo nao pode excluir a propria conta.
+- Conta Google/OAuth sem senha local usa sessao autenticada e frase `EXCLUIR MINHA CONTA` como confirmacao forte nesta etapa.
+
+## Alertas internos em massa
+
+- O envio em massa usa apenas notificacoes internas, sem e-mail, WhatsApp ou push.
+- Publicos suportados: todos os usuarios ativos, clientes ativos e prestadores ativos.
+- O envio imediato tem limite seguro para evitar timeout em serverless; volumes maiores devem usar fila/worker.
+- Cada envio registra admin responsavel, publico, tipo, total de destinatarios e data.
 
 Fluxo recomendado:
 
@@ -127,6 +146,8 @@ No painel da Vercel, configure as mesmas variaveis de `.env.example` nos ambient
 - Busca, solicitacoes, mensagens, notificacoes e admin foram testados.
 - `/api/categoria` responde sem executar DDL em runtime; categorias usam cache publico curto por instancia.
 - Services nao devem criar ou alterar tabelas durante requests; qualquer ajuste de schema deve entrar em nova migration e ser executado manualmente.
+- Rotas administrativas de permissao e alertas foram testadas com sessao server-side.
+- Exclusao propria desativa a conta e encerra a sessao, sem deletar fisicamente dados relacionais.
 
 ## Rollback
 

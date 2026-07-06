@@ -42,8 +42,6 @@ interface CidadeAtendida {
 }
 
 export default function AdminDashboard() {
-    const id_solicitante = 1; // ID padrão do admin
-
     // Estados dos dados do Backend
     const [metrics, setMetrics] = useState<DashboardData | null>(null);
     const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
@@ -57,11 +55,14 @@ export default function AdminDashboard() {
     const itemsPerPage = 4; // Quantidade de parcerias exibidas por vez
 
     // Estados do formulário de Alerta
-    const [idNotificacao, setIdNotificacao] = useState<number>(1);
-    const [prioridade, setPrioridade] = useState<number>(3); // 1-Baixa, 2-Média, 3-Alta
-    const [categoria, setCategoria] = useState('Geral');
+    const [alertaTitulo, setAlertaTitulo] = useState('');
+    const [alertaMensagem, setAlertaMensagem] = useState('');
+    const [alertaTipo, setAlertaTipo] = useState('informativo');
+    const [alertaPublico, setAlertaPublico] = useState('todos');
     const [urlAcao, setUrlAcao] = useState('');
-    const [dataExpiracao, setDataExpiracao] = useState('');
+    const [destinatariosEstimados, setDestinatariosEstimados] = useState<number | null>(null);
+    const [enviandoAlerta, setEnviandoAlerta] = useState(false);
+    const [feedbackAlerta, setFeedbackAlerta] = useState('');
 
     // Carregamento inicial de dados integrados   
     useEffect(() => {
@@ -138,34 +139,62 @@ export default function AdminDashboard() {
         loadDashboardData();
     }, []);
 
+    const estimarDestinatariosAlerta = async () => {
+        const response = await fetch(`/api/admin/alertas?publicoAlvo=${alertaPublico}`, { cache: 'no-store' });
+        const dados = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(dados.erro || 'Erro ao estimar destinatários.');
+        setDestinatariosEstimados(Number(dados.total_destinatarios || 0));
+        return Number(dados.total_destinatarios || 0);
+    };
+
+    useEffect(() => {
+        setDestinatariosEstimados(null);
+        setFeedbackAlerta('');
+    }, [alertaPublico]);
+
     // Envio do formulário de Alerta
     const handleSendAlert = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!idNotificacao || !categoria) return alert("Por favor, preencha todos os campos obrigatórios!");
+        setFeedbackAlerta('');
 
         try {
-            const response = await fetch(`/api/alerta`, {
+            setEnviandoAlerta(true);
+            const total = destinatariosEstimados ?? await estimarDestinatariosAlerta();
+
+            if (!confirm(`Enviar este alerta para ${total} destinatário(s)?`)) {
+                setEnviandoAlerta(false);
+                return;
+            }
+
+            const response = await fetch(`/api/admin/alertas`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    id_notificacao: Number(idNotificacao),
-                    prioridade: Number(prioridade),
-                    categoria: categoria,
-                    url_acao: urlAcao || null,
-                    data_expiracao: dataExpiracao || null
+                    titulo: alertaTitulo,
+                    mensagem: alertaMensagem,
+                    tipo: alertaTipo,
+                    publicoAlvo: alertaPublico,
+                    urlAcao: urlAcao || null
                 })
             });
 
             if (response.ok) {
-                alert("Alerta criado e publicado com sucesso no sistema!");
+                const dados = await response.json().catch(() => ({}));
+                setFeedbackAlerta(`Alerta enviado para ${dados.total_destinatarios || total} destinatário(s).`);
+                setAlertaTitulo('');
+                setAlertaMensagem('');
+                setAlertaTipo('informativo');
+                setAlertaPublico('todos');
                 setUrlAcao('');
-                setDataExpiracao('');
+                setDestinatariosEstimados(null);
             } else {
                 const errData = await response.json();
-                alert(`Falha ao submeter o alerta: ${errData.erro || 'Erro desconhecido'}`);
+                setFeedbackAlerta(errData.erro || 'Erro ao enviar alerta.');
             }
         } catch (error) {
-            console.error(error);
+            setFeedbackAlerta(error instanceof Error ? error.message : 'Erro ao enviar alerta.');
+        } finally {
+            setEnviandoAlerta(false);
         }
     };
 
@@ -337,71 +366,89 @@ export default function AdminDashboard() {
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <h2 className="text-lg font-bold text-slate-900 mb-4">Enviar alerta rápido</h2>
                         <form onSubmit={handleSendAlert} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">ID Notificação</label>
-                                    <input
-                                        type="number"
-                                        value={idNotificacao}
-                                        onChange={(e) => setIdNotificacao(Number(e.target.value))}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                        placeholder="Ex: 1"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Prioridade</label>
-                                    <select
-                                        value={prioridade}
-                                        onChange={(e) => setPrioridade(Number(e.target.value))}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-600"
-                                    >
-                                        <option value={1}>1 - Baixa</option>
-                                        <option value={2}>2 - Média</option>
-                                        <option value={3}>3 - Alta</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Categoria</label>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Título</label>
                                     <input
                                         type="text"
-                                        value={categoria}
-                                        onChange={(e) => setCategoria(e.target.value)}
+                                        value={alertaTitulo}
+                                        onChange={(e) => setAlertaTitulo(e.target.value)}
                                         className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                        placeholder="Ex: Urgente, Geral"
+                                        placeholder="Ex: Manutenção programada"
                                         required
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Tipo/gravidade</label>
+                                    <select
+                                        value={alertaTipo}
+                                        onChange={(e) => setAlertaTipo(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-600"
+                                    >
+                                        <option value="informativo">Informativo</option>
+                                        <option value="aviso">Aviso</option>
+                                        <option value="importante">Importante</option>
+                                        <option value="urgente">Urgente</option>
+                                    </select>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">Mensagem</label>
+                                <textarea
+                                    value={alertaMensagem}
+                                    onChange={(e) => setAlertaMensagem(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                                    rows={4}
+                                    placeholder="Escreva uma mensagem curta e objetiva."
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">URL de Ação (Opcional)</label>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Público-alvo</label>
+                                    <select
+                                        value={alertaPublico}
+                                        onChange={(e) => setAlertaPublico(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-600"
+                                    >
+                                        <option value="todos">Todos os usuários ativos</option>
+                                        <option value="clientes">Somente clientes ativos</option>
+                                        <option value="prestadores">Somente prestadores ativos</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Link interno opcional</label>
                                     <input
                                         type="text"
                                         value={urlAcao}
                                         onChange={(e) => setUrlAcao(e.target.value)}
                                         className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                        placeholder="https://exemplo.com/acao"
+                                        placeholder="/notificacoes"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Data de Expiração (Opcional)</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={dataExpiracao}
-                                        onChange={(e) => setDataExpiracao(e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-500"
-                                    />
+                                <div className="flex items-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => estimarDestinatariosAlerta().catch((error) => setFeedbackAlerta(error.message))}
+                                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl transition"
+                                    >
+                                        {destinatariosEstimados === null ? 'Estimar destinatários' : `${destinatariosEstimados} destinatário(s)`}
+                                    </button>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end pt-2">
+                            <div className="flex items-center justify-between pt-2">
+                                <p className={`text-xs font-bold ${feedbackAlerta.startsWith('Alerta enviado') ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                    {feedbackAlerta}
+                                </p>
                                 <button
                                     type="submit"
-                                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3 rounded-xl transition shadow-md shadow-indigo-100"
+                                    disabled={enviandoAlerta}
+                                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3 rounded-xl transition shadow-md shadow-indigo-100 disabled:opacity-50"
                                 >
-                                    <Send size={16} /> Enviar alerta
+                                    <Send size={16} /> {enviandoAlerta ? 'Enviando...' : 'Enviar alerta'}
                                 </button>
                             </div>
                         </form>
