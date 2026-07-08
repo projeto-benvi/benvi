@@ -90,7 +90,7 @@ export default function AdminUsuarios() {
     useEffect(() => { fetchUsuarios(); }, []);
 
     const handleVisualizarPerfil = (id_usuario: number) => {
-        router.push(`/admin/usuarios/${id_usuario}`);
+        router.push(`/editarUsuario/${id_usuario}`);
     };
 
     const handleConfirmarAcao = async (e: React.FormEvent) => {
@@ -320,6 +320,7 @@ export default function AdminUsuarios() {
                         </div>
 
                         <select
+                            aria-label="Filtrar usuários por tipo"
                             value={filtroTipo}
                             onChange={(e) => { setFiltroTipo(e.target.value); setPaginaAtual(1); }}
                             className="bg-white border border-slate-200 text-slate-600 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"
@@ -358,6 +359,7 @@ export default function AdminUsuarios() {
                                 <th className="p-4 w-10 text-center">
                                     <input
                                         type="checkbox"
+                                        aria-label="Selecionar todos os usuários da página"
                                         className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-none cursor-pointer"
                                         checked={todosDaPaginaSelecionados}
                                         onChange={handleSelecionarTodos}
@@ -389,6 +391,7 @@ export default function AdminUsuarios() {
                                             <td className="p-4 text-center">
                                                 <input
                                                     type="checkbox"
+                                                    aria-label={`Selecionar usuário ${usuario.nome}`}
                                                     className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-none cursor-pointer"
                                                     checked={usuariosSelecionados.includes(usuario.id_usuario)}
                                                     onChange={() => handleSelecionarUm(usuario.id_usuario)}
@@ -510,6 +513,8 @@ export default function AdminUsuarios() {
                         <button
                             onClick={() => mudarPagina(paginaAtual - 1)}
                             disabled={paginaAtual === 1}
+                            aria-label="Voltar para a página anterior"
+                            title="Página anterior"
                             className="p-2 border border-slate-200 rounded-xl hover:bg-white transition disabled:opacity-40"
                         >
                             <ChevronLeft size={14} />
@@ -540,6 +545,8 @@ export default function AdminUsuarios() {
                         <button
                             onClick={() => mudarPagina(paginaAtual + 1)}
                             disabled={paginaAtual === totalPaginas}
+                            aria-label="Avançar para a próxima página"
+                            title="Próxima página"
                             className="p-2 border border-slate-200 rounded-xl hover:bg-white transition disabled:opacity-40"
                         >
                             <ChevronRight size={14} />
@@ -553,6 +560,8 @@ export default function AdminUsuarios() {
                     <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-xl p-6 relative">
                         <button
                             onClick={() => { setUsuarioSelecionado(null); setTipoAcao(null); setMotivoAcao(''); }}
+                            aria-label="Fechar modal de ação do usuário"
+                            title="Fechar"
                             className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
                         >
                             <X size={18} />

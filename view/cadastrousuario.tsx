@@ -337,6 +337,7 @@ export default function CadastroUnificado() {
               src={ilustracao}
               alt="Ilustração Benvi"
               fill
+              sizes="(min-width: 768px) 55vw, 100vw"
               className="object-contain"
               priority
             />
@@ -351,6 +352,7 @@ export default function CadastroUnificado() {
           {passo === 1 ? (
             <Link
               href="/login"
+              aria-label="Voltar para a página de login"
               className="text-gray-600 hover:text-gray-900 transition-colors cursor-pointer text-xl font-medium"
             >
               &lt;
@@ -358,6 +360,7 @@ export default function CadastroUnificado() {
           ) : (
             <button
               type="button"
+              aria-label="Voltar para a etapa anterior"
               onClick={() => {
                 setPasso(1);
                 setErros({});
@@ -405,6 +408,7 @@ export default function CadastroUnificado() {
                     key={tipo}
                     type="button"
                     onClick={() => setTipoConta(tipo)}
+                    aria-label={`Selecionar tipo de conta ${tipo}`}
                     className={`py-3 rounded-xl text-sm font-semibold border transition-all cursor-pointer capitalize ${
                       tipoConta === tipo
                         ? "bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-blue-500/10"
@@ -433,13 +437,16 @@ export default function CadastroUnificado() {
                     }}
                     type="text"
                     placeholder="Seu nome completo"
+                    aria-label="Nome completo"
+                    aria-describedby={erros.nome ? 'erro-nome' : undefined}
+                    autoComplete="name"
                     className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
                       erros.nome ? "ring-2 ring-red-400" : "focus:ring-orange-500"
                     }`}
                   />
                 </div>
                 {erros.nome && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">{erros.nome}</p>
+                  <p id="erro-nome" role="alert" className="text-red-500 text-xs mt-1 pl-1">{erros.nome}</p>
                 )}
               </div>
 
@@ -460,13 +467,16 @@ export default function CadastroUnificado() {
                     }}
                     type="email"
                     placeholder="seuemail@gmail.com"
+                    aria-label="E-mail"
+                    aria-describedby={erros.email ? 'erro-email' : undefined}
+                    autoComplete="email"
                     className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
                       erros.email ? "ring-2 ring-red-400" : "focus:ring-orange-500"
                     }`}
                   />
                 </div>
                 {erros.email && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">{erros.email}</p>
+                  <p id="erro-email" role="alert" className="text-red-500 text-xs mt-1 pl-1">{erros.email}</p>
                 )}
               </div>
 
@@ -488,13 +498,15 @@ export default function CadastroUnificado() {
                     type="text"
                     placeholder="000.000.000-00"
                     inputMode="numeric"
+                    aria-label="CPF"
+                    aria-describedby={erros.cpf ? 'erro-cpf' : undefined}
                     className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
                       erros.cpf ? "ring-2 ring-red-400" : "focus:ring-orange-500"
                     }`}
                   />
                 </div>
                 {erros.cpf && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">{erros.cpf}</p>
+                  <p id="erro-cpf" role="alert" className="text-red-500 text-xs mt-1 pl-1">{erros.cpf}</p>
                 )}
               </div>
 
@@ -514,6 +526,9 @@ export default function CadastroUnificado() {
                       setErros((p) => ({ ...p, dataNascimento: "" }));
                     }}
                     type="date"
+                    aria-label="Data de nascimento"
+                    aria-describedby={erros.dataNascimento ? 'erro-dataNascimento' : undefined}
+                    autoComplete="bday"
                     className={`bg-[#EFEFEF] rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all text-sm text-gray-500 ${
                       erros.dataNascimento
                         ? "ring-2 ring-red-400"
@@ -522,7 +537,7 @@ export default function CadastroUnificado() {
                   />
                 </div>
                 {erros.dataNascimento && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">
+                  <p id="erro-dataNascimento" role="alert" className="text-red-500 text-xs mt-1 pl-1">
                     {erros.dataNascimento}
                   </p>
                 )}
@@ -546,6 +561,9 @@ export default function CadastroUnificado() {
                     type="text"
                     placeholder="(00) 00000-0000"
                     inputMode="numeric"
+                    aria-label="Telefone"
+                    aria-describedby={erros.telefone ? 'erro-telefone' : undefined}
+                    autoComplete="tel"
                     className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
                       erros.telefone
                         ? "ring-2 ring-red-400"
@@ -554,7 +572,7 @@ export default function CadastroUnificado() {
                   />
                 </div>
                 {erros.telefone && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">
+                  <p id="erro-telefone" role="alert" className="text-red-500 text-xs mt-1 pl-1">
                     {erros.telefone}
                   </p>
                 )}
@@ -577,6 +595,9 @@ export default function CadastroUnificado() {
                     }}
                     type={verSenha ? "text" : "password"}
                     placeholder="Senha segura"
+                    aria-label="Senha"
+                    aria-describedby={erros.senha ? 'erro-senha' : 'ajuda-senha'}
+                    autoComplete="new-password"
                     className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-10 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
                       erros.senha ? "ring-2 ring-red-400" : "focus:ring-orange-500"
                     }`}
@@ -585,6 +606,7 @@ export default function CadastroUnificado() {
                   <button
                     type="button"
                     onClick={() => setVerSenha(!verSenha)}
+                    aria-label={verSenha ? 'Ocultar senha' : 'Mostrar senha'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {verSenha ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
@@ -610,7 +632,7 @@ export default function CadastroUnificado() {
                       ))}
                     </div>
 
-                    <div className="flex flex-col gap-0.5 pl-0.5">
+                    <div id="ajuda-senha" className="flex flex-col gap-0.5 pl-0.5">
                       {[
                         {
                           ok: forcaSenha.tamanho,
@@ -639,7 +661,7 @@ export default function CadastroUnificado() {
                 )}
 
                 {erros.senha && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">{erros.senha}</p>
+                  <p id="erro-senha" role="alert" className="text-red-500 text-xs mt-1 pl-1">{erros.senha}</p>
                 )}
               </div>
 
@@ -660,6 +682,9 @@ export default function CadastroUnificado() {
                     }}
                     type={verConfirmar ? "text" : "password"}
                     placeholder="Confirme sua senha"
+                    aria-label="Confirmar senha"
+                    aria-describedby={erros.confirmarSenha ? 'erro-confirmarSenha' : undefined}
+                    autoComplete="new-password"
                     className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-10 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm ${
                       erros.confirmarSenha
                         ? "ring-2 ring-red-400"
@@ -670,6 +695,7 @@ export default function CadastroUnificado() {
                   <button
                     type="button"
                     onClick={() => setVerConfirmar(!verConfirmar)}
+                    aria-label={verConfirmar ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {verConfirmar ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
@@ -677,14 +703,14 @@ export default function CadastroUnificado() {
                 </div>
 
                 {erros.confirmarSenha && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">
+                  <p id="erro-confirmarSenha" role="alert" className="text-red-500 text-xs mt-1 pl-1">
                     {erros.confirmarSenha}
                   </p>
                 )}
               </div>
 
               {erros.geral && (
-                <p className="text-red-500 text-xs font-semibold pl-1 text-center bg-red-50 py-2 rounded-lg">
+                <p role="alert" aria-live="polite" className="text-red-500 text-xs font-semibold pl-1 text-center bg-red-50 py-2 rounded-lg">
                   {erros.geral}
                 </p>
               )}
@@ -710,6 +736,7 @@ export default function CadastroUnificado() {
               <button
                 type="button"
                 onClick={() => signIn("google", { callbackUrl: "/" })}
+                aria-label="Cadastrar com Google"
                 className="bg-[#EFEFEF] text-gray-700 font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-200 transition-colors text-sm"
               >
                 <Image src={googleicon} alt="Google" width={18} height={18} />
@@ -753,6 +780,8 @@ export default function CadastroUnificado() {
                       setErros((p) => ({ ...p, categoria: "" }));
                     }}
                     disabled={carregandoCategorias || categoriasBanco.length === 0}
+                    aria-label="Categoria principal de serviço"
+                    aria-describedby={erros.categoria ? 'erro-categoria' : undefined}
                     className={`bg-[#EFEFEF] text-gray-700 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all text-sm appearance-none cursor-pointer disabled:opacity-60 ${
                       erros.categoria
                         ? "ring-2 ring-red-400"
@@ -775,7 +804,7 @@ export default function CadastroUnificado() {
                 </div>
 
                 {erros.categoria && (
-                  <p className="text-red-500 text-xs mt-1 pl-1">
+                  <p id="erro-categoria" role="alert" className="text-red-500 text-xs mt-1 pl-1">
                     {erros.categoria}
                   </p>
                 )}
@@ -785,6 +814,8 @@ export default function CadastroUnificado() {
                 <button
                   type="button"
                   onClick={() => setDropdownTagsAberto((aberto) => !aberto)}
+                  aria-controls="dropdown-categorias-secundarias"
+                  aria-label="Selecionar categorias secundárias"
                   className="flex w-full items-center justify-between text-left"
                 >
                   <span>
@@ -799,7 +830,7 @@ export default function CadastroUnificado() {
                 </button>
 
                 {dropdownTagsAberto && (
-                  <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+                  <div id="dropdown-categorias-secundarias" className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
                     {categoriasBanco.filter((cat) => cat.nome_categoria !== categoria).length === 0 ? (
                       <p className="px-3 py-2 text-xs text-gray-400">Nenhuma categoria disponível.</p>
                     ) : (
@@ -815,6 +846,7 @@ export default function CadastroUnificado() {
                             >
                               <input
                                 type="checkbox"
+                                aria-label={`Selecionar categoria secundária ${cat.nome_categoria}`}
                                 checked={selecionada}
                                 onChange={() => {
                                   setTagsSelecionadas((tags) =>
@@ -846,6 +878,8 @@ export default function CadastroUnificado() {
                     }}
                     placeholder="Descreva seus serviços, experiência e diferenciais..."
                     rows={4}
+                    aria-label="Descrição profissional"
+                    aria-describedby={erros.descricao ? 'erro-descricao' : 'contador-descricao'}
                     className={`bg-[#EFEFEF] text-gray-800 rounded-xl pl-12 pr-4 py-3.5 w-full focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400 text-sm resize-none ${
                       erros.descricao
                         ? "ring-2 ring-red-400"
@@ -856,12 +890,13 @@ export default function CadastroUnificado() {
 
                 <div className="flex justify-between items-center mt-1 pl-1">
                   {erros.descricao ? (
-                    <p className="text-red-500 text-xs">{erros.descricao}</p>
+                    <p id="erro-descricao" role="alert" className="text-red-500 text-xs">{erros.descricao}</p>
                   ) : (
                     <span />
                   )}
 
                   <p
+                    id="contador-descricao"
                     className={`text-xs ml-auto ${
                       descricao.length < 20 ? "text-gray-400" : "text-green-500"
                     }`}
@@ -872,7 +907,7 @@ export default function CadastroUnificado() {
               </div>
 
               {erros.geral && (
-                <p className="text-red-500 text-xs font-semibold text-center bg-red-50 py-2 rounded-lg">
+                <p role="alert" aria-live="polite" className="text-red-500 text-xs font-semibold text-center bg-red-50 py-2 rounded-lg">
                   {erros.geral}
                 </p>
               )}

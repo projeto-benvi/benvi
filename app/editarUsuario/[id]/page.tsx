@@ -24,18 +24,20 @@ export default function RotaDinamicaPage() {
 
     // 3. Se estiver logado, mas o ID da URL for diferente do ID dele na sessão (e ele não for admin)
     const idDoUsuarioLogado = session?.user && (session.user as any).id;
+    const isAdmin = Boolean((session?.user as any)?.isAdmin);
 
     if (idDoUsuarioLogado && String(idDaUrl) !== String(idDoUsuarioLogado)) {
-      // Se você quiser permitir que administradores editem qualquer conta, descomente a linha abaixo:
-      // if ((session.user as any).isAdmin) return;
+      if (isAdmin) return;
 
       // Se não for o próprio dono da conta, redireciona para o próprio perfil dele ou página inicial
       router.push(`/editarUsuario/${idDoUsuarioLogado}`);
     }
   }, [status, session, idDaUrl, router]);
 
+  const isAdmin = Boolean((session?.user as any)?.isAdmin);
+
   // Enquanto valida a sessão ou se for um acesso inválido, exibe uma tela de carregamento
-  if (status === "loading" || (session?.user && String(idDaUrl) !== String((session.user as any).id))) {
+  if (status === "loading" || (session?.user && !isAdmin && String(idDaUrl) !== String((session.user as any).id))) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center space-y-2">
