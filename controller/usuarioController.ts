@@ -24,7 +24,6 @@ function logErroAtualizacaoUsuario(error: unknown, contexto: Record<string, unkn
     tipo: erro?.name ?? typeof error,
     codigo: erro?.code,
     mensagem: erro?.message,
-    stack: erro?.stack,
     ...contexto,
   });
 }
@@ -65,8 +64,8 @@ export const usuarioController = {
       const usuario = await usuarioService.buscarPorId(id);
       if (!usuario) return NextResponse.json({ erro: 'Usuário não encontrado' }, { status: 404 });
       return NextResponse.json(usuario);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao buscar usuário', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao buscar usuário' }, { status: 500 });
     }
   },
 
@@ -150,8 +149,8 @@ export const usuarioController = {
     try {
       await usuarioService.deletar(id);
       return NextResponse.json({ mensagem: 'Deletado com sucesso' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao deletar usuário', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao deletar usuário' }, { status: 500 });
     }
   },
 

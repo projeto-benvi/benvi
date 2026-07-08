@@ -6,15 +6,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
     const { id } = await params;
-    
-    console.log("ID recebido:", id);
+    const idPrestador = Number(id);
 
+    if (!Number.isFinite(idPrestador) || idPrestador <= 0) {
+      return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
+    }
 
     const avaliacoes =
       await AvaliacaoController.listarPorPrestador(
-        Number(id)
+        idPrestador
       );
 
     return NextResponse.json(
@@ -22,18 +23,10 @@ export async function GET(
       { status: 200 }
     );
 
-  } catch (error) {
-
+  } catch {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Erro interno'
-      },
+      { error: 'Erro interno' },
       { status: 500 }
     );
-
   }
-  
 }

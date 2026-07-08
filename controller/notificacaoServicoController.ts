@@ -41,7 +41,7 @@ export class NotificacaoServicoController {
     } catch (error: any) {
       console.error('Erro no handleCriar:', error);
       return NextResponse.json(
-        { error: 'Erro interno no servidor.', detalhes: error.message },
+        { error: 'Erro interno no servidor.' },
         { status: 500 }
       );
     }
@@ -54,7 +54,7 @@ export class NotificacaoServicoController {
     } catch (error: any) {
       console.error('Erro no handleListar:', error);
       return NextResponse.json(
-        { error: 'Erro ao buscar notificações de serviço.', detalhes: error.message },
+        { error: 'Erro ao buscar notificações de serviço.' },
         { status: 500 }
       );
     }

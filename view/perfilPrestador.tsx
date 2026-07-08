@@ -17,8 +17,6 @@ interface PerfilPrestadorViewProps {
 }
 
 export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewProps)  {
-
-  console.log("ID recebido para o perfil do prestador:", id); 
   const idPrestador = id ? parseInt(id) : 1;
 
   const session = await getServerSession(authOptions);
