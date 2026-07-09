@@ -34,14 +34,16 @@ export default function Home() {
     return null;
   }
 
+  // AQUI A MUDANÇA: Substituímos o <main> por uma <div> simples
+  // e removemos o min-h-screen que causava conflito com o layout pai.
   return (
-    <main className="min-h-screen bg-[#F8FAFC] flex flex-col">
+    <div className="bg-[#F8FAFC] w-full">
       <SearchBar />
-      <div className="p-8 flex flex-col gap-6 w-full">
+      <div className="p-6 md:p-8 flex flex-col gap-6 w-full">
         <CardFundoAzul />
         <CategoriasPopulares />
         <ProfissionaisRecomendados />
       </div>
-    </main>
+    </div>
   );
 }

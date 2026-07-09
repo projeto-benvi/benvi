@@ -1,12 +1,9 @@
 import Home from "@/view/home";
 
-
-
-export default function viewHome(){
-    return(
-        <main className="min-h-screen">
-            <Home/>
-      
-        </main>
-    )
+export default function ViewHome() {
+  return (
+    <div className="w-full px-6 py-8">
+      <Home />
+    </div>
+  );
 }
