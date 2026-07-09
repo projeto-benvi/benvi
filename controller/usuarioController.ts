@@ -2,6 +2,7 @@ import { usuarioService } from '@/service/usuarioService';
 import { adminService } from '@/service/usuarioService';
 import { NextRequest, NextResponse } from 'next/server';
 import { storageErrorStatus, uploadPublicImage } from '@/app/lib/storage';
+import { somenteDigitos, validarCPF } from '@/app/lib/cpf';
 
 // Helper para extrair id_solicitante e retornar erro padronizado
 function getIdSolicitante(req: NextRequest, idAutenticado?: number): number | null {
@@ -44,9 +45,13 @@ export const usuarioController = {
   async criar(req: NextRequest) {
   try {
     const body = await req.json();
-    if (!body?.nome || !body?.email || !body?.senha) {
-      return NextResponse.json({ erro: 'Nome, e-mail e senha são obrigatórios.' }, { status: 400 });
+    if (!body?.nome || !body?.email || !body?.senha || !body?.cpf) {
+      return NextResponse.json({ erro: 'Nome, e-mail, CPF e senha são obrigatórios.' }, { status: 400 });
     }
+    if (!validarCPF(String(body.cpf))) {
+      return NextResponse.json({ erro: 'Informe um CPF válido.', campo: 'cpf' }, { status: 400 });
+    }
+    body.cpf = somenteDigitos(String(body.cpf));
     const id = await usuarioService.criar(body);
     return NextResponse.json({ id_usuario: id }, { status: 201 });
   } catch (e: any) {
@@ -75,7 +80,7 @@ export const usuarioController = {
     const contentType = req.headers.get("content-type") || "";
 
     try {
-      let nome, telefone, cidade, estado, sobreVoce, dataNascimentoString;
+      let nome, telefone, cidade, estado, sobreVoce, dataNascimentoString, cpf;
       let avatarFile = null;
       let avatarUrl = undefined;
 
@@ -90,6 +95,7 @@ export const usuarioController = {
         estado = data.get("estado")?.toString();
         sobreVoce = data.get("sobreVoce")?.toString();
         dataNascimentoString = data.get("dataNascimento")?.toString();
+        cpf = data.get("cpf")?.toString();
         avatarFile = data.get("avatar") as File | null;
       } else {
         const body = await req.json();
@@ -100,6 +106,11 @@ export const usuarioController = {
         estado = body.estado;
         sobreVoce = body.sobreVoce;
         dataNascimentoString = body.dataNascimento;
+        cpf = body.cpf;
+      }
+
+      if (cpf !== undefined && !validarCPF(String(cpf))) {
+        return NextResponse.json({ erro: 'Informe um CPF válido.', campo: 'cpf' }, { status: 400 });
       }
 
       if (avatarFile && avatarFile.size > 0) {
@@ -117,6 +128,7 @@ export const usuarioController = {
       if (cidade !== undefined) dadosParaAtualizar.cidade = cidade;
       if (estado !== undefined) dadosParaAtualizar.estado = estado;
       if (sobreVoce !== undefined) dadosParaAtualizar.sobreVoce = sobreVoce;
+      if (cpf !== undefined) dadosParaAtualizar.cpf = somenteDigitos(String(cpf));
       // Campo administrativo: nunca pode ser alterado pela rota comum de perfil.
       if (dataNascimentoString) dadosParaAtualizar.dataNascimento = new Date(dataNascimentoString);
       if (avatarUrl) dadosParaAtualizar.avatar = avatarUrl;

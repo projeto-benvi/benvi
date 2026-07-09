@@ -16,6 +16,7 @@ import iconCpf from "@/assets/icons/iconCpf.svg";
 import iconTelefone from "@/assets/icons/iconTelefone.svg";
 import iconCadeado from "@/assets/icons/iconCadeado.svg";
 import iconCalendario from "@/assets/icons/iconCalendario.svg";
+import { formatarCPF, somenteDigitos, validarCPF } from "@/app/lib/cpf";
 
 import {
   FaWrench,
@@ -29,15 +30,6 @@ type CategoriaBanco = {
   nome_categoria: string;
   descricao?: string;
 };
-
-function mascaraCPF(valor: string) {
-  return valor
-    .replace(/\D/g, "")
-    .slice(0, 11)
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-}
 
 function mascaraTelefone(valor: string) {
   return valor
@@ -159,7 +151,7 @@ export default function CadastroUnificado() {
       novosErros.email = "Informe um e-mail válido.";
     }
 
-    if (cpf.replace(/\D/g, "").length !== 11) {
+    if (!validarCPF(cpf)) {
       novosErros.cpf = "Informe um CPF válido.";
     }
 
@@ -218,7 +210,7 @@ export default function CadastroUnificado() {
         body: JSON.stringify({
           nome: nome.trim(),
           email: email.trim().toLowerCase(),
-          cpf: cpf.replace(/\D/g, ""),
+          cpf: somenteDigitos(cpf),
           telefone: telefone.replace(/\D/g, ""),
           senha,
           data_nascimento: dataNascimento,
@@ -319,8 +311,8 @@ export default function CadastroUnificado() {
   }
 
   return (
-    <section className="flex w-full h-screen bg-gradient-to-b from-[#60A5FA] to-[#22C55E] overflow-hidden">
-      <div className="hidden md:flex flex-col w-[55%] p-12 relative justify-between h-full">
+    <section className="flex w-full min-h-[100dvh] bg-gradient-to-b from-[#60A5FA] to-[#22C55E]">
+      <div className="hidden md:flex flex-col w-[55%] p-8 lg:p-12 relative justify-between min-h-[100dvh]">
         <div className="w-full flex justify-start items-center pl-6 pt-2">
           <Image
             src={LogoBranca}
@@ -347,7 +339,7 @@ export default function CadastroUnificado() {
         <div className="h-6 hidden lg:block" />
       </div>
 
-      <div className="w-full md:w-[45%] bg-white rounded-tl-[60px] md:rounded-tl-[100px] flex flex-col justify-between p-8 md:p-12 h-full shadow-2xl z-10 overflow-y-auto custom-scrollbar">
+      <div className="w-full md:w-[45%] bg-white md:rounded-tl-[100px] flex flex-col justify-between px-4 py-6 sm:p-8 md:p-10 lg:p-12 min-h-[100dvh] shadow-2xl z-10">
         <div className="flex items-center justify-start pt-2 h-6">
           {passo === 1 ? (
             <Link
@@ -492,7 +484,7 @@ export default function CadastroUnificado() {
                   <input
                     value={cpf}
                     onChange={(e) => {
-                      setCpf(mascaraCPF(e.target.value));
+                      setCpf(formatarCPF(e.target.value));
                       setErros((p) => ({ ...p, cpf: "" }));
                     }}
                     type="text"

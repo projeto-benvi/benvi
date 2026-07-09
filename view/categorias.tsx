@@ -139,7 +139,7 @@ export default function CategoriasView() {
               {categoriasFiltradas.map((categoria) => (
                 <Link
                   key={categoria.id_categoria || categoria.nome_categoria}
-                  href={"/buscar-servicos?categoria=" + encodeURIComponent(categoria.nome_categoria)}
+                  href={"/buscar?categoria=" + encodeURIComponent(categoria.nome_categoria)}
                   className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md hover:border-blue-200 transition-all h-[216px] group"
                 >
                   <div className="mb-4 rounded-2xl bg-blue-50/70 p-3 group-hover:scale-105 transition-transform">
