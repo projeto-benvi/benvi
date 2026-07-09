@@ -90,7 +90,7 @@ export default function CategoriasPopulares() {
           {categorias.map((cat) => (
             <Link
               key={cat.id_categoria}
-              href={"/buscar-servicos?categoria=" + encodeURIComponent(cat.nome_categoria)}
+              href={"/buscar?categoria=" + encodeURIComponent(cat.nome_categoria)}
               // Larguras calculadas por break-point para manter a proporção exata do grid anterior
               className="flex-none w-[calc(50%-8px)] sm:w-[calc(33.333%-11px)] md:w-[calc(25%-12px)] lg:w-[calc(16.666%-14px)] snap-start flex flex-col items-center justify-center p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-300 transition-all group text-center h-28"
             >
