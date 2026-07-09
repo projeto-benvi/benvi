@@ -3,7 +3,6 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import SearchBar from "@/components/searchBar";
 import CardFundoAzul from "@/components/CardFundoAzul";
 import CategoriasPopulares from "@/components/home/CategoriasPopulares";
 import ProfissionaisRecomendados from "@/components/home/profissionaisRecomendados";
@@ -34,15 +33,13 @@ export default function Home() {
     return null;
   }
 
-  // AQUI A MUDANÇA: Substituímos o <main> por uma <div> simples
-  // e removemos o min-h-screen que causava conflito com o layout pai.
   return (
-    <div className="bg-[#F8FAFC] w-full">
+    <main className="min-h-screen bg-[#F8FAFC] flex flex-col w-full">
       <div className="px-3 py-5 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full">
         <CardFundoAzul />
         <CategoriasPopulares />
         <ProfissionaisRecomendados />
       </div>
-    </div>
+    </main>
   );
 }
