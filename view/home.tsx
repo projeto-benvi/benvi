@@ -38,7 +38,6 @@ export default function Home() {
   // e removemos o min-h-screen que causava conflito com o layout pai.
   return (
     <div className="bg-[#F8FAFC] w-full">
-      <SearchBar />
       <div className="px-3 py-5 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full">
         <CardFundoAzul />
         <CategoriasPopulares />

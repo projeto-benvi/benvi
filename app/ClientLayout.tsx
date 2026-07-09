@@ -4,35 +4,31 @@ import { usePathname } from "next/navigation";
 import { SessionProvider } from "next-auth/react";
 import { AuthProvider } from "@/app/context/AuthContext";
 import Sidebar from "@/components/Sidebar";
+import SearchBar from "@/components/searchBar"; 
 
-export default function ClientLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const esconderSidebar = pathname.startsWith("/login") || pathname.startsWith("/cadastro");
 
-  const esconderSidebar =
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/cadastro"); 
-    
   return (
     <SessionProvider>
       <AuthProvider>
-        {/* REMOVA classes como 'gap-x' ou 'p-...' aqui para não afastar os itens */}
-        <div className="flex min-h-screen w-full bg-gray-50">
-          
-          {/* Sidebar fixada à esquerda - sem margens extras */}
+        <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
           {!esconderSidebar && <Sidebar />}
           
-          {/* Main: 'flex-1' faz ele preencher o restante. 
-              Remova qualquer padding ou margem deste container pai se estiver afastando */}
-          <main className="flex-1 w-full overflow-hidden flex flex-col">
+          <main className="flex-1 w-full flex flex-col overflow-hidden">
+            {/* Cabeçalho Fixo */}
+            {!esconderSidebar && (
+              <header className="w-full h-20 flex-shrink-0">
+                <SearchBar />
+              </header>
+            )}
+
+            {/* Conteúdo rolável */}
             <div className="flex-1 w-full overflow-y-auto">
               {children}
             </div>
           </main>
-          
         </div>
       </AuthProvider>
     </SessionProvider>
