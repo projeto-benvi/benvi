@@ -1,4 +1,4 @@
-import pool from "@/app/lib/dataBase";
+import pool, { DatabaseConfigurationError } from "@/app/lib/dataBase";
 import { Categoria } from "@/model/categoria";
 
 const CACHE_TTL_MS = 60_000;
@@ -68,7 +68,15 @@ export async function listarCategorias() {
 }
 
 export async function listarCategoriasComFallback() {
-  const categorias = (await listarCategorias()) as any[];
+  let categorias: any[] = [];
+
+  try {
+    categorias = (await listarCategorias()) as any[];
+  } catch (error) {
+    if (!(error instanceof DatabaseConfigurationError)) {
+      throw error;
+    }
+  }
 
   if (categorias.length > 0) return categorias;
 

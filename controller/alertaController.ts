@@ -40,13 +40,13 @@ export const alertaController = {
         prioridade: Number(prioridade),
         categoria,
         status: status || 'ativo',
-        url_acao,
+        url_acao: novaNotificacao.url_acao,
         data_expiracao: data_expiracao ? new Date(data_expiracao) : undefined,
       });
 
       return NextResponse.json({ ...novoAlerta, notificacao: novaNotificacao }, { status: 201 });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao criar alerta', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao criar alerta' }, { status: 500 });
     }
   },
 
@@ -62,8 +62,8 @@ export const alertaController = {
         fim: searchParams.get('fim') || undefined,
       });
       return NextResponse.json(alertas);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao listar alertas', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao listar alertas' }, { status: 500 });
     }
   },
 
@@ -71,8 +71,8 @@ export const alertaController = {
     try {
       const alertas = await alertaService.listarAtivos();
       return NextResponse.json(alertas);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao listar alertas', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao listar alertas' }, { status: 500 });
     }
   },
 
@@ -81,8 +81,8 @@ export const alertaController = {
       const alerta = await alertaService.buscarPorId(id);
       if (!alerta) return NextResponse.json({ erro: 'Alerta não encontrado' }, { status: 404 });
       return NextResponse.json(alerta);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao buscar alerta', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao buscar alerta' }, { status: 500 });
     }
   },
 
@@ -92,8 +92,8 @@ export const alertaController = {
       const atualizado = await alertaService.atualizar(id, body);
       if (!atualizado) return NextResponse.json({ erro: 'Alerta não encontrado ou sem alterações' }, { status: 404 });
       return NextResponse.json({ mensagem: 'Alerta atualizado com sucesso' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao atualizar alerta', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao atualizar alerta' }, { status: 500 });
     }
   },
 
@@ -102,8 +102,8 @@ export const alertaController = {
       const deletado = await alertaService.deletar(id);
       if (!deletado) return NextResponse.json({ erro: 'Alerta não encontrado para exclusão' }, { status: 404 });
       return NextResponse.json({ mensagem: 'Alerta deletado com sucesso' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao deletar alerta', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao deletar alerta' }, { status: 500 });
     }
   }
 };

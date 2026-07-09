@@ -20,34 +20,31 @@ export default function CardFundoAzul() {
     if (termoLocalizacao) params.set("location", termoLocalizacao);
 
     const query = params.toString();
-    router.push(query ? `/buscar-servicos?${query}` : "/buscar-servicos");
+    router.push(query ? `/buscar?${query}` : "/buscar");
   }
 
   return (
     <section
-      className="w-full rounded-3xl px-6 py-8 md:px-14 md:py-14 relative overflow-hidden flex items-center min-h-[340px]"
+      className="w-full rounded-2xl sm:rounded-3xl px-4 py-7 sm:px-8 sm:py-10 md:px-14 md:py-14 relative overflow-hidden flex items-center justify-between min-h-[300px] sm:min-h-[340px]"
       style={{
         background: "linear-gradient(135deg, #A0C4FF 0%, #C4F1BE 100%)",
       }}
     >
       {/* Lado Esquerdo: Textos e Barra de Pesquisa */}
       <div className="z-10 w-full md:w-[60%] lg:w-[55%] flex flex-col justify-center">
-        <h1 className="mb-4 text-2xl md:text-4xl font-extrabold leading-tight text-[#1E293B]">
-          Encontre o profissional <br className="hidden md:block" />
-          ideal para o que você precisa
+        <h1 className="mb-4 text-2xl sm:text-3xl md:text-4xl font-extrabold leading-tight text-[#1E293B]">
+          Encontre o profissional <br className="hidden sm:block" />
+          ideal para o que <br className="hidden sm:block" />
+          você precisa
         </h1>
 
         <p className="mb-8 max-w-[460px] text-sm md:text-base font-medium text-[#475569]">
           Conectamos você com profissionais confiáveis e avaliados pela comunidade
         </p>
 
-        {/* Barra de Pesquisa Ajustada */}
-        <form 
-          onSubmit={handleBuscar} 
-          className="flex flex-col gap-2 md:flex-row w-full items-center rounded-2xl bg-white p-2 shadow-lg border border-gray-100"
-        >
-          {/* Campo Serviço */}
-          <div className="flex w-full md:flex-1 items-center gap-3 px-3 py-1">
+        {/* Barra de Pesquisa Ampliada */}
+        <form onSubmit={handleBuscar} className="flex flex-col sm:flex-row w-full gap-2 sm:items-center rounded-2xl bg-white p-2.5 shadow-lg border border-gray-100 transition-all">
+          <div className="flex flex-1 items-center gap-3 px-3">
             <Search size={22} className="text-gray-400" />
             <input
               type="text"
@@ -74,7 +71,7 @@ export default function CardFundoAzul() {
 
           <button
             type="submit"
-            className="w-full md:w-auto rounded-xl px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700 active:scale-95 shadow-md flex-shrink-0"
+            className="w-full sm:w-auto rounded-xl px-7 lg:px-10 py-3.5 text-sm font-bold text-white transition hover:bg-blue-700 active:scale-95 shadow-md flex-shrink-0"
             style={{ backgroundColor: "#2563EB" }}
           >
             Buscar

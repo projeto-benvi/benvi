@@ -78,6 +78,7 @@ export default function CategoriasPopulares() {
           {categorias.map((cat) => (
             <Link
               key={cat.id_categoria}
+<<<<<<< HEAD
               href={"/buscar-servicos?categoria=" + encodeURIComponent(cat.nome_categoria)}
               /* 
                  w-[140px] -> Define o tamanho fixo no mobile.
@@ -85,6 +86,11 @@ export default function CategoriasPopulares() {
                  md:w-[calc(20%-16px)] -> Ocupa espaço fluido em telas maiores.
               */
               className="flex-none w-[140px] sm:w-[160px] md:w-[180px] lg:w-[calc(16.666%-16px)] snap-start flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-300 transition-all group text-center h-28"
+=======
+              href={"/buscar?categoria=" + encodeURIComponent(cat.nome_categoria)}
+              // Larguras calculadas por break-point para manter a proporção exata do grid anterior
+              className="flex-none w-[calc(50%-8px)] sm:w-[calc(33.333%-11px)] md:w-[calc(25%-12px)] lg:w-[calc(16.666%-14px)] snap-start flex flex-col items-center justify-center p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-300 transition-all group text-center h-28"
+>>>>>>> a4cd04e0443500df5e011378d403ace5bf6838f5
             >
               <div className="mb-2 transform group-hover:scale-110 transition-transform">
                 <CategoriaIcon nome={cat.nome_categoria} />

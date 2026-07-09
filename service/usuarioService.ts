@@ -27,7 +27,7 @@ export const usuarioService = {
 
   async buscarPorId(id: number): Promise<Usuario | null> {
     const [rows]: any = await pool.query(
-      'SELECT id_usuario, nome, email, telefone, foto_perfil, cidade, nivel_acesso, status_conta, is_admin FROM usuario WHERE id_usuario = ?',
+      'SELECT id_usuario, nome, email, cpf, telefone, foto_perfil, cidade, data_nascimento, nivel_acesso, status_conta, is_admin FROM usuario WHERE id_usuario = ?',
       [id]
     );
     return rows[0] ?? null;
@@ -103,6 +103,7 @@ async criar(dados: Omit<Usuario, 'id_usuario'>): Promise<number> {
       'cidade',
       'foto_perfil',
       'data_nascimento',
+      'cpf',
     ]);
 
     // 1. Mapeia propriedades vindas do controller/frontend para colunas reais do MySQL

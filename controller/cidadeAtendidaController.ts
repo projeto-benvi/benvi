@@ -13,8 +13,8 @@ export const cidadeAtendidaController = {
 
       const novaCidade = await cidadeAtendidaService.criar({ id_parceria, cidade, estado, acesso_gratuito });
       return NextResponse.json(novaCidade, { status: 201 });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao registar cidade', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao registar cidade' }, { status: 500 });
     }
   },
 
@@ -22,8 +22,8 @@ export const cidadeAtendidaController = {
     try {
       const cidades = await cidadeAtendidaService.listarTodas();
       return NextResponse.json(cidades);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao listar cidades', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao listar cidades' }, { status: 500 });
     }
   },
 
@@ -34,8 +34,8 @@ export const cidadeAtendidaController = {
         return NextResponse.json({ erro: 'Cidade não encontrada' }, { status: 404 });
       }
       return NextResponse.json(cidade);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao buscar cidade', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao buscar cidade' }, { status: 500 });
     }
   },
 
@@ -54,8 +54,8 @@ export const cidadeAtendidaController = {
       }
 
       return NextResponse.json({ mensagem: 'Cidade atualizada com sucesso' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao atualizar cidade', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao atualizar cidade' }, { status: 500 });
     }
   },
 
@@ -66,8 +66,8 @@ export const cidadeAtendidaController = {
         return NextResponse.json({ erro: 'Cidade não encontrada para exclusão' }, { status: 404 });
       }
       return NextResponse.json({ mensagem: 'Cidade eliminada com sucesso' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao eliminar cidade', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao eliminar cidade' }, { status: 500 });
     }
   }
 };

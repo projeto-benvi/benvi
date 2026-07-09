@@ -6,6 +6,13 @@ type GlobalWithMySqlPool = typeof globalThis & {
 
 type RequiredDbEnv = "DB_HOST" | "DB_PORT" | "DB_USER" | "DB_PASSWORD" | "DB_NAME";
 
+export class DatabaseConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DatabaseConfigurationError";
+  }
+}
+
 function boolEnv(value: string | undefined): boolean {
   return ["1", "true", "yes", "on"].includes(String(value ?? "").toLowerCase());
 }
@@ -19,7 +26,7 @@ function requireEnv(name: RequiredDbEnv): string {
   const value = process.env[name];
 
   if (!value) {
-    throw new Error(`Variavel de ambiente obrigatoria ausente: ${name}`);
+    throw new DatabaseConfigurationError(`Variavel de ambiente obrigatoria ausente: ${name}`);
   }
 
   return value;
@@ -29,7 +36,7 @@ function requireDbHost(): string {
   const host = requireEnv("DB_HOST").trim();
 
   if (host.includes("://") || host.includes("@") || host.includes("/") || host.includes("?") || host.includes(":")) {
-    throw new Error("DB_HOST deve conter apenas o host do MySQL, sem protocolo, usuario, senha, porta, caminho ou query string.");
+    throw new DatabaseConfigurationError("DB_HOST deve conter apenas o host do MySQL, sem protocolo, usuario, senha, porta, caminho ou query string.");
   }
 
   return host;
@@ -62,14 +69,47 @@ function createPool(): Pool {
 
 const globalForPool = globalThis as GlobalWithMySqlPool;
 
-const pool = globalForPool.__benviMySqlPool ?? createPool();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPool.__benviMySqlPool = pool;
+export function hasRequiredDatabaseEnv(): boolean {
+  return ["DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"].every((name) => {
+    const value = process.env[name];
+    return typeof value === "string" && value.trim().length > 0;
+  });
 }
 
-(pool as any).on?.("error", () => {
-  console.error("Erro no pool MySQL.");
-});
+let poolErrorHandlerAttached = false;
+
+function attachPoolErrorHandler(pool: Pool) {
+  if (poolErrorHandlerAttached) return;
+  poolErrorHandlerAttached = true;
+
+  (pool as any).on?.("error", () => {
+    console.error("Erro no pool MySQL.");
+  });
+}
+
+function getPool(): Pool {
+  const existingPool = globalForPool.__benviMySqlPool;
+  if (existingPool) return existingPool;
+
+  const newPool = createPool();
+  attachPoolErrorHandler(newPool);
+
+  if (process.env.NODE_ENV !== "production") {
+    globalForPool.__benviMySqlPool = newPool;
+  }
+
+  return newPool;
+}
+
+const pool = new Proxy(
+  {},
+  {
+    get(_target, property, receiver) {
+      const currentPool = getPool();
+      const value = Reflect.get(currentPool, property, receiver);
+      return typeof value === "function" ? value.bind(currentPool) : value;
+    },
+  }
+) as Pool;
 
 export default pool;
