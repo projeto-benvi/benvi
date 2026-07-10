@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import SearchBar from "@/components/searchBar";
 import {
   ClipboardList,
   Clock,
@@ -206,11 +205,11 @@ export default function MeusPedidos() {
 
   if (!logado) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center p-8">
+      <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50 px-4">
+        <div className="text-center p-6 sm:p-8">
           <AlertCircle size={48} className="text-blue-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-700 mb-2">Faça login para ver seus pedidos</h2>
-          <p className="text-gray-500 mb-6">Você precisa estar autenticado para acessar esta página.</p>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-700 mb-2">Faça login para ver seus pedidos</h2>
+          <p className="text-sm text-gray-500 mb-6">Você precisa estar autenticado para acessar esta página.</p>
           <button
             onClick={() => router.push("/login")}
             className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition cursor-pointer"
@@ -224,10 +223,8 @@ export default function MeusPedidos() {
 
   return (
     <div className="flex-1 min-h-screen bg-gray-50">
-      <SearchBar />
-
-      <div className="max-w-5xl mx-auto px-6 py-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
               <ClipboardList size={20} className="text-white" />
@@ -237,58 +234,60 @@ export default function MeusPedidos() {
               <p className="text-xs text-gray-500">Acompanhe suas solicitações de serviço</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 value={busca}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBusca(e.target.value)}
                 placeholder="Buscar por prestador ou serviço..."
-                className="pl-9 pr-4 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 w-64"
+                className="pl-9 pr-4 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 w-full sm:w-auto sm:min-w-[320px] truncate"
               />
             </div>
             <button
               onClick={carregarPedidos}
               disabled={carregando}
-              className="p-2 rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer"
+              className="p-2 rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer shrink-0"
               title="Atualizar"
             >
               <RefreshCw size={16} className={carregando ? "animate-spin" : ""} />
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-              <ClipboardList size={18} className="text-blue-600" />
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 shadow-sm">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+              <ClipboardList size={16} className="text-blue-600 sm:w-[18px] sm:h-[18px]" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">{contagens.todos}</p>
-              <p className="text-xs text-gray-500">Total</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-              <Clock size={18} className="text-amber-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">{contagens.pendente}</p>
-              <p className="text-xs text-gray-500">Pendentes</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-gray-800">{contagens.todos}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Total</p>
             </div>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-              <CheckCircle2 size={18} className="text-green-600" />
+          <div className="bg-white rounded-2xl border border-gray-100 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 shadow-sm">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+              <Clock size={16} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">{contagens.concluido}</p>
-              <p className="text-xs text-gray-500">Concluídos</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-gray-800">{contagens.pendente}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Pendentes</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 shadow-sm">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+              <CheckCircle2 size={16} className="text-green-600 sm:w-[18px] sm:h-[18px]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-gray-800">{contagens.concluido}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Concluídos</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-5">
+        <div
+          className="flex items-center gap-2 mb-5 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
           {(["todos", "pendente", "concluido"] as FiltroStatus[]).map((f) => {
             const labels: Record<FiltroStatus, string> = {
               todos: "Todos",
@@ -299,7 +298,7 @@ export default function MeusPedidos() {
               <button
                 key={f}
                 onClick={() => setFiltro(f)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer whitespace-nowrap ${
                   filtro === f
                     ? "bg-blue-600 text-white shadow-sm"
                     : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -321,9 +320,9 @@ export default function MeusPedidos() {
             <Loader2 size={32} className="text-blue-400 animate-spin" />
           </div>
         ) : pedidosFiltrados.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 sm:p-12 text-center shadow-sm">
             <ClipboardList size={48} className="text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-600 mb-1">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-600 mb-1">
               {busca ? "Nenhum pedido encontrado" : "Você ainda não fez nenhum pedido"}
             </h3>
             <p className="text-sm text-gray-400">
@@ -345,27 +344,27 @@ export default function MeusPedidos() {
             {pedidosFiltrados.map((pedido) => (
               <div
                 key={pedido.id_solicitacao}
-                className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow"
+                className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
                     {pedido.foto_prestador ? (
                       <img
                         src={pedido.foto_prestador}
                         alt={pedido.nome_prestador}
-                        className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100"
+                        className="w-11 h-11 rounded-full object-cover ring-2 ring-gray-100 shrink-0"
                       />
                     ) : (
-                      <div className="w-11 h-11 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-base font-bold">
+                      <div className="w-11 h-11 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-base font-bold shrink-0">
                         {pedido.nome_prestador?.charAt(0).toUpperCase() ?? "P"}
                       </div>
                     )}
-                    <div>
-                      <p className="font-semibold text-gray-800 text-sm">{pedido.nome_prestador}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-800 text-sm truncate">{pedido.nome_prestador}</p>
                       {pedido.categoria_principal && (
                         <div className="flex items-center gap-1 mt-0.5">
-                          <Wrench size={11} className="text-gray-400" />
-                          <p className="text-xs text-gray-400">{pedido.categoria_principal}</p>
+                          <Wrench size={11} className="text-gray-400 shrink-0" />
+                          <p className="text-xs text-gray-400 truncate">{pedido.categoria_principal}</p>
                         </div>
                       )}
                     </div>
@@ -402,18 +401,18 @@ export default function MeusPedidos() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-50 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 min-w-0">
                     <CalendarDays size={14} className="text-blue-400 mt-0.5 shrink-0" />
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Solicitado em</p>
                       <p className="text-xs font-medium text-gray-700">{formatarData(pedido.data_solicitacao)}</p>
                     </div>
                   </div>
 
                   {pedido.data_agendamento && (
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-2 min-w-0">
                       <CalendarDays size={14} className="text-green-500 mt-0.5 shrink-0" />
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Agendado para</p>
                         <p className="text-xs font-medium text-gray-700">{formatarData(pedido.data_agendamento)}</p>
                       </div>
@@ -421,11 +420,11 @@ export default function MeusPedidos() {
                   )}
 
                   {pedido.endereco && (
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-2 min-w-0">
                       <MapPin size={14} className="text-red-400 mt-0.5 shrink-0" />
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Endereço</p>
-                        <p className="text-xs font-medium text-gray-700 truncate max-w-[180px]">{pedido.endereco}</p>
+                        <p className="text-xs font-medium text-gray-700 truncate max-w-[140px] sm:max-w-[180px]">{pedido.endereco}</p>
                       </div>
                     </div>
                   )}
@@ -449,49 +448,49 @@ export default function MeusPedidos() {
           onClick={() => setPedidoDetalhes(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <ClipboardList size={18} className="text-blue-600" />
-                <h2 className="font-bold text-gray-800 text-base">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2 min-w-0">
+                <ClipboardList size={18} className="text-blue-600 shrink-0" />
+                <h2 className="font-bold text-gray-800 text-base truncate">
                   Pedido #{pedidoDetalhes.id_solicitacao}
                 </h2>
               </div>
               <button
                 onClick={() => setPedidoDetalhes(null)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition cursor-pointer shrink-0"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="px-6 py-5 flex flex-col gap-4">
-              <div className="flex items-center gap-3">
+            <div className="px-4 sm:px-6 py-5 flex flex-col gap-4">
+              <div className="flex items-center gap-3 flex-wrap">
                 {pedidoDetalhes.foto_prestador ? (
                   <img
                     src={pedidoDetalhes.foto_prestador}
                     alt={pedidoDetalhes.nome_prestador}
-                    className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100"
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 shrink-0"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold shrink-0">
                     {pedidoDetalhes.nome_prestador?.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div>
-                  <p className="font-semibold text-gray-800">{pedidoDetalhes.nome_prestador}</p>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-800 truncate">{pedidoDetalhes.nome_prestador}</p>
                   {pedidoDetalhes.categoria_principal && (
-                    <p className="text-xs text-gray-500">{pedidoDetalhes.categoria_principal}</p>
+                    <p className="text-xs text-gray-500 truncate">{pedidoDetalhes.categoria_principal}</p>
                   )}
                 </div>
-                <div className="ml-auto">
+                <div className="sm:ml-auto">
                   <StatusBadge status={pedidoDetalhes.status} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Solicitado em</p>
                   <p className="text-sm font-medium text-gray-700">{formatarDataHora(pedidoDetalhes.data_solicitacao)}</p>
@@ -508,35 +507,35 @@ export default function MeusPedidos() {
                     <MapPin size={12} className="text-red-400" />
                     <p className="text-[10px] text-gray-400 uppercase font-semibold">Endereço</p>
                   </div>
-                  <p className="text-sm text-gray-700">{pedidoDetalhes.endereco}</p>
+                  <p className="text-sm text-gray-700 break-words">{pedidoDetalhes.endereco}</p>
                 </div>
               )}
 
               <div className="bg-gray-50 rounded-xl p-3">
                 <p className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Descrição / Complemento</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{pedidoDetalhes.complemento}</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{pedidoDetalhes.complemento}</p>
               </div>
 
               {pedidoDetalhes.descricao_servico && (
                 <div className="bg-blue-50 rounded-xl p-3">
                   <p className="text-[10px] text-blue-500 uppercase font-semibold mb-1">Serviço solicitado</p>
-                  <p className="text-sm text-blue-800">{pedidoDetalhes.descricao_servico}</p>
+                  <p className="text-sm text-blue-800 break-words">{pedidoDetalhes.descricao_servico}</p>
                 </div>
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 flex gap-2 justify-end">
-              <button
-                onClick={() => { setPedidoDetalhes(null); router.push("/mensagens"); }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition cursor-pointer"
-              >
-                <MessageCircle size={15} /> Enviar mensagem
-              </button>
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={() => setPedidoDetalhes(null)}
                 className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-200 transition cursor-pointer"
               >
                 Fechar
+              </button>
+              <button
+                onClick={() => { setPedidoDetalhes(null); router.push("/mensagens"); }}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition cursor-pointer"
+              >
+                <MessageCircle size={15} /> Enviar mensagem
               </button>
             </div>
           </div>
@@ -553,24 +552,24 @@ export default function MeusPedidos() {
             className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-bold text-gray-800 text-base">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
+              <h2 className="font-bold text-gray-800 text-base truncate pr-2">
                 Avaliar {pedidoParaAvaliar.nome_prestador}
               </h2>
               <button
                 onClick={() => setPedidoParaAvaliar(null)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition cursor-pointer shrink-0"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-4 sm:px-6 py-5 space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700 block">
                   Como você avalia esse serviço?
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <RenderEstrelas valorAtual={notaGeral} onChange={setNotaGeral} />
                   <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-md">
                     {notaGeral === 5 ? "Excelente!" : notaGeral === 4 ? "Muito bom" : notaGeral === 3 ? "Regular" : notaGeral === 2 ? "Ruim" : "Péssimo"}
@@ -600,7 +599,7 @@ export default function MeusPedidos() {
                   ].map(({ chave, label }) => (
                     <div key={chave} className="border border-gray-100 rounded-xl p-3 flex flex-col gap-1 bg-white shadow-sm">
                       <span className="text-[11px] font-bold text-gray-600">{label}</span>
-                      <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center justify-between mt-1 flex-wrap gap-1">
                         <RenderEstrelas
                           valorAtual={notasCriterios[chave]}
                           onChange={(v) => setNotasCriterios((p) => ({ ...p, [chave]: v }))}
@@ -613,7 +612,7 @@ export default function MeusPedidos() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-100">
               <button
                 onClick={() => setPedidoParaAvaliar(null)}
                 disabled={enviandoAvaliacao}

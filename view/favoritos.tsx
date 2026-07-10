@@ -201,7 +201,6 @@ export default function FavoritosView() {
 	if (!logado) {
 		return (
 			<div className="min-h-screen bg-gray-50">
-				<SearchBar />
 				<div className="mx-auto max-w-4xl px-6 py-16 text-center">
 					<h1 className="text-2xl font-bold text-gray-800">Entre na sua conta</h1>
 					<p className="mt-2 text-sm text-gray-500">Faça login para visualizar seus prestadores favoritos.</p>
@@ -218,7 +217,6 @@ export default function FavoritosView() {
 
 	return (
 		<div className="min-h-screen bg-gray-50">
-			<SearchBar />
 
 			<section className="mx-auto max-w-[1240px] px-4 py-8 md:px-6">
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
