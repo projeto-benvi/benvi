@@ -173,9 +173,14 @@ export default function ServicoPrestador() {
 
       if (resServicos.ok) {
         const dadosServicos = await resServicos.json();
+        const listaServicos = Array.isArray(dadosServicos)
+          ? dadosServicos
+          : Array.isArray(dadosServicos?.dados)
+            ? dadosServicos.dados
+            : [];
 
-        if (Array.isArray(dadosServicos)) {
-          const listaFiltrada = dadosServicos.filter(
+        {
+          const listaFiltrada = listaServicos.filter(
             (servico: ServicoRetorno) => {
               if (!servico.id_prestador) return true;
               return Number(servico.id_prestador) === Number(idUsuarioLogado);
@@ -196,10 +201,13 @@ export default function ServicoPrestador() {
 
       if (resSolicitacoes.ok) {
         const dadosSolicitacoes = await resSolicitacoes.json();
+        const listaSolicitacoes = Array.isArray(dadosSolicitacoes)
+          ? dadosSolicitacoes
+          : Array.isArray(dadosSolicitacoes?.dados)
+            ? dadosSolicitacoes.dados
+            : [];
 
-        if (Array.isArray(dadosSolicitacoes)) {
-          setSolicitacoes(dadosSolicitacoes);
-        }
+        setSolicitacoes(listaSolicitacoes);
       }
     } catch (error) {
       console.error("Erro ao conectar com o banco de dados:", error);

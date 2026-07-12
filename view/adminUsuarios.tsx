@@ -6,6 +6,7 @@ import {
     Search, Eye, AlertTriangle, UserX, UserCheck, X, ChevronLeft, ChevronRight,
     Users, UserPlus, ShieldCheck, ShieldOff
 } from 'lucide-react';
+import { fetchTodosPrestadores } from '@/app/lib/fetchTodosPrestadores';
 
 interface UsuarioPlataforma {
     id_usuario: number;
@@ -62,8 +63,8 @@ export default function AdminUsuarios() {
             const dataUsuarios = await resUsuarios.json();
             const listaUsuarios = Array.isArray(dataUsuarios) ? dataUsuarios : [];
 
-            const resPrestadores = await fetch(`/api/prestador`);
-            const dataPrestadores = await resPrestadores.json();
+            // API paginada; helper percorre as páginas para manter a lista de IDs completa
+            const dataPrestadores = await fetchTodosPrestadores();
             const idsPrestadores = Array.isArray(dataPrestadores)
                 ? dataPrestadores.map((p: any) => p.id_usuario)
                 : [];

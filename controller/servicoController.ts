@@ -1,6 +1,8 @@
 import { servicoService } from '@/service/servicoService';
 import { NextRequest, NextResponse } from 'next/server';
 import { storageErrorStatus, uploadPublicImage, type StorageUploadResult } from '@/app/lib/storage';
+import { parsePaginacao } from '@/app/lib/paginacao';
+import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
 
 type ServicoPayload = Record<string, any>;
 
@@ -79,21 +81,27 @@ async function parseServicoRequest(req: NextRequest) {
 
 export const servicoController = {
 
-  // Lista os serviços de um prestador específico
+  // Lista os serviços de um prestador específico (paginado)
   async listar(req: NextRequest) {
     try {
       const { searchParams } = new URL(req.url);
-      const idPrestador = searchParams.get('id_prestador');
+      const idPrestadorParam = searchParams.get('id_prestador');
 
-      if (!idPrestador) {
+      if (!idPrestadorParam) {
         return NextResponse.json(
           { erro: 'id_prestador é obrigatório' },
           { status: 400 }
         );
       }
 
-      const servicos = await servicoService.buscarPorPrestador(Number(idPrestador));
-      return NextResponse.json(servicos);
+      const idPrestador = parseIdParam(idPrestadorParam);
+      if (idPrestador === null) {
+        return respostaIdInvalido('id_prestador');
+      }
+
+      const paginacao = parsePaginacao(searchParams);
+      const resultado = await servicoService.buscarPorPrestador(idPrestador, paginacao);
+      return NextResponse.json(resultado);
     } catch {
       return NextResponse.json(
         { erro: 'Erro ao listar serviços' },

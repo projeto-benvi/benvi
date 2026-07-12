@@ -10,7 +10,7 @@ export const AvaliacaoController = {
         return await AvaliacaoService.buscarPorId(id);
     },
 
-    async listarPorPrestador(id_prestador: number) {
+    async listarPorPrestador(id_prestador: number, p0: { page: number; limit: number; ordem: string; nota: number | null; }) {
     return await AvaliacaoService.listarPorPrestador(id_prestador);
     },
 

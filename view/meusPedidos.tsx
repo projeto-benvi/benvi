@@ -87,7 +87,8 @@ export default function MeusPedidos() {
       const res = await fetch(`/api/solicitacaoservico?id_usuario=${user.id}`);
       if (!res.ok) throw new Error("Erro ao buscar pedidos");
       const dados = await res.json();
-      setPedidos(Array.isArray(dados) ? dados : []);
+      const lista = Array.isArray(dados) ? dados : Array.isArray(dados?.dados) ? dados.dados : [];
+      setPedidos(lista);
     } catch (err) {
       console.error(err);
       setPedidos([]);

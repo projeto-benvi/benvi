@@ -2,6 +2,7 @@ import { servicoController } from '@/controller/servicoController';
 import pool from '@/app/lib/dataBase';
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthenticatedUser, AuthorizationError, authErrorResponse, requireResourceOwner, requireUser } from '@/app/lib/authz';
+import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
 
 type RouteContext = {
   params: Promise<{ id: string }>; // Definindo params como uma Promise
@@ -19,7 +20,11 @@ export async function GET(
   { params }: RouteContext
 ) {
   const resolvedParams = await params; // Aguarda os parâmetros resolverem
-  return servicoController.buscarPorId(Number(resolvedParams.id));
+  const idServico = parseIdParam(resolvedParams.id);
+  if (idServico === null) {
+    return respostaIdInvalido('id');
+  }
+  return servicoController.buscarPorId(idServico);
 }
 
 export async function PUT(
@@ -29,7 +34,8 @@ export async function PUT(
   try {
     const user = await requireUser();
     const resolvedParams = await params;
-    const idServico = Number(resolvedParams.id);
+    const idServico = parseIdParam(resolvedParams.id);
+    if (idServico === null) return respostaIdInvalido('id');
     await assertServicoOwner(idServico, user);
     return servicoController.atualizar(idServico, req);
   } catch (error) {
@@ -44,7 +50,8 @@ export async function PATCH(
   try {
     const user = await requireUser();
     const resolvedParams = await params;
-    const idServico = Number(resolvedParams.id);
+    const idServico = parseIdParam(resolvedParams.id);
+    if (idServico === null) return respostaIdInvalido('id');
     await assertServicoOwner(idServico, user);
     // Repassa para o método atualizar do seu controller
     return servicoController.atualizar(idServico, req);
@@ -60,7 +67,8 @@ export async function DELETE(
   try {
     const user = await requireUser();
     const resolvedParams = await params; // <--- Isso resolve o erro do NaN!
-    const idServico = Number(resolvedParams.id);
+    const idServico = parseIdParam(resolvedParams.id);
+    if (idServico === null) return respostaIdInvalido('id');
     await assertServicoOwner(idServico, user);
     return servicoController.deletar(idServico);
   } catch (error) {

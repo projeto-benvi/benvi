@@ -1,19 +1,25 @@
 import { prestadorService } from '@/service/prestadorService';
 import { NextRequest, NextResponse } from 'next/server';
+import { parsePaginacao } from '@/app/lib/paginacao';
 
 export const prestadorController = {
 
   async listar(req?: NextRequest) {
     try {
-      const searchParams = req?.nextUrl.searchParams;
-      const prestadores = await prestadorService.listarTodos({
-        search: searchParams?.get("search") || searchParams?.get("termo") || undefined,
-        location: searchParams?.get("location") || searchParams?.get("localizacao") || searchParams?.get("cidade") || undefined,
-        categoria: searchParams?.get("categoria") || undefined,
-        apenasVerificados: searchParams?.get("verificados") === "1",
-      });
+      const searchParams = req?.nextUrl.searchParams ?? null;
+      const paginacao = parsePaginacao(searchParams);
+      const prestadores = await prestadorService.listarTodos(
+        {
+          search: searchParams?.get("search") || searchParams?.get("termo") || undefined,
+          location: searchParams?.get("location") || searchParams?.get("localizacao") || searchParams?.get("cidade") || undefined,
+          categoria: searchParams?.get("categoria") || undefined,
+          apenasVerificados: searchParams?.get("verificados") === "1",
+        },
+        paginacao
+      );
       return NextResponse.json(prestadores);
     } catch (e) {
+      console.error('ERRO AO LISTAR PRESTADORES:', e);
       return NextResponse.json({ erro: 'Erro ao listar prestadores' }, { status: 500 });
     }
   },
