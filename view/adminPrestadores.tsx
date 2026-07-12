@@ -327,6 +327,7 @@ export default function AdminPrestadores() {
           <div className="flex flex-col w-full max-w-xs">
             <span className="text-xs font-semibold text-slate-500 mb-1 ml-1">Categoria</span>
             <select
+              aria-label="Filtrar prestadores por categoria"
               value={filtroCategoria}
               onChange={(e) => { setFiltroCategoria(e.target.value); setPaginaAtual(1); }}
               className="w-full bg-white border border-slate-200 text-slate-600 text-sm rounded-2xl px-3 py-2.5 focus:outline-none"
@@ -341,6 +342,7 @@ export default function AdminPrestadores() {
           <div className="flex flex-col w-full max-w-xs">
             <span className="text-xs font-semibold text-slate-500 mb-1 ml-1">Cidade</span>
             <select
+              aria-label="Filtrar prestadores por cidade"
               value={filtroCidade}
               onChange={(e) => { setFiltroCidade(e.target.value); setPaginaAtual(1); }}
               className="w-full bg-white border border-slate-200 text-slate-600 text-sm rounded-2xl px-3 py-2.5 focus:outline-none"
@@ -360,6 +362,7 @@ export default function AdminPrestadores() {
                 <th className="p-4 w-10 text-center">
                   <input
                     type="checkbox"
+                    aria-label="Selecionar todos os prestadores da página"
                     className="rounded cursor-pointer"
                     checked={todosDaPaginaEstaoSelecionados}
                     onChange={handleToggleSelecionarTodos}
@@ -391,6 +394,7 @@ export default function AdminPrestadores() {
                       <td className="p-4 text-center">
                         <input
                           type="checkbox"
+                          aria-label={`Selecionar prestador ${usuario.nome}`}
                           className="rounded cursor-pointer"
                           checked={estaSelecionado}
                           onChange={() => handleToggleSelecionarItem(usuario.id_usuario)}
@@ -431,7 +435,7 @@ export default function AdminPrestadores() {
                       <td className="p-4 text-center">
                         <div className="flex justify-center gap-3 text-slate-400">
                           <button
-                            onClick={() => router.push(`/admin/prestadores/${usuario.id_usuario}`)}
+                            onClick={() => router.push(`/perfil/prestador/${usuario.id_usuario}`)}
                             className="hover:text-indigo-600 transition"
                             title="Visualizar Perfil"
                           >
@@ -530,6 +534,8 @@ export default function AdminPrestadores() {
           <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-xl p-6 relative">
             <button
               onClick={() => { setUsuarioSelecionado(null); setTipoAcao(null); setMotivoAcao(''); }}
+              aria-label="Fechar modal de ação do prestador"
+              title="Fechar"
               className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
             >
               <X size={18} />

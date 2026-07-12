@@ -34,12 +34,7 @@ export async function GET(
   } catch (error) {
     console.error("Erro na rota de listagem de avaliações:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Erro interno'
-      },
+      { error: 'Erro interno' },
       { status: 500 }
     );
   }

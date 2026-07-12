@@ -4,12 +4,14 @@ import Image from "next/image";
 import { useRouter } from "next/navigation"; 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import iconSearch from "@/assets/icons/search.svg";
 import iconFilter from "@/assets/icons/filter-alt-2.svg";
 import iconNotification from "@/assets/icons/notification.svg";
 import iconPerfil from "@/assets/comSearchBar/nft-profile.svg";
 import iconConfig from "@/assets/comSearchBar/iconConfig.svg";
+import { resolveNotificationTarget } from "@/app/lib/internal-navigation";
 
 interface Notificacao {
   id_notificacao: number;
@@ -103,6 +105,7 @@ export default function SearchBar() {
 
           <button 
             type="button" 
+            aria-label="Abrir filtros de busca"
             className="px-3 border-l border-gray-200 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
           >
             <Image src={iconFilter} alt="Filtro" width={18} height={18} />
@@ -126,9 +129,9 @@ export default function SearchBar() {
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                     Notificações
                   </h4>
-                  <a href="/notificacoes" className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition">
+                  <Link href="/notificacoes" className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition">
                     Ver todas
-                  </a>
+                  </Link>
                 </div>
                 
                 {notificacoes.length === 0 ? (
@@ -202,10 +205,10 @@ export default function SearchBar() {
                   </button>
                 </li>
                 <li>
-                  <a href="/tela-configuracoes" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-50">
+                  <Link href="/tela-configuracoes" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-50">
                     <Image src={iconConfig} alt="icon configurações" className="mr-2.5" width={18} height={18} />
                     Configurações
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </details>

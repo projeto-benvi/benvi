@@ -82,7 +82,7 @@ export const favoritoController = {
       }
 
       return NextResponse.json(
-        { erro: 'Erro ao criar favorito.', detalhes: String(e) },
+        { erro: 'Erro ao criar favorito.' },
         { status: 500 }
       );
     }

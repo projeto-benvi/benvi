@@ -37,7 +37,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] flex flex-col">
       <SearchBar />
-      <div className="p-8 flex flex-col gap-6 w-full">
+      <div className="px-3 py-5 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 w-full">
         <CardFundoAzul />
         <CategoriasPopulares />
         <ProfissionaisRecomendados />

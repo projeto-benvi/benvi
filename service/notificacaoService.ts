@@ -1,4 +1,5 @@
 import pool from '@/app/lib/dataBase'; 
+import { DEFAULT_NOTIFICATION_TARGET, normalizeInternalNavigationTarget } from '@/app/lib/internal-navigation';
 import { Notificacao } from '@/model/notificacaoModel';
 import { ParametrosPaginacao, RespostaPaginada, contarTotal, montarRespostaPaginada } from '@/app/lib/paginacao';
 
@@ -19,11 +20,17 @@ const COLUNAS_NOTIFICACAO = `
 
 export const notificacaoService = {
   async criar(notificacao: NovaNotificacao): Promise<any> {
+    const rawUrlAcao = typeof notificacao.url_acao === 'string' ? notificacao.url_acao.trim() : notificacao.url_acao;
+    const normalizedUrlAcao = normalizeInternalNavigationTarget(rawUrlAcao);
+    const urlAcao = !rawUrlAcao
+      ? null
+      : normalizedUrlAcao ?? DEFAULT_NOTIFICATION_TARGET;
+
     const [result]: any = await pool.query(
       'INSERT INTO notificacao (id_usuario, titulo, descricao, url_acao, tipo) VALUES (?, ?, ?, ?, ?)',
-      [notificacao.id_usuario, notificacao.titulo, notificacao.descricao, notificacao.url_acao ?? null, notificacao.tipo ?? null]
+      [notificacao.id_usuario, notificacao.titulo, notificacao.descricao, urlAcao, notificacao.tipo ?? null]
     );
-    return { id_notificacao: result.insertId, ...notificacao, visualizada: false };
+    return { id_notificacao: result.insertId, ...notificacao, url_acao: urlAcao, visualizada: false };
   },
 
   // Antes retornava todas as notificações do usuário de uma vez (SELECT *).

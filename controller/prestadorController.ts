@@ -29,6 +29,10 @@ export const prestadorController = {
       const destaques = await prestadorService.listarDestaques();
       return NextResponse.json(destaques, { status: 200 });
     } catch (e) {
+      if (e instanceof DatabaseConfigurationError) {
+        return NextResponse.json([], { status: 200 });
+      }
+
       console.error('ERRO AO LISTAR DESTAQUES:', e);
       return NextResponse.json({ erro: 'Erro ao listar profissionais de destaque' }, { status: 500 });
     }
@@ -55,7 +59,7 @@ export const prestadorController = {
       return NextResponse.json({ id_usuario: id }, { status: 201 });
     } catch (e) {
       console.error('ERRO AO CRIAR PRESTADOR:', e);
-      return NextResponse.json({ erro: 'Erro ao criar prestador', detalhes: String(e) }, { status: 500 });
+      return NextResponse.json({ erro: 'Erro ao criar prestador' }, { status: 500 });
     }
   },
 

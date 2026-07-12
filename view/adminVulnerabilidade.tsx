@@ -103,7 +103,7 @@ export default function PrestadoresPage() {
           return {
             ...p,
             is_vulneravel: novoStatus,
-            impulsiona_perfil: novoStatus ? true : p.impulsiona_perfil
+            impulsiona_perfil: novoStatus
           };
         }
         return p;
@@ -117,7 +117,7 @@ export default function PrestadoresPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           is_vulneravel: novoStatus,
-          impulsiona_perfil: novoStatus ? true : usuario.impulsiona_perfil
+          impulsiona_perfil: novoStatus
         })
       });
 

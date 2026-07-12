@@ -2,11 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Camera, Trash2, Star, X, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { formatarCPF, somenteDigitos, validarCPF } from '@/app/lib/cpf';
 
 export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }) {
+  const router = useRouter();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [cpf, setCpf] = useState('');
   const [cidade, setCidade] = useState('');
   const [data_nascimento, setDataNascimento] = useState('');
   const [foto_perfil, setFotoPerfil] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80');
@@ -29,6 +33,7 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
           setNome(dados.nome || '');
           setEmail(dados.email || '');
           setTelefone(dados.telefone || '');
+          setCpf(formatarCPF(dados.cpf || ''));
           setCidade(dados.cidade || '');
           if (dados.data_nascimento) setDataNascimento(dados.data_nascimento.split('T')[0]);
           if (dados.foto_perfil) setFotoPerfil(dados.foto_perfil);
@@ -81,8 +86,12 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
       alert("Erro: ID do usuário não encontrado.");
       return;
     }
+    if (!validarCPF(cpf)) {
+      alert("Informe um CPF válido.");
+      return;
+    }
     try {
-      const dadosParaAtualizar: Record<string, any> = { nome, email, telefone, cidade, estado, foto_perfil };
+      const dadosParaAtualizar: Record<string, any> = { nome, email, cpf: somenteDigitos(cpf), telefone, cidade, estado, foto_perfil };
       if (data_nascimento) dadosParaAtualizar.data_nascimento = data_nascimento;
       
       const resposta = await fetch(`/api/usuario/${idUsuario}`, {
@@ -133,7 +142,7 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
     <div className="w-full text-gray-800 font-sans min-h-screen bg-white relative">
       <main className="p-4 sm:p-10 pl-6 sm:pl-10 max-w-7xl w-full mx-0 grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-16">
         <section className="lg:col-span-3 space-y-6 sm:space-y-8">
-          <button type="button" className="flex items-center gap-2.5 text-base text-gray-500 hover:text-gray-700 font-semibold transition-colors">
+          <button type="button" onClick={() => router.back()} className="flex items-center gap-2.5 text-base text-gray-500 hover:text-gray-700 font-semibold transition-colors">
             <ArrowLeft size={18} /> Voltar
           </button>
 
@@ -186,6 +195,10 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-1.5">
+                <label htmlFor="cpf-edicao" className="block text-sm font-bold text-gray-600">CPF</label>
+                <input id="cpf-edicao" inputMode="numeric" required value={cpf} onChange={(e) => setCpf(formatarCPF(e.target.value))} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-base bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all" />
+              </div>
+              <div className="space-y-1.5">
                 <label className="block text-sm font-bold text-gray-600">Email</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-base bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all" />
               </div>
@@ -236,7 +249,7 @@ export default function EditarUsuarioComponent({ idUsuario }: { idUsuario: any }
           <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
             <h3 className="text-base font-bold text-gray-800 mb-5">Ações da conta</h3>
             <div className="space-y-2">
-              <button type="button" className="w-full flex items-center gap-3.5 px-3 py-3.5 text-base text-gray-700 font-semibold hover:bg-gray-50 rounded-xl transition-colors border-b border-gray-50">
+              <button type="button" onClick={() => router.push('/cadastro/usuario')} className="w-full flex items-center gap-3.5 px-3 py-3.5 text-base text-gray-700 font-semibold hover:bg-gray-50 rounded-xl transition-colors border-b border-gray-50">
                 <span className="text-xl">🛠️</span> Prestar serviço
               </button>
               <button type="button" onClick={() => setModalExcluirAberto(true)} className="w-full flex items-center gap-3.5 px-3 py-3.5 text-base text-red-600 font-semibold hover:bg-red-50 rounded-xl transition-colors">
