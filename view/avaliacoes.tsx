@@ -1,5 +1,4 @@
 "use client";
-import SearchBar from "@/components/searchBar";
 import {
   MessageSquareText,
   CircleDollarSign,
@@ -227,44 +226,41 @@ export default function Avaliacoes() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F8F8]">
-        <div className="border-b border-[#CDCDCD] shrink-0 bg-white">
-            <SearchBar />
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         {/* Cabeçalho */}
-        <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 rounded-xl bg-[#FBE8D8] flex items-center justify-center">
-            <MessageSquareText />
+        <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-[#FBE8D8] flex items-center justify-center shrink-0">
+            <MessageSquareText className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
 
-            <div>
-            <h1 className="text-3xl font-semibold">
+            <div className="min-w-0">
+            <h1 className="text-xl sm:text-3xl font-semibold leading-tight">
                 Avaliações recebidas
             </h1>
 
-            <p className="text-gray-500">
+            <p className="text-sm sm:text-base text-gray-500">
                 Veja o que os clientes dizem sobre o seu trabalho
             </p>
             </div>
         </div>
 
         {/* Estatísticas */}
-        <div className="flex flex-wrap gap-4 mb-8 items-end">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-8 sm:items-end">
 
             {/* Nota geral */}
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-6 w-[220px] shadow-sm">
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-5 sm:p-6 w-full sm:w-[220px] shadow-sm shrink-0">
 
-            <h3 className="font-semibold">
+            <h3 className="font-semibold text-sm sm:text-base">
                 Nota média geral
             </h3>
 
             <div className="text-center mt-4">
-                <span className="text-5xl font-bold">
+                <span className="text-4xl sm:text-5xl font-bold">
                 {notaMedia}
                 </span>
             </div>
 
-            <div className="text-center text-yellow-400 text-2xl mt-3">
+            <div className="text-center text-yellow-400 text-xl sm:text-2xl mt-3">
                 ★★★★★
             </div>
 
@@ -275,12 +271,12 @@ export default function Avaliacoes() {
             </div>
 
             {/* Cards estrelas */}
-            <div className="flex gap-2 flex-wrap flex-1 items-stretch">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-2 flex-1 items-stretch">
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
-                <p className="font-medium">⭐ 5 estrelas</p>
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-full sm:w-[140px] h-[150px] sm:h-[165px] shadow-sm flex flex-col justify-between">
+                <p className="font-medium text-sm sm:text-base">⭐ 5 estrelas</p>
 
-                <p className="text-2xl font-semibold text-center mt-3">
+                <p className="text-xl sm:text-2xl font-semibold text-center mt-3">
                 {qtd5}
                 </p>
 
@@ -297,10 +293,10 @@ export default function Avaliacoes() {
                 </p>
             </div>
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
-                <p className="font-medium">⭐ 4 estrelas</p>
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-full sm:w-[140px] h-[150px] sm:h-[165px] shadow-sm flex flex-col justify-between">
+                <p className="font-medium text-sm sm:text-base">⭐ 4 estrelas</p>
 
-                <p className="text-2xl font-semibold text-center mt-3">
+                <p className="text-xl sm:text-2xl font-semibold text-center mt-3">
                 {qtd4}
                 </p>
 
@@ -315,10 +311,10 @@ export default function Avaliacoes() {
                 </p>
             </div>
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
-                <p className="font-medium">⭐ 3 estrelas</p>
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-full sm:w-[140px] h-[150px] sm:h-[165px] shadow-sm flex flex-col justify-between">
+                <p className="font-medium text-sm sm:text-base">⭐ 3 estrelas</p>
 
-                <p className="text-2xl font-semibold text-center mt-3">
+                <p className="text-xl sm:text-2xl font-semibold text-center mt-3">
                 {qtd3}
                 </p>
 
@@ -333,10 +329,10 @@ export default function Avaliacoes() {
                 </p>
             </div>
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
-                <p className="font-medium">⭐ 2 estrelas</p>
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-full sm:w-[140px] h-[150px] sm:h-[165px] shadow-sm flex flex-col justify-between">
+                <p className="font-medium text-sm sm:text-base">⭐ 2 estrelas</p>
 
-                <p className="text-2xl font-semibold text-center mt-3">
+                <p className="text-xl sm:text-2xl font-semibold text-center mt-3">
                 {qtd2}
                 </p>
 
@@ -351,10 +347,10 @@ export default function Avaliacoes() {
                 </p>
             </div>
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
-                <p className="font-medium">⭐ 1 estrela</p>
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-full sm:w-[140px] h-[150px] sm:h-[165px] shadow-sm flex flex-col justify-between col-span-2 sm:col-span-1">
+                <p className="font-medium text-sm sm:text-base">⭐ 1 estrela</p>
 
-                <p className="text-2xl font-semibold text-center mt-3">
+                <p className="text-xl sm:text-2xl font-semibold text-center mt-3">
                 {qtd1}
                 </p>
 
@@ -376,18 +372,18 @@ export default function Avaliacoes() {
         <div className="flex flex-col xl:flex-row gap-6">
 
             {/* Lista avaliações */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
 
             
 
             {/* Filtros */}
-            <div className="flex flex-wrap items-end gap-4 sm:gap-8 border-b mb-6">
+            <div className="flex items-end gap-4 sm:gap-8 border-b mb-6 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
                 <button
                 onClick={() => setFiltroEstrela(null)}
                 className={`
-                    cursor-pointer
-                    pb-3 font-medium
+                    cursor-pointer shrink-0
+                    pb-3 font-medium text-sm sm:text-base
                     ${filtroEstrela === null
                     ? "border-b-2 border-blue-600 text-blue-600"
                     : "text-gray-500"}
@@ -399,8 +395,8 @@ export default function Avaliacoes() {
                 <button
                 onClick={() => setFiltroEstrela(5)}
                 className={`
-                    cursor-pointer
-                    pb-3
+                    cursor-pointer shrink-0
+                    pb-3 text-sm sm:text-base
                     ${filtroEstrela === 5
                     ? "border-b-2 border-blue-600 text-blue-600"
                     : "text-gray-500"}
@@ -412,8 +408,8 @@ export default function Avaliacoes() {
                 <button
                 onClick={() => setFiltroEstrela(4)}
                 className={`
-                    cursor-pointer
-                    pb-3
+                    cursor-pointer shrink-0
+                    pb-3 text-sm sm:text-base
                     ${filtroEstrela === 4
                     ? "border-b-2 border-blue-600 text-blue-600"
                     : "text-gray-500"}
@@ -425,8 +421,8 @@ export default function Avaliacoes() {
                 <button
                 onClick={() => setFiltroEstrela(3)}
                 className={`
-                    cursor-pointer
-                    pb-3
+                    cursor-pointer shrink-0
+                    pb-3 text-sm sm:text-base
                     ${filtroEstrela === 3
                     ? "border-b-2 border-blue-600 text-blue-600"
                     : "text-gray-500"}
@@ -438,8 +434,8 @@ export default function Avaliacoes() {
                 <button
                 onClick={() => setFiltroEstrela(2)}
                 className={`
-                    cursor-pointer
-                    pb-3
+                    cursor-pointer shrink-0
+                    pb-3 text-sm sm:text-base
                     ${filtroEstrela === 2
                     ? "border-b-2 border-blue-600 text-blue-600"
                     : "text-gray-500"}
@@ -452,8 +448,8 @@ export default function Avaliacoes() {
                 <button
                 onClick={() => setFiltroEstrela(1)}
                 className={`
-                    cursor-pointer
-                    pb-3
+                    cursor-pointer shrink-0
+                    pb-3 text-sm sm:text-base
                     ${filtroEstrela === 1
                     ? "border-b-2 border-blue-600 text-blue-600"
                     : "text-gray-500"}
@@ -465,7 +461,7 @@ export default function Avaliacoes() {
                 
 
             </div>
-            <p className="text-2xl font-bold text-gray-500 mb-3 ">
+            <p className="text-lg sm:text-2xl font-bold text-gray-500 mb-3 ">
                 {ordem === "recentes" ? "Mais recentes" : "Mais antigos"}
             </p>
             {/* Avaliação */}
@@ -516,7 +512,7 @@ export default function Avaliacoes() {
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
 
                 {/* Foto */}
-                <div className="w-16 h-16 rounded-full bg-gray-200 shrink-0 overflow-hidden ring-2 ring-gray-100">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-200 shrink-0 overflow-hidden ring-2 ring-gray-100">
                     {avaliacao.foto_perfil && (
                     <img
                         src={avaliacao.foto_perfil}
@@ -527,9 +523,9 @@ export default function Avaliacoes() {
                 </div>
 
                 {/* Dados cliente */}
-                <div className="w-full sm:w-[170px] shrink-0">
+                <div className="w-full sm:w-[170px] shrink-0 pr-8 sm:pr-0">
 
-                    <h3 className="font-bold text-xl">
+                    <h3 className="font-bold text-lg sm:text-xl break-words">
                     {avaliacao.nome}
                     </h3>
 
@@ -561,7 +557,7 @@ export default function Avaliacoes() {
 
                     </div>
 
-                    <p className="mt-2 text-gray-800">
+                    <p className="mt-2 text-gray-800 break-words">
                     "{avaliacao.comentario}"
                     </p>
 
@@ -574,7 +570,7 @@ export default function Avaliacoes() {
                             key={criterio.key}
                             className="bg-gray-50 rounded-lg px-3 py-2 flex items-start gap-2"
                         >
-                            <div className="text-blue-600 mt-0.5">
+                            <div className="text-blue-600 mt-0.5 shrink-0">
                             <criterio.icon className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
@@ -635,7 +631,6 @@ export default function Avaliacoes() {
             border border-[#E2D5D5]
             rounded-2xl
             w-full
-            xl:w-[250px]
             overflow-hidden
             shadow-sm
             ">
@@ -682,13 +677,13 @@ export default function Avaliacoes() {
                     key={criterio.key}
                     className="flex items-center justify-between text-sm"
                     >
-                    <div className="flex items-center gap-2 text-gray-600">
-                        <criterio.icon className="w-4 h-4 text-blue-600" />
-                        <span>
+                    <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                        <criterio.icon className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span className="truncate">
                         {criterio.label}
                         </span>
                     </div>
-                    <span className="font-semibold text-gray-800">
+                    <span className="font-semibold text-gray-800 shrink-0">
                         {mediasCriterios[criterio.key].toFixed(1)}
                     </span>
                     </div>
