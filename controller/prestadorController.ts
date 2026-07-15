@@ -1,6 +1,7 @@
 import { prestadorService } from '@/service/prestadorService';
 import { NextRequest, NextResponse } from 'next/server';
 import { parsePaginacao } from '@/app/lib/paginacao';
+import { DatabaseConfigurationError } from '@/app/lib/dataBase';
 
 export const prestadorController = {
 
