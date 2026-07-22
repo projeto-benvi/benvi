@@ -38,8 +38,9 @@ export async function POST(request: Request) {
   }
 }
 
-// GET: Listar histórico de uma conversa
+// GET: Listar histórico de uma conversa ou novas mensagens após um cursor
 // Exemplo de URL: /api/mensagens?idConversa=1
+// Exemplo de URL de polling: /api/mensagens?idConversa=1&afterId=23
 export async function GET(request: Request) {
   try {
     const user = await requireUser();
@@ -51,7 +52,40 @@ export async function GET(request: Request) {
     }
 
     await assertConversaAccess(Number(idConversa), user);
-    const resultado = await mensagemController.listarMensagens(idConversa);
+
+    await mensagemController.marcarComoLidas(
+      Number(idConversa),
+      user.id
+    );
+    
+    const afterId = searchParams.get("afterId");
+    const beforeId = searchParams.get("beforeId");
+    const limit = Number(searchParams.get("limit") ?? 30);
+    
+    let resultado;
+    console.log({
+      afterId,
+      beforeId,
+      limit,
+    });
+    if (afterId) {
+      resultado = await mensagemController.listarMensagensDesdeId(
+        Number(idConversa),
+        Number(afterId)
+      );
+    } else if (beforeId) {
+      resultado = await mensagemController.listarMensagensAntes(
+        Number(idConversa),
+        Number(beforeId),
+        limit
+      );
+    } else {
+      resultado = await mensagemController.listarUltimasMensagens(
+        Number(idConversa),
+        limit
+      );
+    }
+
     return NextResponse.json(resultado, { status: 200 });
   } catch (erro: any) {
     return NextResponse.json({ erro: erro.message }, { status: 400 });

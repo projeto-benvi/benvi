@@ -13,6 +13,7 @@ import iconConfig from "@/assets/comSearchBar/iconConfig.svg";
 
 interface Notificacao {
   id_notificacao: number;
+  id_usuario: number;
   titulo: string;
   descricao: string;
   visualizada: boolean;
@@ -62,15 +63,39 @@ export default function SearchBar() {
   const totalNaoLidas = notificacoes.filter(n => !n.visualizada).length;
 
   const marcarComoLida = async (notificacao: Notificacao) => {
-    await fetch(`/api/notificacao/${notificacao.id_notificacao}`, { method: "PATCH" });
-    setNotificacoes(prev =>
-      prev.map(n => n.id_notificacao === notificacao.id_notificacao ? { ...n, visualizada: true } : n)
+    await fetch(`/api/notificacao/${notificacao.id_notificacao}`, {
+      method: "PATCH",
+    });
+
+    setNotificacoes((prev) =>
+      prev.map((n) =>
+        n.id_notificacao === notificacao.id_notificacao
+          ? { ...n, visualizada: true }
+          : n
+      )
     );
 
-    if (notificacao.url_acao) {
-      router.push(notificacao.url_acao);
+    const destino = notificacao.url_acao;
+
+    const rotasPermitidas = [
+      "/mensagens",
+      "/perfil",
+      "/perfil/usuario",
+      "/perfil/prestador",
+      "/notificacoes",
+    ];
+    console.log("URL:", notificacao.url_acao);
+    if (
+      destino &&
+      rotasPermitidas.some((rota) => destino.startsWith(rota))
+    ) {
+      router.push(destino);
+    } else {
+      router.push("/notificacoes");
     }
   };
+
+  
 
   const lidarComRedirecionamentoPerfil = (e: React.MouseEvent) => {
     e.preventDefault();

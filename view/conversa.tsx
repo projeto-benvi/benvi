@@ -1,59 +1,37 @@
 "use client";
-import logo from "@/assets/benvi colorido 2.svg"
-import { Search, Plus, Mic, ThumbsUp, SmilePlus, AlertTriangle, X, EllipsisVertical, Star, StepForward } from "lucide-react";
-import SearchBar from "@/components/searchBar";
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+
+import logo from "@/assets/benvi colorido 2.svg";
+import SearchBar from "@/components/searchBar";
+
+import {
+  AlertTriangle,
+  ArrowLeft,
+  EllipsisVertical,
+  Eraser,
+  Mic,
+  Plus,
+  RotateCw,
+  Search,
+  SmilePlus,
+  Star,
+  StepForward,
+  ThumbsUp,
+  X,
+  XCircle,
+} from "lucide-react";
+
 
 
 export default function Conversa() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
 
-   const [fotos, setFotos] = useState<File[]>([]);
-  const [categoria, setCategoria] = useState("");
-  const [categoriasPrestador, setCategoriasPrestador] = useState<string[]>([]);
-  const [carregandoCategoriasPrestador, setCarregandoCategoriasPrestador] = useState(false);
-  const [descricao, setDescricao] = useState("");
-  const [dataServico, setDataServico] = useState("");
-  const [endereco, setEndereco] = useState("");
-  const [modalSolicitacaoAberto, setModalSolicitacaoAberto] = useState(false);
-  const [busca, setBusca] = useState("");
-  const [buscaMensagens, setBuscaMensagens] = useState("");
-  const [mostrarBuscaMensagens, setMostrarBuscaMensagens] = useState(false);
-  const [mostrarMenuAcoes, setMostrarMenuAcoes] = useState(false);
-  const [mostrarPainelEmoji, setMostrarPainelEmoji] = useState(false);
-  const [favoritos, setFavoritos] = useState<number[]>([]);
-  const [notificacao, setNotificacao] = useState<{
-    titulo: string;
-    mensagem: string;
-    tipo: "sucesso" | "erro" | "info";
-  } | null>(null);
-  const [modalDenunciaAberto, setModalDenunciaAberto] = useState(false);
-  const [denunciaEnviando, setDenunciaEnviando] = useState(false);
-  const [denunciaMensagem, setDenunciaMensagem] = useState("");
-  const [anexoEmDestaque, setAnexoEmDestaque] = useState<ConteudoAnexo | null>(null);
-  const [novaMensagem, setNovaMensagem] = useState("");
-  const [complementoSolicitacao, setComplementoSolicitacao] = useState("");
-  const [suporteAtivo, setSuporteAtivo] = useState(false);
-  const [suporteTexto, setSuporteTexto] = useState("");
-  const [suporteMensagens, setSuporteMensagens] = useState<MensagemSuporte[]>([]);
-  const [carregandoSuporte, setCarregandoSuporte] = useState(false);
-  const [enviandoSuporte, setEnviandoSuporte] = useState(false);
-  const [erro, setErro] = useState("");
-  const [chatDiretoProcessado, setChatDiretoProcessado] = useState(false);
-
-  const inputRef = useRef<HTMLInputElement>(null);
-  const inputMensagemRef = useRef<HTMLInputElement>(null);
-  const inputBuscaMensagemRef = useRef<HTMLInputElement>(null);
-  const inputAnexoRef = useRef<HTMLInputElement>(null);
-  const fimMensagensRef = useRef<HTMLDivElement>(null);
-  const notificacaoTimerRef = useRef<number | null>(null);
-
-  // ==========================
+  // ==========================================================
   // TYPES
-  // ==========================
+  // ==========================================================
 
   type Mensagem = {
     idMensagem: number;
@@ -61,6 +39,11 @@ export default function Conversa() {
     idRemetente: number;
     conteudo: string;
     criadoEm: string;
+    lida: boolean;
+
+    enviando?: boolean;
+    erro?: boolean;
+    tempId?: string;
   };
 
   type ConteudoAnexo = {
@@ -71,17 +54,17 @@ export default function Conversa() {
   };
 
   type Chat = {
-  idConversa: number;
-  idUsuario: number;
-  idPrestador: number;
+    idConversa: number;
+    idUsuario: number;
+    idPrestador: number;
 
-  nome?: string;
-  fotoPerfil?: string;
+    nome?: string;
+    fotoPerfil?: string;
 
-  ultimaMensagemEm: string;
+    ultimaMensagemEm: string;
 
-  mensagens?: Mensagem[];
-};
+    mensagens?: Mensagem[];
+  };
 
   type CategoriaVinculada = {
     id_categoria?: number;
@@ -94,39 +77,270 @@ export default function Conversa() {
     texto: string;
     data: string;
   };
-  // ==========================
-  // STATES
-  // ==========================
+
+
+
+  // ==========================================================
+  // STATES - CONVERSAS
+  // ==========================================================
 
   const [listaChats, setListaChats] = useState<Chat[]>([]);
-  const [chatSelecionado, setChatSelecionado] = useState<Chat | null>(null);
+  const [chatSelecionado, setChatSelecionado] =
+    useState<Chat | null>(null);
+
+  const [contadorNovasMensagens, setContadorNovasMensagens] =
+    useState<Record<number, number>>({});
+
+  const [mostrarListaMobile, setMostrarListaMobile] =
+    useState(true);
+
+  const [chatDiretoProcessado, setChatDiretoProcessado] =
+    useState(false);
+
+
+
+  // ==========================================================
+  // STATES - MENSAGENS
+  // ==========================================================
+
+  const [novaMensagem, setNovaMensagem] = useState("");
+
+  const [ultimoIdRecebido, setUltimoIdRecebido] =
+    useState(0);
+
+  const [novasMensagensPendentes, setNovasMensagensPendentes] =
+    useState(0);
+
+  const [abaVisivel, setAbaVisivel] =
+    useState(true);
+
+
+
+  // ==========================================================
+  // STATES - HISTÓRICO
+  // ==========================================================
+
+  const [primeiraMensagemId, setPrimeiraMensagemId] =
+    useState<number | null>(null);
+
+  const [temMaisMensagens, setTemMaisMensagens] =
+    useState(true);
+
+  const [carregandoHistorico, setCarregandoHistorico] =
+    useState(false);
+
+
+
+  // ==========================================================
+  // STATES - BUSCA
+  // ==========================================================
+
+  const [busca, setBusca] = useState("");
+
+  const [buscaMensagens, setBuscaMensagens] =
+    useState("");
+
+  const [mostrarBuscaMensagens, setMostrarBuscaMensagens] =
+    useState(false);
+
+
+
+  // ==========================================================
+  // STATES - MENU
+  // ==========================================================
+
+  const [mostrarMenuAcoes, setMostrarMenuAcoes] =
+    useState(false);
+
+  const [mostrarPainelEmoji, setMostrarPainelEmoji] =
+    useState(false);
+
+  const [favoritos, setFavoritos] =
+    useState<number[]>([]);
+
+
+
+  // ==========================================================
+  // STATES - SOLICITAÇÃO
+  // ==========================================================
+
+  const [modalSolicitacaoAberto, setModalSolicitacaoAberto] =
+    useState(false);
+
+  const [categoria, setCategoria] = useState("");
+
+  const [categoriasPrestador, setCategoriasPrestador] =
+    useState<string[]>([]);
+
+  const [carregandoCategoriasPrestador,
+    setCarregandoCategoriasPrestador] =
+    useState(false);
+
+  const [descricao, setDescricao] = useState("");
+
+  const [dataServico, setDataServico] =
+    useState("");
+
+  const [endereco, setEndereco] =
+    useState("");
+
+  const [complementoSolicitacao,
+    setComplementoSolicitacao] =
+    useState("");
+
+  const [fotos, setFotos] =
+    useState<File[]>([]);
+
+  const [erro, setErro] = useState("");
+
+
+
+  // ==========================================================
+  // STATES - SUPORTE
+  // ==========================================================
+
+  const [suporteAtivo, setSuporteAtivo] =
+    useState(false);
+
+  const [suporteTexto, setSuporteTexto] =
+    useState("");
+
+  const [suporteMensagens, setSuporteMensagens] =
+    useState<MensagemSuporte[]>([]);
+
+  const [carregandoSuporte, setCarregandoSuporte] =
+    useState(false);
+
+  const [enviandoSuporte, setEnviandoSuporte] =
+    useState(false);
+
+
+
+  // ==========================================================
+  // STATES - DENÚNCIA
+  // ==========================================================
+
+  const [modalDenunciaAberto, setModalDenunciaAberto] =
+    useState(false);
+
+  const [denunciaEnviando, setDenunciaEnviando] =
+    useState(false);
+
+  const [denunciaMensagem, setDenunciaMensagem] =
+    useState("");
+
+
+
+  // ==========================================================
+  // STATES - ANEXOS
+  // ==========================================================
+
+  const [anexoEmDestaque, setAnexoEmDestaque] =
+    useState<ConteudoAnexo | null>(null);
+
+
+
+  // ==========================================================
+  // STATES - NOTIFICAÇÃO
+  // ==========================================================
+
+  const [notificacao, setNotificacao] = useState<{
+    titulo: string;
+    mensagem: string;
+    tipo: "sucesso" | "erro" | "info";
+  } | null>(null);
+
+
+
+  // ==========================================================
+  // REFS - INPUTS
+  // ==========================================================
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputMensagemRef = useRef<HTMLInputElement>(null);
+  const inputBuscaMensagemRef = useRef<HTMLInputElement>(null);
+  const inputAnexoRef = useRef<HTMLInputElement>(null);
+
+
+
+  // ==========================================================
+  // REFS - CHAT
+  // ==========================================================
+
+  const listaMensagensRef = useRef<HTMLDivElement>(null);
+  const fimMensagensRef = useRef<HTMLDivElement>(null);
+
+  const primeiraCargaRef = useRef(true);
+  const carregandoHistoricoRef = useRef(false);
+  const buscandoNovasMensagensRef = useRef(false);
+
+  const chatSelecionadoRef = useRef<Chat | null>(null);
+  const ultimoIdRecebidoRef = useRef(0);
+
+
+
+  // ==========================================================
+  // REFS - UI
+  // ==========================================================
+
+  const notificacaoTimerRef = useRef<number | null>(null);
+
+
+
+  // ==========================================================
+  // DADOS DA SESSÃO
+  // ==========================================================
 
   const idUsuarioLogado = Number((session?.user as any)?.id ?? 0);
-  const idPrestadorDireto = Number(searchParams.get("idPrestador") ?? 0);
-  const isAdmin = (session?.user as any)?.isAdmin ?? false;
-  const tipoParticipanteLogado: "usuario" | "prestador" | "admin" = isAdmin
-    ? "admin"
-    : (session?.user as any)?.isPrestador
-    ? "prestador"
-    : "usuario";
+
+  const idPrestadorDireto =
+    Number(searchParams.get("idPrestador") ?? 0);
+
+  const isAdmin =
+    (session?.user as any)?.isAdmin ?? false;
+
+  const tipoParticipanteLogado:
+    "usuario" | "prestador" | "admin" =
+    isAdmin
+      ? "admin"
+      : (session?.user as any)?.isPrestador
+      ? "prestador"
+      : "usuario";
 
   const podeSolicitarServico = Boolean(
     !suporteAtivo &&
       chatSelecionado &&
       tipoParticipanteLogado === "usuario" &&
       !isAdmin &&
-      Number(chatSelecionado.idPrestador) !== Number(idUsuarioLogado)
+      Number(chatSelecionado.idPrestador) !==
+        Number(idUsuarioLogado)
   );
 
-  const nomeChat = (chat: Chat) => chat.nome?.trim() || `Conversa ${chat.idConversa}`;
-  const fotoChat = (chat?: Chat | null) => chat?.fotoPerfil?.trim() || "";
-  const inicialChat = (chat?: Chat | null) => (chat?.nome?.trim()?.[0] || "?").toUpperCase();
 
-  const renderAvatarChat = (chat?: Chat | null, tamanho = "h-12 w-12") => {
+
+  // ==========================================================
+  // HELPERS - CHAT
+  // ==========================================================
+
+  const nomeChat = (chat: Chat) =>
+    chat.nome?.trim() || `Conversa ${chat.idConversa}`;
+
+  const fotoChat = (chat?: Chat | null) =>
+    chat?.fotoPerfil?.trim() || "";
+
+  const inicialChat = (chat?: Chat | null) =>
+    (chat?.nome?.trim()?.[0] || "?").toUpperCase();
+
+  const renderAvatarChat = (
+    chat?: Chat | null,
+    tamanho = "h-12 w-12"
+  ) => {
     const foto = fotoChat(chat);
 
     return (
-      <div className={`${tamanho} rounded-full bg-gray-300 shrink-0 overflow-hidden flex items-center justify-center`}>
+      <div
+        className={`${tamanho} rounded-full bg-gray-300 shrink-0 overflow-hidden flex items-center justify-center`}
+      >
         {foto ? (
           <img
             src={foto}
@@ -134,11 +348,19 @@ export default function Conversa() {
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="text-sm font-semibold text-gray-500">{inicialChat(chat)}</span>
+          <span className="text-sm font-semibold text-gray-500">
+            {inicialChat(chat)}
+          </span>
         )}
       </div>
     );
   };
+
+
+
+  // ==========================================================
+  // HELPERS - NOTIFICAÇÕES
+  // ==========================================================
 
   const exibirNotificacao = (
     titulo: string,
@@ -149,7 +371,11 @@ export default function Conversa() {
       window.clearTimeout(notificacaoTimerRef.current);
     }
 
-    setNotificacao({ titulo, mensagem, tipo });
+    setNotificacao({
+      titulo,
+      mensagem,
+      tipo,
+    });
 
     notificacaoTimerRef.current = window.setTimeout(() => {
       setNotificacao(null);
@@ -166,26 +392,89 @@ export default function Conversa() {
     setNotificacao(null);
   };
 
+
+
+  // ==========================================================
+  // HELPERS - SCROLL
+  // ==========================================================
+
+  const estaNoFimDaConversa = () => {
+    const lista = listaMensagensRef.current;
+
+    if (!lista) return false;
+
+    return (
+      lista.scrollHeight -
+        lista.scrollTop -
+        lista.clientHeight <
+      80
+    );
+  };
+
+  const irParaUltimaMensagem = () => {
+    rolarParaFim();
+
+    setNovasMensagensPendentes(0);
+  };
+
+  const rolarParaFim = (suave = false) => {
+    console.trace("ROLAR PARA FIM");
+
+    if (!listaMensagensRef.current) return;
+
+    listaMensagensRef.current.scrollTo({
+      top: listaMensagensRef.current.scrollHeight,
+      behavior: suave ? "smooth" : "auto",
+    });
+
+    setNovasMensagensPendentes(0);
+  };
+
+
+
+  // ==========================================================
+  // HELPERS - ANEXOS
+  // ==========================================================
+
   const obterLabelAnexo = (mimeType: string) => {
     if (mimeType.startsWith("image/")) return "Imagem";
     if (mimeType.startsWith("video/")) return "Vídeo";
     if (mimeType === "application/pdf") return "PDF";
+
     return "Arquivo";
   };
 
-  const ehConteudoAnexo = (conteudo: string): conteudo is string => {
+  const ehConteudoAnexo = (
+    conteudo: string
+  ): conteudo is string => {
     try {
       const parsed = JSON.parse(conteudo) as ConteudoAnexo;
-      return Boolean(parsed && parsed.url && parsed.nome && parsed.mimeType && parsed.tipo);
+
+      return Boolean(
+        parsed &&
+          parsed.url &&
+          parsed.nome &&
+          parsed.mimeType &&
+          parsed.tipo
+      );
     } catch {
       return false;
     }
   };
 
-  const interpretarConteudo = (conteudo: string): ConteudoAnexo | null => {
+  const interpretarConteudo = (
+    conteudo: string
+  ): ConteudoAnexo | null => {
     try {
       const parsed = JSON.parse(conteudo) as ConteudoAnexo;
-      if (!parsed || !parsed.url || !parsed.nome || !parsed.mimeType || !parsed.tipo) {
+
+      if (
+        !parsed ||
+        !parsed.url ||
+        !parsed.nome ||
+        !parsed.mimeType ||
+        !parsed.tipo
+      ) {
         return null;
       }
 
@@ -195,7 +484,9 @@ export default function Conversa() {
     }
   };
 
-  const abrirAnexoEmDestaque = (anexo: ConteudoAnexo) => {
+  const abrirAnexoEmDestaque = (
+    anexo: ConteudoAnexo
+  ) => {
     setAnexoEmDestaque(anexo);
   };
 
@@ -203,285 +494,11 @@ export default function Conversa() {
     setAnexoEmDestaque(null);
   };
 
-  // ==========================
-  // FILTRO
-  // ==========================
 
-  const chatsFiltrados = listaChats.filter((chat) =>
-    nomeChat(chat).toLowerCase().includes(busca.toLowerCase())
-  );
 
-  const mensagensFiltradas = chatSelecionado?.mensagens?.filter((msg) =>
-    msg.conteudo.toLowerCase().includes(buscaMensagens.toLowerCase())
-  ) ?? [];
-
-  // ==========================
-  // SCROLL
-  // ==========================
-
-  useEffect(() => {
-    fimMensagensRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-  }, [chatSelecionado?.mensagens]);
-
-  useEffect(() => {
-    return () => {
-      if (notificacaoTimerRef.current) {
-        window.clearTimeout(notificacaoTimerRef.current);
-      }
-    };
-  }, []);
-
-  // ==========================
-  // CONVERSAS
-  // ==========================
-
-  const carregarConversas = async () => {
-    if (!idUsuarioLogado) return;
-
-    try {
-      const response = await fetch(
-        `/api/conversas?idParticipante=${idUsuarioLogado}&tipoParticipante=${isAdmin ? "admin" : tipoParticipanteLogado}`
-      );
-
-      const dados = await response.json();
-
-      setListaChats(Array.isArray(dados) ? dados : []);
-
-      if (Array.isArray(dados) && dados.length > 0 && !chatSelecionado) {
-        setChatSelecionado(dados[0]);
-        carregarMensagens(dados[0].idConversa);
-      }
-
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  useEffect(() => {
-    carregarConversas();
-  }, [idUsuarioLogado, tipoParticipanteLogado]);
-
-  useEffect(() => {
-    const abrirConversaDireta = async () => {
-      if (chatDiretoProcessado) return;
-      if (!idPrestadorDireto || idPrestadorDireto <= 0) return;
-      if (!idUsuarioLogado || isAdmin) return;
-      if (idPrestadorDireto === idUsuarioLogado) {
-        setChatDiretoProcessado(true);
-        return;
-      }
-
-      try {
-        const criarResponse = await fetch("/api/conversas", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            idUsuario: idUsuarioLogado,
-            idPrestador: idPrestadorDireto,
-          }),
-        });
-
-        const conversaCriada = await criarResponse.json();
-
-        if (!criarResponse.ok) {
-          throw new Error(conversaCriada?.erro || "Não foi possível abrir a conversa.");
-        }
-
-        const listaResponse = await fetch(
-          `/api/conversas?idParticipante=${idUsuarioLogado}&tipoParticipante=${tipoParticipanteLogado}`
-        );
-        const lista = await listaResponse.json();
-        const chats = Array.isArray(lista) ? lista : [];
-
-        setListaChats(chats);
-
-        const idConversaAlvo = Number(conversaCriada?.idConversa ?? 0);
-        const conversaAlvo =
-          chats.find((chat: Chat) => Number(chat.idConversa) === idConversaAlvo) ||
-          chats.find((chat: Chat) => Number(chat.idPrestador) === idPrestadorDireto);
-
-        if (conversaAlvo) {
-          setSuporteAtivo(false);
-          setChatSelecionado(conversaAlvo);
-          await carregarMensagens(conversaAlvo.idConversa);
-        }
-
-        setChatDiretoProcessado(true);
-      } catch (error) {
-        console.error(error);
-        setChatDiretoProcessado(true);
-      }
-    };
-
-    abrirConversaDireta();
-  }, [chatDiretoProcessado, idPrestadorDireto, idUsuarioLogado, tipoParticipanteLogado]);
-
-  const carregarSuporte = async () => {
-    if (!idUsuarioLogado) return;
-
-    setCarregandoSuporte(true);
-
-    try {
-      const response = await fetch(`/api/ticketSuporte?id_usuario=${idUsuarioLogado}`);
-      const tickets = await response.json();
-
-      if (!response.ok || !Array.isArray(tickets)) {
-        throw new Error("Não foi possível carregar os tickets de suporte.");
-      }
-
-      const itens: MensagemSuporte[] = [];
-
-      tickets.forEach((ticket: any) => {
-        itens.push({
-          id: `usuario-${ticket.id_ticket}`,
-          lado: "usuario",
-          texto: String(ticket.descricao ?? ""),
-          data: ticket.data_abertura ?? new Date().toISOString(),
-        });
-
-        if (ticket.resposta_admin) {
-          itens.push({
-            id: `admin-${ticket.id_ticket}`,
-            lado: "admin",
-            texto: ticket.resposta_admin,
-            data: ticket.data_encerramento ?? ticket.data_abertura ?? new Date().toISOString(),
-          });
-        }
-      });
-
-      itens.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-      setSuporteMensagens(itens);
-    } catch (error) {
-      console.error(error);
-      exibirNotificacao("Suporte indisponível", "Não foi possível carregar o histórico com o administrador.", "erro");
-    } finally {
-      setCarregandoSuporte(false);
-    }
-  };
-
-  const abrirSuporte = async () => {
-    setSuporteAtivo(true);
-    setChatSelecionado(null);
-    setMostrarMenuAcoes(false);
-    setMostrarPainelEmoji(false);
-    await carregarSuporte();
-  };
-
-  const enviarMensagemSuporte = async () => {
-    if (!suporteTexto.trim() || enviandoSuporte) return;
-
-    if (!idUsuarioLogado) {
-      exibirNotificacao("Login necessário", "Entre na conta para conversar com o administrador.", "erro");
-      return;
-    }
-
-    setEnviandoSuporte(true);
-
-    try {
-      const response = await fetch("/api/ticketSuporte", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id_usuario: idUsuarioLogado,
-          titulo: "Suporte",
-          descricao: suporteTexto.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Não foi possível enviar a mensagem ao suporte.");
-      }
-
-      setSuporteTexto("");
-      await carregarSuporte();
-      exibirNotificacao("Mensagem enviada", "Sua mensagem foi enviada para o administrador.", "sucesso");
-    } catch (error) {
-      console.error(error);
-      exibirNotificacao("Falha no suporte", "Não foi possível enviar a mensagem agora.", "erro");
-    } finally {
-      setEnviandoSuporte(false);
-    }
-  };
-
-  // ==========================
-  // MENSAGENS
-  // ==========================
-
-  const carregarMensagens = async (idConversa: number) => {
-    try {
-      const response = await fetch(
-        `/api/mensagens?idConversa=${idConversa}`
-      );
-
-      const mensagens: Mensagem[] = await response.json();
-
-      setListaChats((anterior) =>
-        anterior.map((chat) =>
-          chat.idConversa === idConversa
-            ? { ...chat, mensagens }
-            : chat
-        )
-      );
-
-      setChatSelecionado((anterior) =>
-        anterior && anterior.idConversa === idConversa
-          ? { ...anterior, mensagens }
-          : anterior
-      );
-
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const enviarMensagem = async () => {
-    if (!novaMensagem.trim()) return;
-
-    if (!chatSelecionado) return;
-
-    try {
-      await fetch("/api/mensagens", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          idConversa: chatSelecionado.idConversa,
-          idRemetente: idUsuarioLogado,
-          conteudo: novaMensagem,
-        }),
-      });
-
-      await carregarMensagens(chatSelecionado.idConversa);
-
-      setNovaMensagem("");
-      
-
-    } catch (error) {
-      console.error(error);
-      exibirNotificacao("Falha ao enviar", "Não foi possível enviar a mensagem agora.", "erro");
-    }
-  };
-
-  // ==========================
-  // FOTOS
-  // ==========================
-
-  const handleFotos = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const arquivos = Array.from(e.target.files || []);
-
-    const novasFotos = [...fotos, ...arquivos].slice(0, 5);
-
-    setFotos(novasFotos);
-  };
+  // ==========================================================
+  // HELPERS - ARQUIVOS
+  // ==========================================================
 
   const lerArquivoComoDataURL = (arquivo: File) =>
     new Promise<string>((resolve, reject) => {
@@ -512,55 +529,731 @@ export default function Conversa() {
     return Array.from(new Set(nomes));
   };
 
-  useEffect(() => {
-    if (!modalSolicitacaoAberto || !chatSelecionado?.idPrestador || suporteAtivo) return;
 
-    let ativo = true;
 
-    const carregarCategoriasPrestador = async () => {
-      setCarregandoCategoriasPrestador(true);
-      setCategoriasPrestador([]);
+  // ==========================================================
+  // FILTROS
+  // ==========================================================
 
-      try {
-        const response = await fetch(`/api/prestador/${chatSelecionado.idPrestador}`);
-        const dadosPrestador = await response.json();
+  const chatsFiltrados = listaChats.filter((chat) =>
+    nomeChat(chat)
+      .toLowerCase()
+      .includes(busca.toLowerCase())
+  );
+  console.log(
+    "CHAT SELECIONADO",
+    chatSelecionado?.idConversa,
+    chatSelecionado?.mensagens?.length
+  );
+  const mensagensFiltradas =
+    chatSelecionado?.mensagens?.filter((msg) =>
+      msg.conteudo
+        .toLowerCase()
+        .includes(buscaMensagens.toLowerCase())
+  ) ?? [];
 
-        if (!response.ok) {
-          throw new Error(dadosPrestador?.erro || "Não foi possível carregar as categorias do prestador.");
-        }
 
-        const categorias = montarCategoriasDoPrestador(dadosPrestador);
 
-        if (!ativo) return;
+  // ==========================================================
+  // AÇÕES DA INTERFACE
+  // ==========================================================
 
-        setCategoriasPrestador(categorias);
-        setCategoria((categoriaAtual) =>
-          categoriaAtual && categorias.includes(categoriaAtual) ? categoriaAtual : ""
-        );
-      } catch (error) {
-        console.error(error);
+  const alternarBuscaMensagens = () => {
+    const vaiMostrarBusca = !mostrarBuscaMensagens;
 
-        if (ativo) {
-          setCategoriasPrestador([]);
-          setCategoria("");
-        }
-      } finally {
-        if (ativo) {
-          setCarregandoCategoriasPrestador(false);
-        }
+    setMostrarBuscaMensagens(vaiMostrarBusca);
+    setMostrarMenuAcoes(false);
+    setMostrarPainelEmoji(false);
+
+    if (vaiMostrarBusca) {
+      setTimeout(() => inputBuscaMensagemRef.current?.focus(), 0);
+    }
+  };
+
+  const abrirSuporte = async () => {
+    setSuporteAtivo(true);
+    setChatSelecionado(null);
+    setMostrarMenuAcoes(false);
+    setMostrarPainelEmoji(false);
+    await carregarSuporte();
+  };
+
+  const executarAcaoMenu = async (acao: "recarregar" | "limpar" | "fechar") => {
+    if (acao === "recarregar" && chatSelecionado) {
+      await carregarMensagens(chatSelecionado.idConversa);
+      exibirNotificacao("Mensagens atualizadas", "O histórico da conversa foi recarregado.", "info");
+    }
+
+    if (acao === "limpar") {
+      setNovaMensagem("");
+      exibirNotificacao("Campo limpo", "A mensagem atual foi removida do campo de texto.", "info");
+    }
+
+    if (acao === "fechar") {
+      setChatSelecionado(null);
+      setBuscaMensagens("");
+      exibirNotificacao("Conversa fechada", "A conversa saiu da área principal.", "info");
+    }
+
+    setMostrarMenuAcoes(false);
+  };
+
+  const handleScroll = () => {
+    
+    if (!listaMensagensRef.current) return;
+    
+    console.log(
+      "scrollTop:",
+      listaMensagensRef.current.scrollTop,
+      "programatico?",
+      carregandoHistoricoRef.current
+    );
+
+    if (primeiraCargaRef.current) {
+      return;
+    }
+
+    if (mostrarBuscaMensagens) {
+      return;
+    }
+
+    if (listaMensagensRef.current.scrollTop < 40) {
+      console.log(">>>> carregarHistorico()");
+      carregarHistorico();
+    }
+  };
+
+  const handleFotos = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const arquivos = Array.from(e.target.files || []);
+
+    const novasFotos = [...fotos, ...arquivos].slice(0, 5);
+
+    setFotos(novasFotos);
+  };
+
+  const alternarFavorito = () => {
+    if (!chatSelecionado) return;
+
+    setFavoritos((anterior) => {
+      const jaFavorito = anterior.includes(chatSelecionado.idConversa);
+
+      if (jaFavorito) {
+        exibirNotificacao("Favorito removido", "A conversa saiu da sua lista de favoritos.", "info");
+        return anterior.filter((id) => id !== chatSelecionado.idConversa);
       }
+
+      exibirNotificacao("Favorito salvo", "A conversa foi adicionada aos seus favoritos.", "sucesso");
+      return [...anterior, chatSelecionado.idConversa];
+    });
+  };
+
+  const denunciarConversa = async () => {
+    if (!chatSelecionado) return;
+
+    setModalDenunciaAberto(true);
+  };
+
+  const inserirEmoji = (emoji: string) => {
+    setNovaMensagem((anterior) => `${anterior}${emoji}`);
+    setMostrarPainelEmoji(false);
+    inputMensagemRef.current?.focus();
+  };
+
+
+
+  // ==========================================================
+  // API - CONVERSAS
+  // ==========================================================
+
+  const carregarConversas = async () => {
+    console.log("ENTROU carregarConversas");
+    
+    if (!idUsuarioLogado) {
+      console.log("SEM USUARIO");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/conversas?idParticipante=${idUsuarioLogado}&tipoParticipante=${isAdmin ? "admin" : tipoParticipanteLogado}`
+      );
+
+      const dados = await response.json();
+      console.log(dados);
+      setListaChats(Array.isArray(dados) ? dados : []);
+      
+      if (Array.isArray(dados) && dados.length > 0 && !chatSelecionado) {
+        setChatSelecionado(dados[0]);
+        carregarMensagens(dados[0].idConversa);
+      }
+
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
+
+  // ==========================================================
+  // API - MENSAGENS
+  // ==========================================================
+
+  const carregarMensagens = async (idConversa: number) => {
+    console.log("CARREGANDO CONVERSA", idConversa);
+    try {
+      const response = await fetch(
+        `/api/mensagens?idConversa=${idConversa}&limit=30`
+      );
+
+      const mensagens: Mensagem[] = await response.json();
+      
+      console.log(
+        "carregarMensagens:",
+        mensagens.map((m) => m.idMensagem)
+      );
+
+      if (!response.ok) {
+      console.error("Erro da API:", mensagens);
+      return;
+    }
+
+    if (!Array.isArray(mensagens)) {
+      console.error("Resposta inesperada da API:", mensagens);
+      return;
+    }
+
+      setPrimeiraMensagemId(
+          mensagens.length > 0
+              ? mensagens[0].idMensagem
+              : null
+      );
+
+      setTemMaisMensagens(mensagens.length >= 30);
+      
+      const chatBase = listaChats.find(
+          (c) => c.idConversa === idConversa
+      );
+
+      if (chatBase) {
+          setChatSelecionado(chatBase);
+      }
+      
+      const ultimo =
+        mensagens.length > 0
+          ? mensagens[mensagens.length - 1].idMensagem
+          : 0;
+
+      console.log("SETANDO ultimoId:", ultimo);
+
+      setUltimoIdRecebido(ultimo);
+
+      /*
+      setListaChats((anterior) =>
+        anterior.map((chat) =>
+          chat.idConversa === idConversa
+            ? { ...chat, mensagens }
+            : chat
+        )
+      );
+      */
+      console.log(
+        "Atualizando lista",
+        idConversa,
+        listaChats.map(c => c.idConversa)
+      );
+
+      setListaChats((anterior) => {
+        console.log(
+          "MAP",
+          anterior.map(c => c.idConversa),
+          "procurando",
+          idConversa
+        );
+
+        const novaLista = anterior.map((chat) => {
+          if (chat.idConversa === idConversa) {
+            console.log("ENCONTROU", chat.idConversa);
+
+            return {
+              ...chat,
+              mensagens,
+            };
+          }
+
+          return chat;
+        });
+
+        console.log(
+          "RESULTADO",
+          novaLista.map(c => ({
+            id: c.idConversa,
+            msgs: c.mensagens?.length,
+          }))
+        );
+
+        return novaLista;
+      });
+
+      setChatSelecionado((anterior) =>
+        anterior && anterior.idConversa === idConversa
+          ? { ...anterior, mensagens }
+          : anterior
+      );
+
+      console.log("SCROLL carregarMensagens");
+
+      if (listaMensagensRef.current) {
+        listaMensagensRef.current.scrollTop =
+          listaMensagensRef.current.scrollHeight;
+      }
+
+      primeiraCargaRef.current = false;
+      
+      
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const carregarHistorico = async () => {
+    
+    if (
+      !chatSelecionado ||
+      !primeiraMensagemId ||
+      carregandoHistorico ||
+      !temMaisMensagens
+    ) {
+      return;
+    }
+
+    setCarregandoHistorico(true);
+
+    const elemento = listaMensagensRef.current;
+    const alturaAnterior = elemento?.scrollHeight ?? 0;
+
+    try {
+      
+      carregandoHistoricoRef.current = true;
+      console.log("CARREGOU HISTÓRICO");
+      const response = await fetch(
+        `/api/mensagens?idConversa=${chatSelecionado.idConversa}&beforeId=${primeiraMensagemId}&limit=30`
+      );
+      
+      const historico: Mensagem[] = await response.json();
+      
+      if (!Array.isArray(historico) || historico.length === 0) {
+        setTemMaisMensagens(false);
+        return;
+      }
+
+      setPrimeiraMensagemId(historico[0].idMensagem);
+
+      if (historico.length < 30) {
+        setTemMaisMensagens(false);
+      }
+
+      setListaChats((anterior) =>
+        anterior.map((chat) => {
+          if (chat.idConversa !== chatSelecionado.idConversa) return chat;
+
+          const mensagens = [...historico, ...(chat.mensagens ?? [])].filter(
+            (msg, index, self) =>
+              index === self.findIndex((m) => m.idMensagem === msg.idMensagem)
+          );
+
+          return { ...chat, mensagens };
+        })
+      );
+
+      setChatSelecionado((anterior) => {
+        if (!anterior) return anterior;
+
+        const mensagens = [...historico, ...(anterior.mensagens ?? [])].filter(
+          (msg, index, self) =>
+            index === self.findIndex((m) => m.idMensagem === msg.idMensagem)
+        );
+
+        return {
+          ...anterior,
+          mensagens,
+        };
+      });
+
+      requestAnimationFrame(() => {
+        if (!listaMensagensRef.current) return;
+
+        const novaAltura = listaMensagensRef.current.scrollHeight;
+
+        listaMensagensRef.current.scrollTop =
+          novaAltura - alturaAnterior;
+      });
+
+    } finally {
+      setCarregandoHistorico(false);
+
+      setTimeout(() => {
+        carregandoHistoricoRef.current = false;
+      }, 0);
+    }
+  };
+
+  const carregarNovasMensagens = async (idConversa: number, afterId: number) => {
+    console.log("afterId enviado:", afterId);
+    try {
+      if (buscandoNovasMensagensRef.current) {
+        return;
+      }
+
+      buscandoNovasMensagensRef.current = true;
+
+      const response = await fetch(
+        `/api/mensagens?idConversa=${idConversa}&afterId=${afterId}`
+      );
+      
+      const novas: Mensagem[] = await response.json();
+
+      console.log(
+        "POLL RECEBEU",
+        idConversa,
+        afterId,
+        novas.map((m) => ({
+          id: m.idMensagem,
+          remetente: m.idRemetente,
+          conteudo: m.conteudo,
+        }))
+      );
+
+      if (!Array.isArray(novas) || novas.length === 0) {
+        return;
+      }
+
+      setUltimoIdRecebido(
+        novas[novas.length - 1].idMensagem
+      );
+
+      console.log(
+        "afterId:",
+        afterId,
+        "ids:",
+        novas.map((m) => m.idMensagem)
+      );
+
+      const usuarioEstavaNoFim = estaNoFimDaConversa();
+      console.log(
+        "ANTES",
+        {
+          lista:
+            listaChats.find(c => c.idConversa === idConversa)?.mensagens?.length,
+          chat:
+            chatSelecionadoRef.current?.mensagens?.length,
+          novas: novas.length
+        }
+      );
+      setListaChats((anterior) =>
+        anterior.map((chat) => {
+          if (chat.idConversa !== idConversa) return chat;
+          const montagem = [...(chat.mensagens ?? []), ...novas].filter(
+            (mensagem, index, self) =>
+              index === self.findIndex((item) => item.idMensagem === mensagem.idMensagem)
+          );
+          return { ...chat, mensagens: montagem };
+        })
+      );
+
+      
+
+      setChatSelecionado((anterior) => {
+        if (!anterior || anterior.idConversa !== idConversa) return anterior;
+        const montagem = [...(anterior.mensagens ?? []), ...novas].filter(
+          (mensagem, index, self) =>
+            index === self.findIndex((item) => item.idMensagem === mensagem.idMensagem)
+        );
+        return { ...anterior, mensagens: montagem } as any;
+      });
+      setTimeout(() => {
+        console.log(
+          "DEPOIS",
+          {
+            lista:
+              listaChats.find(c => c.idConversa === idConversa)?.mensagens?.length,
+            chat:
+              chatSelecionadoRef.current?.mensagens?.length,
+          }
+        );
+      }, 0);
+      if (usuarioEstavaNoFim) {
+        rolarParaFim();
+        setNovasMensagensPendentes(0);
+      } else {
+        setNovasMensagensPendentes((valor) => valor + novas.length);
+      }
+
+      requestAnimationFrame(() => {
+        const container = listaMensagensRef.current;
+
+        if (!container) return;
+
+        const distanciaDoFim =
+          container.scrollHeight -
+          container.scrollTop -
+          container.clientHeight;
+
+        // só desce automaticamente se o usuário já estiver perto do fim
+        if (distanciaDoFim < 150) {
+          rolarParaFim();
+        }
+      });
+
+      const mensagensNaoLidas = novas.filter(
+        (msg) =>
+          msg.idRemetente !== idUsuarioLogado &&
+          chatSelecionado?.idConversa !== idConversa
+      );
+
+      if (mensagensNaoLidas.length > 0) {
+        setContadorNovasMensagens((anterior) => ({
+          ...anterior,
+          [idConversa]:
+            (anterior[idConversa] ?? 0) + mensagensNaoLidas.length,
+        }));
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      buscandoNovasMensagensRef.current = false;
+    }
+  };
+
+  const enviarMensagem = async () => {
+    if (!novaMensagem.trim()) return;
+
+    if (!chatSelecionado) return;
+
+    const tempId = `temp-${Date.now()}`;
+
+    const mensagemTemporaria: Mensagem = {
+      idMensagem: -Date.now(),
+      tempId,
+      idConversa: chatSelecionado.idConversa,
+      idRemetente: idUsuarioLogado,
+      conteudo: novaMensagem,
+      criadoEm: new Date().toISOString(),
+      lida: false,
+      enviando: true,
     };
 
-    carregarCategoriasPrestador();
+    setChatSelecionado((anterior) => {
+      if (!anterior) return anterior;
 
-    return () => {
-      ativo = false;
-    };
-  }, [modalSolicitacaoAberto, chatSelecionado?.idPrestador, suporteAtivo]);
+      return {
+        ...anterior,
+        mensagens: [...(anterior.mensagens ?? []), mensagemTemporaria],
+      };
+    });
 
-  // ==========================
-  // SOLICITAÇÃO
-  // ==========================
+    setListaChats((anterior) =>
+      anterior.map((chat) =>
+        chat.idConversa === chatSelecionado.idConversa
+          ? {
+              ...chat,
+              mensagens: [...(chat.mensagens ?? []), mensagemTemporaria],
+            }
+          : chat
+      )
+    );
+
+    setNovaMensagem("");
+
+    requestAnimationFrame(() => {
+        rolarParaFim();
+    });
+    
+    try {
+      const response = await fetch("/api/mensagens", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          idConversa: chatSelecionado.idConversa,
+          idRemetente: idUsuarioLogado,
+          conteudo: novaMensagem,
+        }),
+      });
+
+      const mensagemReal = await response.json();
+      console.log("RESPOSTA POST", mensagemReal);
+      if (!response.ok) {
+        throw new Error(mensagemReal.erro ?? "Erro ao enviar");
+      }
+
+      setUltimoIdRecebido(mensagemReal.idMensagem);
+
+      setChatSelecionado((anterior) => {
+        if (!anterior) return anterior;
+
+        return {
+          ...anterior,
+          mensagens: anterior.mensagens?.map((msg) =>
+            msg.tempId === tempId
+              ? {
+                  ...mensagemReal,
+                  tempId: undefined,
+                  enviando: false,
+                  erro: false,
+                }
+              : msg
+          ),
+        };
+      });
+
+      setListaChats((anterior) =>
+        anterior.map((chat) =>
+          chat.idConversa === chatSelecionado.idConversa
+            ? {
+                ...chat,
+                mensagens: chat.mensagens?.map((msg) =>
+                    msg.tempId === tempId
+                        ? {
+                            ...mensagemReal,
+                            tempId: undefined,
+                            enviando: false,
+                            erro: false,
+                        }
+                        : msg
+                ),
+              }
+            : chat
+        )
+      );
+
+      setUltimoIdRecebido(mensagemReal.idMensagem);
+      await carregarNovasMensagens(
+        chatSelecionado.idConversa,
+        mensagemReal.idMensagem
+      );
+
+    } catch (error) {
+      setChatSelecionado((anterior) => {
+        if (!anterior) return anterior;
+
+        return {
+          ...anterior,
+          mensagens: anterior.mensagens?.map((msg) =>
+            msg.tempId === tempId
+              ? {
+                  ...msg,
+                  enviando: false,
+                  erro: true,
+                }
+              : msg
+          ),
+        };
+      });
+
+      setListaChats((anterior) =>
+        anterior.map((chat) =>
+          chat.idConversa === chatSelecionado.idConversa
+            ? {
+                ...chat,
+                mensagens: chat.mensagens?.map((msg) =>
+                  msg.tempId === tempId
+                    ? {
+                        ...msg,
+                        enviando: false,
+                        erro: true,
+                      }
+                    : msg
+                ),
+              }
+            : chat
+        )
+      );
+
+      console.error(error);
+
+      exibirNotificacao(
+        "Falha ao enviar",
+        "Não foi possível enviar a mensagem agora.",
+        "erro"
+      );
+    }
+  };
+
+  const enviarLike = async () => {
+    if (!chatSelecionado) return;
+
+    await fetch("/api/mensagens", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        idConversa: chatSelecionado.idConversa,
+        idRemetente: idUsuarioLogado,
+        conteudo: "👍",
+      }),
+    });
+
+    carregarMensagens(chatSelecionado.idConversa);
+  };
+
+  const anexarArquivosNaConversa = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (!chatSelecionado) return;
+
+    const arquivos = Array.from(e.target.files || []);
+
+    if (arquivos.length === 0) return;
+
+    try {
+      await Promise.all(
+        arquivos.map(async (arquivo) => {
+          const tipo = identificarTipoArquivo(arquivo.type);
+
+          if (!tipo) {
+            throw new Error(`O arquivo ${arquivo.name} não é imagem, vídeo ou PDF.`);
+          }
+
+          const url = await lerArquivoComoDataURL(arquivo);
+
+          return fetch("/api/mensagens", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              idConversa: chatSelecionado.idConversa,
+              idRemetente: idUsuarioLogado,
+              conteudo: JSON.stringify({
+                tipo,
+                nome: arquivo.name,
+                mimeType: arquivo.type,
+                url,
+              } satisfies ConteudoAnexo),
+            }),
+          });
+        })
+      );
+
+      await carregarMensagens(chatSelecionado.idConversa);
+      exibirNotificacao("Arquivo enviado", "O anexo foi publicado na conversa.", "sucesso");
+    } catch (error) {
+      console.error(error);
+      exibirNotificacao("Falha no envio", error instanceof Error ? error.message : "Não foi possível enviar o anexo.", "erro");
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+
+
+  // ==========================================================
+  // API - SOLICITAÇÃO
+  // ==========================================================
 
   const enviarSolicitacao = async () => {
 
@@ -659,106 +1352,98 @@ export default function Conversa() {
     }
   };
 
-  const alternarFavorito = () => {
-    if (!chatSelecionado) return;
 
-    setFavoritos((anterior) => {
-      const jaFavorito = anterior.includes(chatSelecionado.idConversa);
 
-      if (jaFavorito) {
-        exibirNotificacao("Favorito removido", "A conversa saiu da sua lista de favoritos.", "info");
-        return anterior.filter((id) => id !== chatSelecionado.idConversa);
-      }
+  // ==========================================================
+  // API - SUPORTE
+  // ==========================================================
 
-      exibirNotificacao("Favorito salvo", "A conversa foi adicionada aos seus favoritos.", "sucesso");
-      return [...anterior, chatSelecionado.idConversa];
-    });
-  };
+  const carregarSuporte = async () => {
+    if (!idUsuarioLogado) return;
 
-  const enviarLike = async () => {
-    if (!chatSelecionado) return;
-
-    await fetch("/api/mensagens", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        idConversa: chatSelecionado.idConversa,
-        idRemetente: idUsuarioLogado,
-        conteudo: "👍",
-      }),
-    });
-
-    carregarMensagens(chatSelecionado.idConversa);
-  };
-
-  const alternarBuscaMensagens = () => {
-    const vaiMostrarBusca = !mostrarBuscaMensagens;
-
-    setMostrarBuscaMensagens(vaiMostrarBusca);
-    setMostrarMenuAcoes(false);
-    setMostrarPainelEmoji(false);
-
-    if (vaiMostrarBusca) {
-      setTimeout(() => inputBuscaMensagemRef.current?.focus(), 0);
-    }
-  };
-
-  const anexarArquivosNaConversa = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (!chatSelecionado) return;
-
-    const arquivos = Array.from(e.target.files || []);
-
-    if (arquivos.length === 0) return;
+    setCarregandoSuporte(true);
 
     try {
-      await Promise.all(
-        arquivos.map(async (arquivo) => {
-          const tipo = identificarTipoArquivo(arquivo.type);
+      const response = await fetch(`/api/ticketSuporte?id_usuario=${idUsuarioLogado}`);
+      const tickets = await response.json();
 
-          if (!tipo) {
-            throw new Error(`O arquivo ${arquivo.name} não é imagem, vídeo ou PDF.`);
-          }
+      if (!response.ok || !Array.isArray(tickets)) {
+        throw new Error("Não foi possível carregar os tickets de suporte.");
+      }
 
-          const url = await lerArquivoComoDataURL(arquivo);
+      const itens: MensagemSuporte[] = [];
 
-          return fetch("/api/mensagens", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              idConversa: chatSelecionado.idConversa,
-              idRemetente: idUsuarioLogado,
-              conteudo: JSON.stringify({
-                tipo,
-                nome: arquivo.name,
-                mimeType: arquivo.type,
-                url,
-              } satisfies ConteudoAnexo),
-            }),
+      tickets.forEach((ticket: any) => {
+        itens.push({
+          id: `usuario-${ticket.id_ticket}`,
+          lado: "usuario",
+          texto: String(ticket.descricao ?? ""),
+          data: ticket.data_abertura ?? new Date().toISOString(),
+        });
+
+        if (ticket.resposta_admin) {
+          itens.push({
+            id: `admin-${ticket.id_ticket}`,
+            lado: "admin",
+            texto: ticket.resposta_admin,
+            data: ticket.data_encerramento ?? ticket.data_abertura ?? new Date().toISOString(),
           });
-        })
-      );
+        }
+      });
 
-      await carregarMensagens(chatSelecionado.idConversa);
-      exibirNotificacao("Arquivo enviado", "O anexo foi publicado na conversa.", "sucesso");
+      itens.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+      setSuporteMensagens(itens);
     } catch (error) {
       console.error(error);
-      exibirNotificacao("Falha no envio", error instanceof Error ? error.message : "Não foi possível enviar o anexo.", "erro");
+      exibirNotificacao("Suporte indisponível", "Não foi possível carregar o histórico com o administrador.", "erro");
     } finally {
-      e.target.value = "";
+      setCarregandoSuporte(false);
     }
   };
 
-  const denunciarConversa = async () => {
-    if (!chatSelecionado) return;
+  const enviarMensagemSuporte = async () => {
+    if (!suporteTexto.trim() || enviandoSuporte) return;
 
-    setModalDenunciaAberto(true);
+    if (!idUsuarioLogado) {
+      exibirNotificacao("Login necessário", "Entre na conta para conversar com o administrador.", "erro");
+      return;
+    }
+
+    setEnviandoSuporte(true);
+
+    try {
+      const response = await fetch("/api/ticketSuporte", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id_usuario: idUsuarioLogado,
+          titulo: "Suporte",
+          descricao: suporteTexto.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Não foi possível enviar a mensagem ao suporte.");
+      }
+
+      setSuporteTexto("");
+      await carregarSuporte();
+      exibirNotificacao("Mensagem enviada", "Sua mensagem foi enviada para o administrador.", "sucesso");
+    } catch (error) {
+      console.error(error);
+      exibirNotificacao("Falha no suporte", "Não foi possível enviar a mensagem agora.", "erro");
+    } finally {
+      setEnviandoSuporte(false);
+    }
   };
+
+
+
+  // ==========================================================
+  // API - DENÚNCIA
+  // ==========================================================
 
   const enviarDenuncia = async () => {
     if (!chatSelecionado || denunciaEnviando) return;
@@ -800,31 +1485,371 @@ export default function Conversa() {
     }
   };
 
-  const inserirEmoji = (emoji: string) => {
-    setNovaMensagem((anterior) => `${anterior}${emoji}`);
-    setMostrarPainelEmoji(false);
-    inputMensagemRef.current?.focus();
+
+
+  // ==========================================================
+  // API - SINCRONIZAÇÃO DE MENSAGENS
+  // ==========================================================
+
+  const sincronizarMensagens = async (idConversa: number) => {
+    try {
+      const response = await fetch(
+        `/api/mensagens?idConversa=${idConversa}&limit=30`
+      );
+
+      const mensagens: Mensagem[] = await response.json();
+
+      if (!response.ok || !Array.isArray(mensagens)) {
+        return;
+      }
+
+      setListaChats((anterior) =>
+        anterior.map((chat) =>
+          chat.idConversa === idConversa
+            ? {
+                ...chat,
+                mensagens: chat.mensagens?.map((msg) => {
+                  const atualizada = mensagens.find(
+                    (m) => m.idMensagem === msg.idMensagem
+                  );
+                  return atualizada ?? msg;
+                }),
+              }
+            : chat
+        )
+      );
+
+      setChatSelecionado((anterior) => {
+        if (!anterior || anterior.idConversa !== idConversa) {
+          return anterior;
+        }
+
+        return {
+          ...anterior,
+          mensagens: anterior.mensagens?.map((msg) => {
+            const atualizada = mensagens.find(
+              (m) => m.idMensagem === msg.idMensagem
+            );
+            return atualizada ?? msg;
+          }),
+        };
+      });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const executarAcaoMenu = async (acao: "recarregar" | "limpar" | "fechar") => {
-    if (acao === "recarregar" && chatSelecionado) {
-      await carregarMensagens(chatSelecionado.idConversa);
-      exibirNotificacao("Mensagens atualizadas", "O histórico da conversa foi recarregado.", "info");
+
+
+  // ==========================================================
+  // USE EFFECTS - REFS
+  // ==========================================================
+
+  useEffect(() => {
+    console.log(
+      "REF atualizado:",
+      ultimoIdRecebido,
+      "->",
+      ultimoIdRecebidoRef.current
+    );
+    chatSelecionadoRef.current = chatSelecionado;
+  }, [chatSelecionado]);
+
+  useEffect(() => {
+    ultimoIdRecebidoRef.current = ultimoIdRecebido;
+  }, [ultimoIdRecebido]);
+
+
+
+  // ==========================================================
+  // USE EFFECTS - LIMPEZA
+  // ==========================================================
+
+  useEffect(() => {
+    return () => {
+      if (notificacaoTimerRef.current) {
+        window.clearTimeout(notificacaoTimerRef.current);
+      }
+    };
+  }, []);
+
+
+
+  // ==========================================================
+  // USE EFFECTS - PRIMEIRA CARGA
+  // ==========================================================
+
+  useEffect(() => {
+    carregarConversas();
+  }, [idUsuarioLogado, tipoParticipanteLogado]);
+
+
+
+  // ==========================================================
+  // USE EFFECTS - CONVERSA DIRETA
+  // ==========================================================
+
+  useEffect(() => {
+    const abrirConversaDireta = async () => {
+      if (chatDiretoProcessado) return;
+      if (!idPrestadorDireto || idPrestadorDireto <= 0) return;
+      if (!idUsuarioLogado || isAdmin) return;
+
+      if (idPrestadorDireto === idUsuarioLogado) {
+        setChatDiretoProcessado(true);
+        return;
+      }
+
+      try {
+        const criarResponse = await fetch("/api/conversas", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            idUsuario: idUsuarioLogado,
+            idPrestador: idPrestadorDireto,
+          }),
+        });
+
+        const conversaCriada = await criarResponse.json();
+
+        if (!criarResponse.ok) {
+          throw new Error(
+            conversaCriada?.erro || 
+              "Não foi possível abrir a conversa.");
+        }
+
+        const listaResponse = await fetch(
+          `/api/conversas?idParticipante=${idUsuarioLogado}&tipoParticipante=${tipoParticipanteLogado}`
+        );
+        
+        const lista = await listaResponse.json();
+
+        const chats = Array.isArray(lista) 
+          ? lista 
+          : [];
+
+        setListaChats(chats);
+
+        const idConversaAlvo = Number(
+          conversaCriada?.idConversa ?? 0
+        );
+
+        const conversaAlvo =
+          chats.find(
+            (chat: Chat) =>
+                Number(chat.idConversa) ===
+                idConversaAlvo
+          ) ||
+          chats.find(
+            (chat: Chat) =>
+                Number(chat.idPrestador) ===
+                idPrestadorDireto
+          );
+
+        if (conversaAlvo) {
+          setSuporteAtivo(false);
+          primeiraCargaRef.current = true;
+
+          setChatSelecionado(conversaAlvo);
+
+          await carregarMensagens(conversaAlvo.idConversa);
+        }
+
+        setChatDiretoProcessado(true);
+      } catch (error) {
+        console.error(error);
+        setChatDiretoProcessado(true);
+      }
+    };
+
+    abrirConversaDireta();
+  }, [
+      chatDiretoProcessado,
+      idPrestadorDireto,
+      idUsuarioLogado, 
+      tipoParticipanteLogado,
+  ]);
+
+
+
+  // ==========================================================
+  // USE EFFECTS - VISIBILIDADE
+  // ==========================================================
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      setAbaVisivel(!document.hidden);
+    };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibility
+    );
+
+    handleVisibility();
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibility
+      );
+    };
+  }, []);
+  /*
+  useEffect(() => {
+    if (!abaVisivel) return;
+    if (!chatSelecionado) return;
+    if (suporteAtivo) return;
+    if (!ultimoIdRecebido) return;
+
+    carregarNovasMensagens(
+      chatSelecionado.idConversa,
+      ultimoIdRecebido
+    );
+  }, [
+    abaVisivel,
+    chatSelecionado?.idConversa,
+    suporteAtivo,
+  ]);
+  */
+
+
+  // ==========================================================
+  // USE EFFECTS - POLLING
+  // ==========================================================
+
+  useEffect(() => {
+    if (!chatSelecionado || suporteAtivo || !abaVisivel) return;
+
+    const intervalo = window.setInterval(() => {
+    
+      const chat = chatSelecionadoRef.current;
+      
+      if (!chat) return;
+      if (!ultimoIdRecebidoRef.current) return;
+      console.log({
+        chatRef: chatSelecionadoRef.current?.idConversa,
+        ultimoRef: ultimoIdRecebidoRef.current,
+        state: ultimoIdRecebido,
+      });
+      console.log(
+        "POLL",
+        "conversa:",
+        chat.idConversa,
+        "after:",
+        ultimoIdRecebidoRef.current
+      );
+      
+      carregarNovasMensagens(
+        chat.idConversa,
+        ultimoIdRecebidoRef.current
+      );
+
+      // sincronizarMensagens(chat.idConversa);
+    }, 3000);
+
+    return () => {
+      window.clearInterval(intervalo);
+    };
+  }, [
+    chatSelecionado?.idConversa,
+    suporteAtivo,
+    abaVisivel,
+  ]);
+
+
+
+  // ==========================================================
+  // USE EFFECTS - SUPORTE
+  // ==========================================================
+
+  useEffect(() => {
+    if (
+      !modalSolicitacaoAberto ||
+      !chatSelecionado?.idPrestador ||
+      suporteAtivo
+    ) {
+      return;
     }
 
-    if (acao === "limpar") {
-      setNovaMensagem("");
-      exibirNotificacao("Campo limpo", "A mensagem atual foi removida do campo de texto.", "info");
+    let ativo = true;
+
+    const carregarCategoriasPrestador = async () => {
+      setCarregandoCategoriasPrestador(true);
+      setCategoriasPrestador([]);
+
+      try {
+        const response = await fetch(
+          `/api/prestador/${chatSelecionado.idPrestador}`
+        );
+
+        const dadosPrestador = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            dadosPrestador?.erro ||
+              "Não foi possível carregar as categorias do prestador."
+          );
+        }
+
+        const categorias =
+          montarCategoriasDoPrestador(dadosPrestador);
+
+        if (!ativo) return;
+
+        setCategoriasPrestador(categorias);
+
+        setCategoria((categoriaAtual) =>
+          categoriaAtual &&
+          categorias.includes(categoriaAtual)
+            ? categoriaAtual
+            : ""
+        );
+      } catch (error) {
+        console.error(error);
+
+        if (ativo) {
+          setCategoriasPrestador([]);
+          setCategoria("");
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoCategoriasPrestador(false);
+        }
+      }
+    };
+
+    carregarCategoriasPrestador();
+
+    return () => {
+      ativo = false;
+    };
+  }, [
+    modalSolicitacaoAberto,
+    chatSelecionado?.idPrestador,
+    suporteAtivo,
+  ]);
+
+  
+
+  useEffect(() => {
+    if (!primeiraCargaRef.current) return;
+    if (!chatSelecionado?.mensagens?.length) return;
+
+    console.log("LAYOUT EFFECT SCROLL");
+
+    if (listaMensagensRef.current) {
+      listaMensagensRef.current.scrollTop =
+        listaMensagensRef.current.scrollHeight;
     }
 
-    if (acao === "fechar") {
-      setChatSelecionado(null);
-      setBuscaMensagens("");
-      exibirNotificacao("Conversa fechada", "A conversa saiu da área principal.", "info");
-    }
-
-    setMostrarMenuAcoes(false);
-  };
+    primeiraCargaRef.current = false;
+  }, [
+    chatSelecionado?.idConversa,
+    chatSelecionado?.mensagens?.length,
+  ]);
 
 
 
@@ -835,11 +1860,20 @@ export default function Conversa() {
 
 
 
+  console.log(
+    "LISTA",
+    listaChats.map(c => ({
+      id: c.idConversa,
+      msgs: c.mensagens?.length
+    }))
+  );
 
 
-
-
-
+  console.log(
+    "RENDER",
+    chatSelecionado?.idConversa,
+    chatSelecionado?.mensagens?.length
+  );
   return (
     <div className="h-screen flex flex-col bg-white">
 
@@ -852,7 +1886,7 @@ export default function Conversa() {
             className="w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-4">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-3 py-3 md:px-6 md:py-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {obterLabelAnexo(anexoEmDestaque.mimeType)}
@@ -937,7 +1971,14 @@ export default function Conversa() {
       <div className="flex flex-1 overflow-hidden">
 
         {/* Lista de Conversas */}
-        <aside className="w-[25%] min-w-[260px] max-w-[340px] border-r border-[#CDCDCD] bg-white flex flex-col">
+        <aside
+          className={`
+            border-r border-[#CDCDCD] bg-white flex flex-col
+            w-full md:w-[25%] md:min-w-[260px] md:max-w-[340px]
+            ${mostrarListaMobile ? "flex" : "hidden"}
+            md:flex
+          `}
+        >
           <div className="h-20 px-4 border-b border-[#CDCDCD] flex items-center">
             <div className="flex items-center gap-4 rounded-full border-hidden bg-cyan-50 border-[#CDCDCD] px-7 h-12 w-full">
               <button onClick={() => inputRef.current?.focus()}
@@ -959,10 +2000,18 @@ export default function Conversa() {
             {chatsFiltrados.map((chat) => (
               <div
               key={chat.idConversa}
-              onClick={() => {
+              onClick={async () => {
+                console.log(
+                  "CLICK",
+                  chat.idConversa,
+                  chat.mensagens?.length
+                );
+                primeiraCargaRef.current = true;
                 setSuporteAtivo(false);
-                setChatSelecionado(chat);
-                carregarMensagens(chat.idConversa);
+                setChatSelecionado(chat);             
+                setMostrarListaMobile(false);
+                setContadorNovasMensagens((anterior) => ({ ...anterior, [chat.idConversa]: 0 }));
+                await carregarMensagens(chat.idConversa);
               }}
               className={`
                 flex gap-3 px-4 py-4 border-b border-[#CDCDCD]
@@ -973,12 +2022,12 @@ export default function Conversa() {
                 {renderAvatarChat(chat)}
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between">
-                    <h3 className="font-medium text-sm">
+                  <div className="flex justify-between gap-2">
+                    <h3 className="font-medium text-sm truncate">
                       {nomeChat(chat)}
                     </h3>
 
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 shrink-0">
                       {new Date(chat.ultimaMensagemEm).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -986,17 +2035,28 @@ export default function Conversa() {
                     </span>
                   </div>
 
-                  <p className="text-sm text-gray-500 truncate">
-                    {chat.mensagens?.[chat.mensagens.length - 1]?.conteudo}
-                  </p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="text-sm text-gray-500 truncate">
+                      {chat.mensagens?.[chat.mensagens.length - 1]?.conteudo}
+                    </p>
+                    {(contadorNovasMensagens[chat.idConversa] ?? 0) > 0 ? (
+                      <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+                        {contadorNovasMensagens[chat.idConversa]}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
+          
           {/* Contato fixo */}
           <div className="border-t border-[#CDCDCD] bg-white shrink-0">
             <div
-              onClick={abrirSuporte}
+              onClick={() => {
+                abrirSuporte();
+                setMostrarListaMobile(false);
+              }}
               className={`flex gap-3 px-4 py-4 cursor-pointer hover:bg-[#F7F7F7] ${suporteAtivo ? "bg-blue-50" : ""}`}
             >
               <div className="h-12 w-12 rounded-full shrink-0 flex items-center justify-center overflow-hidden">
@@ -1021,14 +2081,53 @@ export default function Conversa() {
         </aside>
 
         {/* Área do Chat */}
-        <section className="flex-1 min-w-0 flex flex-col bg-white">
+        <section
+          
+          className={`
+            flex-1 flex-col bg-white min-w-0
+            ${
+              !mostrarListaMobile && (chatSelecionado || suporteAtivo)
+                ? "flex"
+                : "hidden md:flex"
+            }
+          `}
+        >
 
           {/* Header da conversa */}
-          <div className="h-20 border-b border-[#CDCDCD] px-6 flex items-center justify-between">
+          <div className="h-20 border-b border-[#CDCDCD] px-3 md:px-6 flex items-center justify-between gap-2">
+            
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              
+              <button
+                onClick={() => {
+                  setChatSelecionado(null);
+                  setMostrarListaMobile(true);
+                  setMostrarBuscaMensagens(false);
+                  setMostrarMenuAcoes(false);
+                  setMostrarPainelEmoji(false);
+                  setBuscaMensagens("");
+                }}
+                className="
+                  md:hidden
+                  flex items-center justify-center
+                  w-10 h-10
+                  rounded-full
+                  hover:bg-blue-50
+                  active:scale-95
+                  transition
+                  cursor-pointer
+                "
+                aria-label="Voltar para conversas"
+              >
+                <ArrowLeft
+                  size={22}
+                  color="#2563EB"
+                  strokeWidth={2.5}
+                />
+              </button>
 
-            <div className="flex items-center gap-3">
               {suporteAtivo ? (
-                <div className="h-12 w-12 rounded-full shrink-0 flex items-center justify-center overflow-hidden">
+                <div className="h-10 w-10 md:h-12 md:w-12 rounded-full shrink-0 flex items-center justify-center overflow-hidden">
                   <img
                     src={logo.src}
                     alt="Suporte"
@@ -1036,26 +2135,29 @@ export default function Conversa() {
                   />
                 </div>
               ) : (
-                renderAvatarChat(chatSelecionado)
+                <div className="h-10 w-10 md:h-12 md:w-12 rounded-full shrink-0 flex items-center justify-center overflow-hidden">
+                  {renderAvatarChat(chatSelecionado)}
+                </div>
               )}
-
-              <div>
-                <h2 className="font-semibold text-[15px]">
+              
+              
+              <div className="min-w-0">
+                <h2 className="font-semibold text-sm md:text-[15px] truncate">
                   {suporteAtivo ? "Suporte Benvi" : (chatSelecionado?.nome ?? "Selecione uma conversa")}
                 </h2>
 
-                <p className="text-sm text-gray-500">
-  {suporteAtivo
-    ? "Administrador"
-    : tipoParticipanteLogado === "prestador"
-    ? "Cliente"
-    : "Prestador"}
-</p>
+                <p className="text-xs md:text-sm text-gray-500 truncate">
+                  {suporteAtivo
+                    ? "Administrador"
+                    : tipoParticipanteLogado === "prestador"
+                    ? "Cliente"
+                    : "Prestador"}
+                </p>
               </div>
 
               {podeSolicitarServico && (
               <button  onClick={() => setModalSolicitacaoAberto(true)}
-              className="ml-4 bg-[#2F80ED] text-white px-5 py-2 rounded-full text-sm hover:bg-blue-600 cursor-pointer">
+              className="hidden md:block ml-3 bg-[#2F80ED] text-white px-4 py-2 rounded-full text-sm hover:bg-blue-600 cursor-pointer">
                 Solicitar serviço
               </button>
               )}
@@ -1064,28 +2166,31 @@ export default function Conversa() {
             
             {/* Lado direito */}
             {!suporteAtivo && (
-            <div className="flex items-center gap-4">
-              
+            <div className="flex items-center gap-1 md:gap-3 shrink-0">
+
               <button
                 onClick={alternarFavorito}
-                className="p-2 rounded-full hover:bg-blue-200 cursor-pointer"
+                className="hidden md:block p-2 rounded-full hover:bg-blue-200 cursor-pointer"
               >
-                  <Star
-                    size={20}
-                    color="blue"
-                    fill={
-                      chatSelecionado && favoritos.includes(chatSelecionado.idConversa)
-                        ? "blue"
-                        : "none"
-                    }
-                  />
+                <Star
+                  size={20}
+                  color="blue"
+                  fill={
+                    chatSelecionado && favoritos.includes(chatSelecionado.idConversa)
+                      ? "blue"
+                      : "none"
+                  }
+                />
               </button>
+              
               <button
                 onClick={alternarBuscaMensagens}
                 className="p-2 rounded-full hover:bg-gray-200 cursor-pointer"
               >
                   <Search  size={20} />
               </button>
+
+              
 
               <div className="relative">
                 <button
@@ -1100,22 +2205,77 @@ export default function Conversa() {
 
                 {mostrarMenuAcoes && (
                   <div className="absolute right-0 mt-2 w-44 bg-white border border-[#CDCDCD] rounded-lg shadow-md z-20">
+                    <div className="md:hidden">
+                      {podeSolicitarServico && (
+                        <button
+                          onClick={() => {
+                            setModalSolicitacaoAberto(true);
+                            setMostrarMenuAcoes(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
+                        >
+                          <Plus size={16} />
+                          Solicitar serviço
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          alternarFavorito();
+                          setMostrarMenuAcoes(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
+                      >
+                        <Star
+                          size={16}
+                          fill={
+                            chatSelecionado && favoritos.includes(chatSelecionado.idConversa)
+                              ? "blue"
+                              : "none"
+                          }
+                          color="blue"
+                        />
+                        {chatSelecionado && favoritos.includes(chatSelecionado.idConversa)
+                          ? "Remover dos favoritos"
+                          : "Adicionar aos favoritos"}
+                      </button>
+                    </div>
+
                     <button
                       onClick={() => executarAcaoMenu("recarregar")}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
+                      <RotateCw size={16} />
                       Recarregar mensagens
                     </button>
+
                     <button
                       onClick={() => executarAcaoMenu("limpar")}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
+                      <Eraser size={16} />
                       Limpar campo
                     </button>
+
+                    <div className="md:hidden">
+                      <button
+                        onClick={() => {
+                          denunciarConversa();
+                          setMostrarMenuAcoes(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <AlertTriangle size={16} />
+                        Denunciar conversa
+                      </button>
+                    </div>
+
+                    <hr className="border-t border-[#CDCDCD]" />
+
                     <button
                       onClick={() => executarAcaoMenu("fechar")}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     >
+                      <XCircle size={16} />
                       Fechar conversa
                     </button>
                   </div>
@@ -1124,30 +2284,37 @@ export default function Conversa() {
 
               <button
                 onClick={denunciarConversa}
-                className="p-2 rounded-full hover:bg-red-200 cursor-pointer"
+                className="hidden md:block p-2 rounded-full hover:bg-red-200 cursor-pointer"
               >
-                  <AlertTriangle color="red" size={20} />
+                <AlertTriangle color="red" size={20} />
               </button>
 
             </div>
             )}
           </div>
 
-          {/* Mensagens */}
-          <div className="flex-1 overflow-y-auto bg-[#FAFAFA] px-8 py-6">
 
-            {!suporteAtivo && mostrarBuscaMensagens && (
-              <div className="mb-4">
+          {/* Barra de busca */}
+          {mostrarBuscaMensagens && (
+              <div className="border-b border-[#CDCDCD] bg-white px-6 py-3 shrink-0">
                 <input
                   ref={inputBuscaMensagemRef}
                   value={buscaMensagens}
                   onChange={(e) => setBuscaMensagens(e.target.value)}
                   placeholder="Buscar nesta conversa..."
-                  className="w-full border border-[#CDCDCD] rounded-full px-4 py-2 outline-none bg-white"
+                  className="w-full rounded-full border border-[#CDCDCD] px-4 py-2 outline-none"
                 />
               </div>
             )}
 
+
+          {/* Mensagens */}
+          <div
+          ref={listaMensagensRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto bg-[#FAFAFA] px-3 py-3 md:px-8 md:py-6">
+
+            
             {suporteAtivo && (
               <div className="space-y-4">
                 {carregandoSuporte && (
@@ -1161,7 +2328,7 @@ export default function Conversa() {
                 )}
 
                 {suporteMensagens.map((mensagem) => (
-                  <div key={mensagem.id} className={`mb-5 flex ${mensagem.lado === "usuario" ? "justify-end" : "justify-start"}`}>
+                  <div key={mensagem.id} className={`mb-3 md:mb-5 flex ${mensagem.lado === "usuario" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[70%] whitespace-pre-line rounded-2xl px-5 py-3 ${mensagem.lado === "usuario" ? "bg-[#2F80ED] text-white rounded-br-none" : "bg-white border border-slate-200 text-slate-700 rounded-bl-none"}`}>
                       <p>{mensagem.texto}</p>
                       <p className={`mt-1 text-[11px] ${mensagem.lado === "usuario" ? "text-blue-100" : "text-slate-400"}`}>
@@ -1172,7 +2339,11 @@ export default function Conversa() {
                 ))}
               </div>
             )}
-
+            {carregandoHistorico && (
+                <div className="py-3 text-center text-sm text-gray-500">
+                    Carregando mensagens...
+                </div>
+            )}
             {!suporteAtivo && mensagensFiltradas.map((msg) => {
 
               const enviadaPorMim = msg.idRemetente === idUsuarioLogado;
@@ -1182,14 +2353,14 @@ export default function Conversa() {
               return (
                 <div
                   key={msg.idMensagem}
-                  className={`mb-5 flex ${
+                  className={`mb-3 md:mb-5 flex ${
                     enviadaPorMim
                       ? "justify-end"
                       : "justify-start"
                   }`}
                 >
                   <div
-                    className={`max-w-[60%] px-5 py-3 rounded-2xl ${
+                    className={`max-w-[90%] md:max-w-[60%] px-4 py-2.5 md:px-5 md:py-3 rounded-2xl ${
                       enviadaPorMim
                         ? "bg-[#2F80ED] text-white rounded-br-none"
                         : "bg-[#DCE6FF] text-[#333] rounded-bl-none"
@@ -1209,12 +2380,12 @@ export default function Conversa() {
                         </div>
 
                         {anexo.tipo === "imagem" && (
-                          <img src={anexo.url} alt={anexo.nome} className="max-h-80 w-full rounded-xl object-cover ring-1 ring-white/10" />
+                          <img src={anexo.url} alt={anexo.nome} className="w-full max-h-64 md:max-h-80 rounded-xl object-cover ring-1 ring-white/10" />
                         )}
 
                         {anexo.tipo === "video" && (
                           <div className="relative overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
-                            <video className="max-h-80 w-full" src={anexo.url} />
+                            <video className="max-h-64 md:max-h-80 w-full" src={anexo.url} />
                             <div className="absolute inset-0 flex items-end justify-start bg-gradient-to-t from-black/45 to-transparent p-4">
                               <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-900">
                                 Toque para abrir o vídeo
@@ -1224,7 +2395,7 @@ export default function Conversa() {
                         )}
 
                         {anexo.tipo === "pdf" && (
-                          <div className="flex min-h-40 flex-col justify-between rounded-xl border border-white/15 bg-white/95 p-4 text-slate-900 ring-1 ring-white/10">
+                          <div className="flex min-h-32 md:min-h-40 flex-col justify-between rounded-xl border border-white/15 bg-white/95 p-4 text-slate-900 ring-1 ring-white/10">
                             <div className="space-y-2">
                               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Prévia do PDF</p>
                               <p className="truncate text-sm font-medium text-slate-800">{anexo.nome}</p>
@@ -1238,30 +2409,61 @@ export default function Conversa() {
                         )}
                       </button>
                     ) : (
-                      <p>{textoMensagem}</p>
+                      <p className="break-words text-sm md:text-base">
+                        {textoMensagem}
+                      </p>
+                    )}
+                    {msg.enviando && (
+                      <p className="mt-1 text-[11px] text-blue-100">
+                        Enviando...
+                      </p>
                     )}
 
-                    <p
-                      className={`text-[11px] mt-1 ${
+                    {msg.erro && (
+                      <p className="mt-1 text-[11px] text-red-300">
+                        Falha ao enviar
+                      </p>
+                    )}
+                    
+                    <div
+                      className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${
                         enviadaPorMim
                           ? "text-blue-100"
                           : "text-gray-400"
                       }`}
                     >
-                      {new Date(msg.criadoEm).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
+                      <span>
+                        {new Date(msg.criadoEm).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+
+                      {enviadaPorMim && !msg.enviando && !msg.erro && (
+                        <span>
+                          {msg.lida ? "✓✓" : "✓"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
           })}
+          {novasMensagensPendentes > 0 && (
+            <div className="sticky bottom-2 md:bottom-4 flex justify-center">
+              <button
+                onClick={irParaUltimaMensagem}
+                className="rounded-full bg-blue-600 px-3 py-2 text-xs md:text-sm md:px-4 text-white shadow-lg hover:bg-blue-700 cursor-pointer"
+              >
+                ↓ {novasMensagensPendentes} nova{novasMensagensPendentes > 1 ? "s" : ""} mensagem{novasMensagensPendentes > 1 ? "s" : ""}
+              </button>
+            </div>
+          )}
             <div ref={fimMensagensRef}/>
           </div>
             
           {/* Input */}
-          <div className="border-t border-[#CDCDCD] bg-white px-6 py-4">
+          <div className="border-t border-[#CDCDCD] bg-white px-3 py-3 md:px-6 md:py-4">
 
             {suporteAtivo ? (
               <p className="mb-2 text-xs text-slate-500">Sua mensagem será enviada como ticket para o administrador.</p>
@@ -1273,7 +2475,7 @@ export default function Conversa() {
 
             {suporteAtivo ? (
               <div className="flex items-center gap-3">
-                <div className="flex-1 flex items-center bg-cyan-50 rounded-full">
+                <div className="flex-1 min-w-0 flex items-center bg-cyan-50 rounded-full">
                   <input
                     value={suporteTexto}
                     onChange={(e) => setSuporteTexto(e.target.value)}
@@ -1305,7 +2507,7 @@ export default function Conversa() {
                     setMostrarPainelEmoji((anterior) => !anterior);
                     setMostrarMenuAcoes(false);
                   }}
-                  className="p-2 hover:bg-cyan-200 cursor-pointer rounded-full"
+                  className="p-2 md:p-2 hover:bg-cyan-200 rounded-full cursor-pointer"
                 >
                 <SmilePlus size={20} color="#3D64FD" />
                 </button>
@@ -1326,13 +2528,13 @@ export default function Conversa() {
               </div>
 
 
-              <div className="flex-1 flex items-center bg-cyan-50 rounded-full">
+              <div className="flex-1 min-w-0 flex items-center bg-cyan-50 rounded-full">
                 <input
                 ref={inputMensagemRef}
                 value={novaMensagem}
                 onChange={(e) => setNovaMensagem(e.target.value)}
                 placeholder="Digite uma mensagem..."
-                className="w-full flex-1 border-hidden border-[#CDCDCD] rounded-full px-5 py-3 outline-none"
+                className="w-full flex-1 rounded-full bg-transparent px-3 md:px-5 py-3 outline-none text-sm"
                 onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   enviarMensagem();
@@ -1341,7 +2543,7 @@ export default function Conversa() {
                 />
 
                 <button onClick={enviarMensagem}
-                className="p-3 hover:bg-cyan-300 bg-cyan-100 cursor-pointer rounded-full"
+                className="p-2 md:p-3 hover:bg-cyan-300 bg-cyan-100 rounded-full cursor-pointer"
                 >
                   <StepForward size={20} fill="#3D64FD" color="#3D64FD"/>
                 </button>
@@ -1350,7 +2552,7 @@ export default function Conversa() {
               
               <button
                 onClick={() => inputAnexoRef.current?.click()}
-                className="p-2 hover:bg-cyan-200 cursor-pointer rounded-full"
+                className="p-2 md:p-2 hover:bg-cyan-200 rounded-full cursor-pointer"
               >
                 <Plus size={20} color="#3D64FD"/>
               </button>
@@ -1365,13 +2567,13 @@ export default function Conversa() {
               />
 
               <button onClick={() => exibirNotificacao("Áudio em desenvolvimento", "O envio de áudio ainda não foi ativado.", "info")}
-              className="p-2 hover:bg-cyan-200 cursor-pointer rounded-full">
+              className="hidden md:block p-2 hover:bg-cyan-200 cursor-pointer rounded-full">
                 <Mic size={20} color="#3D64FD"/>
               </button>
 
               <button
                 onClick={enviarLike}
-                className="p-2 hover:bg-cyan-200 cursor-pointer rounded-full"
+                className="hidden md:block p-2 hover:bg-cyan-200 cursor-pointer rounded-full"
               >
                 <ThumbsUp size={20} color="#3D64FD"/>
               </button>
@@ -1542,7 +2744,7 @@ export default function Conversa() {
                   {fotos.map((foto, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2"
+                      className="flex items-center gap-2 md:gap-3 rounded-lg border border-slate-200 bg-white p-2"
                     >
                       <img
                         src={URL.createObjectURL(foto)}

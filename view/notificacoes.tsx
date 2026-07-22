@@ -11,6 +11,8 @@ interface Notificacao {
   descricao: string;
   visualizada: boolean;
   data_envio: string;
+  url_acao?: string;
+  tipo?: string;
 }
 
 type Filtro = "todas" | "nao_lidas" | "mensagens";

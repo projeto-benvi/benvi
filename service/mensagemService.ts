@@ -55,4 +55,63 @@ export class MensagemService {
     );
     return historico;
   }
+
+  async listarMensagensDesdeId(idConversa: number, afterId: number) {
+    const [historico] = await pool.execute<RowDataPacket[]>(
+      'SELECT * FROM mensagens WHERE idConversa = ? AND idMensagem > ? ORDER BY criadoEm ASC',
+      [idConversa, afterId]
+    );
+    return historico;
+  }
+
+  async listarUltimasMensagens(idConversa: number, limite = 30) {
+  const [historico] = await pool.query<RowDataPacket[]>(
+    `
+      SELECT *
+      FROM mensagens
+      WHERE idConversa = ?
+      ORDER BY idMensagem DESC
+      LIMIT ${Number(limite)}
+    `,
+    [idConversa]
+  );
+  
+  return historico.reverse();
+  }
+
+  async listarMensagensAntes(
+    idConversa: number,
+    beforeId: number,
+    limite = 30
+  ) {
+    const [historico] = await pool.query<RowDataPacket[]>(
+      `
+        SELECT *
+        FROM mensagens
+        WHERE idConversa = ?
+        AND idMensagem < ?
+        ORDER BY idMensagem DESC
+        LIMIT ${Number(limite)}
+      `,
+      [idConversa, beforeId]
+    );
+
+    return historico.reverse();
+  }
+
+  async marcarComoLidas(
+    idConversa: number,
+    idUsuario: number
+  ) {
+    await pool.execute(
+      `
+        UPDATE mensagens
+        SET lida = 1
+        WHERE idConversa = ?
+        AND idRemetente <> ?
+        AND lida = 0
+      `,
+      [idConversa, idUsuario]
+    );
+  }
 }
