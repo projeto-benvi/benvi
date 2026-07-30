@@ -2700,13 +2700,13 @@ export default function Conversa() {
                         {textoMensagem}
                       </p>
                     )}
-                    {!mensagemAudio && msg.enviando && (
+                    {!mensagemAudio && !anexo && msg.enviando && (
                       <p className="mt-1 text-[11px] text-blue-100">
                         Enviando...
                       </p>
                     )}
 
-                    {!mensagemAudio && msg.erro && (
+                    {!mensagemAudio && !anexo && msg.erro && (
                       <button
                         type="button"
                         onClick={() => tentarEnviarNovamente(msg)}
