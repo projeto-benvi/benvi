@@ -1,6 +1,6 @@
 "use client";
 import logo from "@/assets/benvi colorido 2.svg"
-import { Search, Plus, Mic, ThumbsUp, SmilePlus, AlertTriangle, X, EllipsisVertical, Star, StepForward } from "lucide-react";
+import { Search, Plus, Mic, ThumbsUp, SmilePlus, AlertTriangle, X, EllipsisVertical, Star, StepForward, Square, Trash2, RotateCw } from "lucide-react";
 import SearchBar from "@/components/searchBar";
 import { useRef, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -43,6 +43,10 @@ export default function Conversa() {
   const [enviandoSuporte, setEnviandoSuporte] = useState(false);
   const [erro, setErro] = useState("");
   const [chatDiretoProcessado, setChatDiretoProcessado] = useState(false);
+  const [estadoAudio, setEstadoAudio] = useState<"idle" | "requesting" | "recording" | "preview" | "sending" | "error">("idle");
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState("");
+  const [audioSegundos, setAudioSegundos] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const inputMensagemRef = useRef<HTMLInputElement>(null);
@@ -50,6 +54,13 @@ export default function Conversa() {
   const inputAnexoRef = useRef<HTMLInputElement>(null);
   const fimMensagensRef = useRef<HTMLDivElement>(null);
   const notificacaoTimerRef = useRef<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioTimerRef = useRef<number | null>(null);
+  const audioPreviewUrlRef = useRef("");
+  const descartarAudioRef = useRef(false);
+  const audioTempCounterRef = useRef(0);
 
   // ==========================
   // TYPES
@@ -61,6 +72,18 @@ export default function Conversa() {
     idRemetente: number;
     conteudo: string;
     criadoEm: string;
+    lida?: boolean;
+    tipo_mensagem?: "texto" | "audio";
+    arquivo_url?: string;
+    arquivo_mime?: string;
+    arquivo_tamanho?: number;
+    audio_duracao?: number;
+    clientTempId?: string;
+    tempId?: string;
+    enviando?: boolean;
+    erro?: boolean;
+    audioLocalUrl?: string;
+    audioBlob?: Blob;
   };
 
   type ConteudoAnexo = {
@@ -468,6 +491,219 @@ export default function Conversa() {
       exibirNotificacao("Falha ao enviar", "Não foi possível enviar a mensagem agora.", "erro");
     }
   };
+
+  const encerrarStreamAudio = () => {
+    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    audioStreamRef.current = null;
+    if (audioTimerRef.current) {
+      window.clearInterval(audioTimerRef.current);
+      audioTimerRef.current = null;
+    }
+  };
+
+  const limparGravacaoAudio = () => {
+    encerrarStreamAudio();
+    if (audioPreviewUrlRef.current) URL.revokeObjectURL(audioPreviewUrlRef.current);
+    audioPreviewUrlRef.current = "";
+    setAudioPreviewUrl("");
+    setAudioBlob(null);
+    setAudioSegundos(0);
+    setEstadoAudio("idle");
+  };
+
+  const escolherMimeAudio = () => {
+    const formatos = ["audio/webm", "audio/ogg", "audio/mp4"];
+    return formatos.find((formato) => MediaRecorder.isTypeSupported(formato)) ?? "";
+  };
+
+  const iniciarGravacaoAudio = async () => {
+    if (!chatSelecionado || suporteAtivo || estadoAudio !== "idle") return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      exibirNotificacao("Áudio indisponível", "Este navegador não oferece gravação de áudio.", "erro");
+      return;
+    }
+
+    setEstadoAudio("requesting");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = escolherMimeAudio();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
+      audioStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+      descartarAudioRef.current = false;
+      setAudioSegundos(0);
+
+      recorder.addEventListener("dataavailable", (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      });
+      recorder.addEventListener("stop", () => {
+        encerrarStreamAudio();
+        if (descartarAudioRef.current) {
+          descartarAudioRef.current = false;
+          audioChunksRef.current = [];
+          setEstadoAudio("idle");
+          return;
+        }
+
+        const blob = new Blob(audioChunksRef.current, {
+          type: recorder.mimeType || mimeType || "audio/webm",
+        });
+        audioChunksRef.current = [];
+        if (!blob.size) {
+          setEstadoAudio("error");
+          exibirNotificacao("Gravação vazia", "Não foi possível capturar o áudio.", "erro");
+          return;
+        }
+
+        const previewUrl = URL.createObjectURL(blob);
+        audioPreviewUrlRef.current = previewUrl;
+        setAudioBlob(blob);
+        setAudioPreviewUrl(previewUrl);
+        setEstadoAudio("preview");
+      });
+
+      recorder.start(250);
+      setEstadoAudio("recording");
+      audioTimerRef.current = window.setInterval(() => {
+        setAudioSegundos((segundos) => {
+          if (segundos >= 119) {
+            mediaRecorderRef.current?.stop();
+            return 120;
+          }
+          return segundos + 1;
+        });
+      }, 1000);
+    } catch (error) {
+      encerrarStreamAudio();
+      setEstadoAudio("idle");
+      const negado =
+        error instanceof DOMException &&
+        (error.name === "NotAllowedError" || error.name === "PermissionDeniedError");
+      exibirNotificacao(
+        negado ? "Microfone bloqueado" : "Falha no microfone",
+        negado
+          ? "Permita o acesso ao microfone nas configurações do navegador."
+          : "Não foi possível iniciar a gravação.",
+        "erro"
+      );
+    }
+  };
+
+  const finalizarGravacaoAudio = () => {
+    if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+  };
+
+  const cancelarGravacaoAudio = () => {
+    descartarAudioRef.current = true;
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+    } else {
+      limparGravacaoAudio();
+    }
+  };
+
+  const salvarMensagemAudioNoEstado = (mensagem: Mensagem, tempId: string) => {
+    setListaChats((anterior) =>
+      anterior.map((chat) =>
+        chat.idConversa === mensagem.idConversa
+          ? {
+              ...chat,
+              mensagens: [
+                ...(chat.mensagens ?? []).filter(
+                  (item) => item.tempId !== tempId && item.idMensagem !== mensagem.idMensagem
+                ),
+                mensagem,
+              ],
+            }
+          : chat
+      )
+    );
+    setChatSelecionado((anterior) =>
+      anterior?.idConversa === mensagem.idConversa
+        ? {
+            ...anterior,
+            mensagens: [
+              ...(anterior.mensagens ?? []).filter(
+                (item) => item.tempId !== tempId && item.idMensagem !== mensagem.idMensagem
+              ),
+              mensagem,
+            ],
+          }
+        : anterior
+    );
+  };
+
+  const enviarAudio = async (blob = audioBlob, tempIdExistente?: string) => {
+    if (!blob || !chatSelecionado) return;
+
+    audioTempCounterRef.current += 1;
+    const tempId = tempIdExistente ?? `audio-${idUsuarioLogado}-${audioTempCounterRef.current}`;
+    const mimeType = blob.type.split(";")[0].toLowerCase();
+    const extensao =
+      mimeType === "audio/ogg" ? "ogg" :
+      mimeType === "audio/mp4" ? "m4a" :
+      mimeType === "audio/mpeg" ? "mp3" :
+      mimeType === "audio/wav" ? "wav" : "webm";
+    const localUrl = audioPreviewUrl || URL.createObjectURL(blob);
+
+    const temporaria: Mensagem = {
+      idMensagem: -audioTempCounterRef.current,
+      idConversa: chatSelecionado.idConversa,
+      idRemetente: idUsuarioLogado,
+      conteudo: "[Áudio]",
+      criadoEm: new Date().toISOString(),
+      tipo_mensagem: "audio",
+      arquivo_mime: mimeType,
+      audio_duracao: audioSegundos,
+      tempId,
+      enviando: true,
+      audioLocalUrl: localUrl,
+      audioBlob: blob,
+    };
+    salvarMensagemAudioNoEstado(temporaria, tempId);
+    setEstadoAudio("sending");
+    requestAnimationFrame(() => fimMensagensRef.current?.scrollIntoView({ behavior: "smooth" }));
+
+    try {
+      const formData = new FormData();
+      formData.append("idConversa", String(chatSelecionado.idConversa));
+      formData.append("clientTempId", tempId);
+      formData.append("audio", new File([blob], `audio.${extensao}`, { type: mimeType }));
+
+      const response = await fetch("/api/mensagens/audio", { method: "POST", body: formData });
+      const confirmada = await response.json();
+      if (!response.ok) throw new Error(confirmada.erro || "Não foi possível enviar o áudio.");
+
+      salvarMensagemAudioNoEstado(confirmada, tempId);
+      limparGravacaoAudio();
+      exibirNotificacao("Áudio enviado", "A mensagem de áudio foi enviada.", "sucesso");
+    } catch (error) {
+      const falha = { ...temporaria, enviando: false, erro: true };
+      salvarMensagemAudioNoEstado(falha, tempId);
+      setEstadoAudio("error");
+      exibirNotificacao(
+        "Falha ao enviar",
+        error instanceof Error ? error.message : "Tente novamente em instantes.",
+        "erro"
+      );
+    }
+  };
+
+  const tentarReenviarAudio = (mensagem: Mensagem) => {
+    if (mensagem.audioBlob && mensagem.tempId) {
+      enviarAudio(mensagem.audioBlob, mensagem.tempId);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+      if (audioTimerRef.current) window.clearInterval(audioTimerRef.current);
+      if (audioPreviewUrlRef.current) URL.revokeObjectURL(audioPreviewUrlRef.current);
+    };
+  }, []);
 
   // ==========================
   // FOTOS
@@ -1176,6 +1412,7 @@ export default function Conversa() {
             {!suporteAtivo && mensagensFiltradas.map((msg) => {
 
               const enviadaPorMim = msg.idRemetente === idUsuarioLogado;
+              const mensagemAudio = msg.tipo_mensagem === "audio";
               const anexo = ehConteudoAnexo(msg.conteudo) ? interpretarConteudo(msg.conteudo) : null;
               const textoMensagem = anexo ? null : msg.conteudo;
 
@@ -1195,7 +1432,31 @@ export default function Conversa() {
                         : "bg-[#DCE6FF] text-[#333] rounded-bl-none"
                     }`}
                   >
-                    {anexo ? (
+                    {mensagemAudio ? (
+                      <div className="min-w-[220px] max-w-full space-y-2">
+                        <audio
+                          controls
+                          preload="metadata"
+                          src={msg.audioLocalUrl || msg.arquivo_url}
+                          className="h-10 w-full max-w-[320px]"
+                        >
+                          Seu navegador não suporta reprodução de áudio.
+                        </audio>
+                        {msg.enviando && (
+                          <p className="text-xs opacity-80">Enviando áudio...</p>
+                        )}
+                        {msg.erro && (
+                          <button
+                            type="button"
+                            onClick={() => tentarReenviarAudio(msg)}
+                            className="flex items-center gap-1 text-xs font-semibold underline"
+                          >
+                            <RotateCw size={13} />
+                            Falha no envio — tentar novamente
+                          </button>
+                        )}
+                      </div>
+                    ) : anexo ? (
                       <button
                         type="button"
                         onClick={() => abrirAnexoEmDestaque(anexo)}
@@ -1297,6 +1558,58 @@ export default function Conversa() {
               </div>
             ) : (
 
+            <>
+            {estadoAudio !== "idle" && (
+              <div className="mb-3 rounded-2xl border border-blue-100 bg-blue-50 p-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  {estadoAudio === "requesting" && (
+                    <p className="text-sm font-medium text-blue-700">Solicitando acesso ao microfone...</p>
+                  )}
+                  {estadoAudio === "recording" && (
+                    <>
+                      <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
+                      <p className="text-sm font-semibold text-slate-700">
+                        Gravando {Math.floor(audioSegundos / 60)}:{String(audioSegundos % 60).padStart(2, "0")}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={finalizarGravacaoAudio}
+                        className="flex items-center gap-1 rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold text-white"
+                      >
+                        <Square size={13} fill="currentColor" />
+                        Finalizar
+                      </button>
+                    </>
+                  )}
+                  {(estadoAudio === "preview" || estadoAudio === "error") && audioPreviewUrl && (
+                    <>
+                      <audio controls src={audioPreviewUrl} className="h-10 min-w-0 flex-1" />
+                      <button
+                        type="button"
+                        onClick={() => enviarAudio()}
+                        className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white"
+                      >
+                        {estadoAudio === "error" ? "Tentar novamente" : "Enviar áudio"}
+                      </button>
+                    </>
+                  )}
+                  {estadoAudio === "sending" && (
+                    <p className="text-sm font-medium text-blue-700">Enviando áudio...</p>
+                  )}
+                  {estadoAudio !== "requesting" && estadoAudio !== "sending" && (
+                    <button
+                      type="button"
+                      onClick={cancelarGravacaoAudio}
+                      className="ml-auto flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white"
+                    >
+                      <Trash2 size={14} />
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">Máximo de 2 minutos e 8 MB.</p>
+              </div>
+            )}
             <div className="flex items-center gap-3">
 
               <div className="relative">
@@ -1364,8 +1677,14 @@ export default function Conversa() {
                 className="hidden"
               />
 
-              <button onClick={() => exibirNotificacao("Áudio em desenvolvimento", "O envio de áudio ainda não foi ativado.", "info")}
-              className="p-2 hover:bg-cyan-200 cursor-pointer rounded-full">
+              <button
+                type="button"
+                onClick={iniciarGravacaoAudio}
+                disabled={estadoAudio !== "idle" || !chatSelecionado}
+                aria-label="Gravar mensagem de áudio"
+                title="Gravar mensagem de áudio"
+                className="p-2 hover:bg-cyan-200 cursor-pointer rounded-full disabled:cursor-not-allowed disabled:opacity-40"
+              >
                 <Mic size={20} color="#3D64FD"/>
               </button>
 
@@ -1377,6 +1696,7 @@ export default function Conversa() {
               </button>
 
             </div>
+            </>
             )}
           </div>
 
