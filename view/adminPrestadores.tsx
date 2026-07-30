@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Eye, AlertTriangle, UserX, X, Star, CheckCircle, UserCheck } from 'lucide-react';
+import { fetchTodosPrestadores } from '@/app/lib/fetchTodosPrestadores';
 
 interface UsuarioPlataforma {
   id_usuario: number;
@@ -54,9 +55,8 @@ export default function AdminPrestadores() {
       setLoading(true);
 
       // 1. Busca todos os prestadores (já vem com nome, email, cidade, status_conta via JOIN)
-      const resPrestadores = await fetch(`/api/prestador`);
-      const dataPrestadores = await resPrestadores.json();
-      const listaPrestadores = Array.isArray(dataPrestadores) ? dataPrestadores : [];
+      // A API é paginada; o helper busca todas as páginas sem sobrecarregar o banco em uma única consulta.
+      const listaPrestadores = await fetchTodosPrestadores();
 
       const prestadoresFormatados: UsuarioPlataforma[] = listaPrestadores.map((p: any) => ({
         id_usuario: p.id_usuario,

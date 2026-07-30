@@ -1,21 +1,22 @@
 import { SolicitacaoServicoService } from '@/service/solicitacaoservicoService';
+import { ParametrosPaginacao } from '@/app/lib/paginacao';
 
 export const SolicitacaoServicoController = {
 
-    async listar() {
-        return await SolicitacaoServicoService.listar();
+    async listar(paginacao: ParametrosPaginacao) {
+        return await SolicitacaoServicoService.listar(paginacao);
     },
 
     async buscarPorId(id: number) {
         return await SolicitacaoServicoService.buscarPorId(id);
     },
 
-    async listarPorUsuario(id_usuario: number) {
-        return await SolicitacaoServicoService.listarPorUsuario(id_usuario);
+    async listarPorUsuario(id_usuario: number, paginacao: ParametrosPaginacao) {
+        return await SolicitacaoServicoService.listarPorUsuario(id_usuario, paginacao);
     },
 
-    async listarPorPrestador(id_prestador: number) {
-        return await SolicitacaoServicoService.listarPorPrestador(id_prestador);
+    async listarPorPrestador(id_prestador: number, paginacao: ParametrosPaginacao) {
+        return await SolicitacaoServicoService.listarPorPrestador(id_prestador, paginacao);
     },
 
     async criar(dados: {

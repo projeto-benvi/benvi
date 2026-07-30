@@ -1,5 +1,7 @@
 import { notificacaoService } from '@/service/notificacaoService';
 import { NextResponse, NextRequest } from 'next/server';
+import { parsePaginacao } from '@/app/lib/paginacao';
+import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
 
 export const notificacaoController = {
   async criar(req: NextRequest) {
@@ -21,13 +23,19 @@ export const notificacaoController = {
   async listarPorUsuario(req: NextRequest) {
     try {
       const { searchParams } = new URL(req.url);
-      const idUsuario = searchParams.get('id_usuario');
+      const idUsuarioParam = searchParams.get('id_usuario');
 
-      if (!idUsuario) {
+      if (!idUsuarioParam) {
         return NextResponse.json({ erro: 'O parâmetro id_usuario é obrigatório' }, { status: 400 });
       }
 
-      const notificacoes = await notificacaoService.listarPorUsuario(Number(idUsuario));
+      const idUsuario = parseIdParam(idUsuarioParam);
+      if (idUsuario === null) {
+        return respostaIdInvalido('id_usuario');
+      }
+
+      const paginacao = parsePaginacao(searchParams);
+      const notificacoes = await notificacaoService.listarPorUsuario(idUsuario, paginacao);
       return NextResponse.json(notificacoes);
     } catch {
       return NextResponse.json({ erro: 'Erro ao listar notificações' }, { status: 500 });

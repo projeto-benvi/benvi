@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Star, HeartHandshake, ShieldAlert } from 'lucide-react';
+import { fetchTodosPrestadores } from '@/app/lib/fetchTodosPrestadores';
 
 // --- Interfaces de Tipagem Ajustadas para o Banco ---
 interface UsuarioPlataforma {
@@ -48,9 +49,8 @@ export default function PrestadoresPage() {
   const fetchPrestadores = async () => {
     try {
       setLoading(true);
-      // Rota que busca a lista geral de prestadores
-      const res = await fetch(`/api/prestador`); 
-      const data = await res.json();
+      // Rota que busca a lista geral de prestadores (API paginada; helper percorre as páginas)
+      const data = await fetchTodosPrestadores();
 
       if (Array.isArray(data)) {
         const dadosTratados = data.map((p: any) => ({

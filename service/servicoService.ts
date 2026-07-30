@@ -1,13 +1,8 @@
 import pool from '@/app/lib/dataBase';
 import { Servico } from '@/model/servicoModel';
+import { ParametrosPaginacao, RespostaPaginada, contarTotal, montarRespostaPaginada } from '@/app/lib/paginacao';
 
-
-export const servicoService = {
-
-// Substitua apenas este método dentro do seu servicoService.ts
-  async listarTodos(): Promise<any[]> {
-    const [rows]: any = await pool.query(
-      `SELECT 
+const COLUNAS_SERVICO_LISTAGEM = `
         s.id_servico,
         s.id_prestador,
         s.id_categoria,
@@ -25,16 +20,30 @@ export const servicoService = {
         u.email AS email_prestador,
         u.telefone AS telefone_prestador,
         u.foto_perfil AS foto_prestador,
-        u.cidade AS cidade_prestador
+        u.cidade AS cidade_prestador`;
+
+export const servicoService = {
+
+  // Listagem geral de serviços (paginada). Ainda não é consumida por nenhuma rota,
+  // mas fica pronta com o mesmo contrato de paginação usado nos demais módulos.
+  async listarTodos(paginacao: ParametrosPaginacao): Promise<RespostaPaginada<any>> {
+    const sqlBase = `
+      SELECT ${COLUNAS_SERVICO_LISTAGEM}
        FROM servico s
        LEFT JOIN prestador p ON s.id_prestador = p.id_usuario
        LEFT JOIN usuario u ON p.id_usuario = u.id_usuario
        LEFT JOIN categoria c ON s.id_categoria = c.id_categoria
        WHERE u.status_conta = 'ativo'
          AND COALESCE(p.status_social, 'ativo') = 'ativo'
-         AND LOWER(s.status_servico) <> 'inativo'`
+         AND LOWER(s.status_servico) <> 'inativo'`;
+
+    const total = await contarTotal(pool, sqlBase, []);
+    const [rows]: any = await pool.query(
+      `${sqlBase} ORDER BY s.data_inicio DESC, s.id_servico DESC LIMIT ? OFFSET ?`,
+      [paginacao.limite, paginacao.offset]
     );
-    return rows as any[];
+
+    return montarRespostaPaginada(rows as any[], total, paginacao);
   },
 
   // 2. CORRIGIDO: Busca por ID trazendo a mesma estrutura limpa de dados conectados
@@ -71,11 +80,20 @@ export const servicoService = {
     return rows[0] ?? null;
   },
 
-// BUSCA CORRIGIDA: Agora traz os dados do prestador junto com os serviços
-  async buscarPorPrestador(idPrestador: number): Promise<any[]> {
-    const [rows]: any = await pool.query(
-      `SELECT 
-        s.*,
+// BUSCA CORRIGIDA: Agora traz os dados do prestador junto com os serviços, paginada
+  async buscarPorPrestador(idPrestador: number, paginacao: ParametrosPaginacao): Promise<RespostaPaginada<any>> {
+    const sqlBase = `
+      SELECT
+        s.id_servico,
+        s.id_prestador,
+        s.id_categoria,
+        s.titulo,
+        s.descricao,
+        s.status_servico,
+        s.data_inicio,
+        s.data_fim,
+        s.tempo_execucao,
+        s.imagens,
         u.nome AS nome_prestador,
         u.foto_perfil AS foto_prestador,
         u.cidade AS cidade_prestador,
@@ -87,10 +105,16 @@ export const servicoService = {
        WHERE s.id_prestador = ?
          AND u.status_conta = 'ativo'
          AND COALESCE(p.status_social, 'ativo') = 'ativo'
-         AND LOWER(s.status_servico) <> 'inativo'
-       ORDER BY s.data_inicio DESC, s.id_servico DESC`, [idPrestador]
+         AND LOWER(s.status_servico) <> 'inativo'`;
+    const params = [idPrestador];
+
+    const total = await contarTotal(pool, sqlBase, params);
+    const [rows]: any = await pool.query(
+      `${sqlBase} ORDER BY s.data_inicio DESC, s.id_servico DESC LIMIT ? OFFSET ?`,
+      [...params, paginacao.limite, paginacao.offset]
     );
-    return rows as any[];
+
+    return montarRespostaPaginada(rows as any[], total, paginacao);
   },
 
   // Cria un novo serviço

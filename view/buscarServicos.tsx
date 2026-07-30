@@ -65,8 +65,13 @@ export default function BuscarServicosView() {
 
         const dadosPrestadores = await resPrestadores.json();
         const dadosCategorias = await resCategorias.json();
+        const listaPrestadores = Array.isArray(dadosPrestadores)
+          ? dadosPrestadores
+          : Array.isArray(dadosPrestadores?.dados)
+            ? dadosPrestadores.dados
+            : [];
 
-        setPrestadores(Array.isArray(dadosPrestadores) ? dadosPrestadores : []);
+        setPrestadores(listaPrestadores);
         setCategorias(Array.isArray(dadosCategorias) ? dadosCategorias : []);
       } catch {
         setPrestadores([]);

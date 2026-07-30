@@ -60,7 +60,8 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
         .filter(Boolean)
     : [];
 
-  const todosServicos = await servicoService.buscarPorPrestador(idPrestador) || [];
+  const resultadoServicos = await servicoService.buscarPorPrestador(idPrestador, { pagina: 1, limite: 20, offset: 0 });
+  const todosServicos = resultadoServicos?.dados ?? [];
   const servicosConcluidos = todosServicos.filter((servico: any) => {
     const statusServico = String(servico.status_servico || "").toLowerCase();
     return statusServico === "concluido" || statusServico === "concluído";

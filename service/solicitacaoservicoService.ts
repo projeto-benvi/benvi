@@ -4,12 +4,25 @@ import pool from '@/app/lib/dataBase';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { SolicitacaoServico } from '@/model/solicitacaoservico';
 import { notificacaoService } from '@/service/notificacaoService';
+import { ParametrosPaginacao, RespostaPaginada, contarTotal, montarRespostaPaginada } from '@/app/lib/paginacao';
+
+const COLUNAS_SOLICITACAO = `
+    s.id_solicitacao,
+    s.id_usuario,
+    s.id_prestador,
+    s.endereco,
+    s.data_solicitacao,
+    s.data_agendamento,
+    s.status,
+    s.descricao_servico,
+    s.complemento`;
 
 export const SolicitacaoServicoService = {
 
-    async listar() {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `
+    // Listagem administrativa (todas as solicitações). Antes não tinha filtro
+    // nem limite; agora é paginada para não travar com muitos registros.
+    async listar(paginacao: ParametrosPaginacao): Promise<RespostaPaginada<any>> {
+        const sqlBase = `
             SELECT
                 s.id_solicitacao,
                 s.endereco,
@@ -40,12 +53,14 @@ export const SolicitacaoServicoService = {
                 ON s.id_prestador = p.id_usuario
 
             INNER JOIN usuario u2
-                ON p.id_usuario = u2.id_usuario
+                ON p.id_usuario = u2.id_usuario`;
 
-            ORDER BY s.data_solicitacao DESC
-            `
+        const total = await contarTotal(pool, sqlBase, []);
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `${sqlBase} ORDER BY s.data_solicitacao DESC LIMIT ? OFFSET ?`,
+            [paginacao.limite, paginacao.offset]
         );
-        return rows;
+        return montarRespostaPaginada(rows, total, paginacao);
     },
 
     async buscarPorId(id: number) {
@@ -129,41 +144,45 @@ export const SolicitacaoServicoService = {
         };
     },
 
-    async listarPorUsuario(id_usuario: number) {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `
+    async listarPorUsuario(id_usuario: number, paginacao: ParametrosPaginacao): Promise<RespostaPaginada<any>> {
+        const sqlBase = `
             SELECT
-                s.*,
+                ${COLUNAS_SOLICITACAO},
                 u2.nome       AS nome_prestador,
                 u2.foto_perfil AS foto_prestador,
                 p.categoria_principal
             FROM solicitacaoservico s
             INNER JOIN prestador p   ON s.id_prestador = p.id_usuario
             INNER JOIN usuario u2    ON p.id_usuario   = u2.id_usuario
-            WHERE s.id_usuario = ?
-            ORDER BY s.data_solicitacao DESC
-            `,
-            [id_usuario]
+            WHERE s.id_usuario = ?`;
+        const params = [id_usuario];
+
+        const total = await contarTotal(pool, sqlBase, params);
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `${sqlBase} ORDER BY s.data_solicitacao DESC LIMIT ? OFFSET ?`,
+            [...params, paginacao.limite, paginacao.offset]
         );
-        return rows;
+        return montarRespostaPaginada(rows, total, paginacao);
     },
 
-    async listarPorPrestador(id_prestador: number) {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `
+    async listarPorPrestador(id_prestador: number, paginacao: ParametrosPaginacao): Promise<RespostaPaginada<any>> {
+        const sqlBase = `
             SELECT
-                s.*,
+                ${COLUNAS_SOLICITACAO},
                 u.nome        AS nome_usuario,
                 u.foto_perfil AS foto_usuario,
                 u.telefone    AS telefone_usuario
             FROM solicitacaoservico s
             INNER JOIN usuario u ON s.id_usuario = u.id_usuario
-            WHERE s.id_prestador = ?
-            ORDER BY s.data_solicitacao DESC
-            `,
-            [id_prestador]
+            WHERE s.id_prestador = ?`;
+        const params = [id_prestador];
+
+        const total = await contarTotal(pool, sqlBase, params);
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `${sqlBase} ORDER BY s.data_solicitacao DESC LIMIT ? OFFSET ?`,
+            [...params, paginacao.limite, paginacao.offset]
         );
-        return rows;
+        return montarRespostaPaginada(rows, total, paginacao);
     },
 
     async criar(dados: {

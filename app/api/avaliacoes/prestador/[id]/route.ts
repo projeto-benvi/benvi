@@ -7,23 +7,32 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const idPrestador = Number(id);
+    
+    // Extrai os parâmetros de busca (Query Params) da URL
+    const { searchParams } = new URL(request.url);
+    
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
+    const limit = Math.max(1, Number(searchParams.get("limit")) || 10);
+    const ordem = searchParams.get("ordem") === "antigas" ? "antigas" : "recentes";
+    
+    const notaParam = searchParams.get("nota");
+    const nota = notaParam !== null ? Number(notaParam) : null;
 
-    if (!Number.isFinite(idPrestador) || idPrestador <= 0) {
-      return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
-    }
+    console.log(`Buscando avaliações para o Prestador ID: ${id} | Página: ${page} | Filtro Nota: ${nota} | Ordem: ${ordem}`);
 
-    const avaliacoes =
-      await AvaliacaoController.listarPorPrestador(
-        idPrestador
-      );
+    // Passa o id e as opções de paginação/filtro para o seu Controller
+    const resultado = await AvaliacaoController.listarPorPrestador(
+      Number(id),
+      { page, limit, ordem, nota }
+    );
 
     return NextResponse.json(
-      avaliacoes,
+      resultado,
       { status: 200 }
     );
 
-  } catch {
+  } catch (error) {
+    console.error("Erro na rota de listagem de avaliações:", error);
     return NextResponse.json(
       { error: 'Erro interno' },
       { status: 500 }

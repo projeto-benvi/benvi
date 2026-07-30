@@ -19,14 +19,15 @@ interface Notificacao {
   descricao: string;
   visualizada: boolean;
   data_envio: string;
-  url_acao?: string;
-  tipo?: string;
 }
 
 export default function SearchBar() {
   const { data: session } = useSession();
   const router = useRouter();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  
+  // 1. Estado criado para controlar o texto da busca
+  const [busca, setBusca] = useState("");
 
   const usuarioLogado = session?.user as any;
   const nomeUsuario = usuarioLogado?.name || usuarioLogado?.nome || "Visitante";
@@ -39,39 +40,35 @@ export default function SearchBar() {
 
   useEffect(() => {
     if (!usuarioLogado?.id) return;
-
-    let ativo = true;
-    const carregarNotificacoes = () => {
-      fetch(`/api/notificacao?id_usuario=${usuarioLogado.id}`, { cache: "no-store" })
-        .then(res => res.json())
-        .then(dados => {
-          if (ativo) setNotificacoes(Array.isArray(dados) ? dados.slice(0, 5) : []);
-        })
-        .catch(() => {
-          if (ativo) setNotificacoes([]);
-        });
-    };
-
-    carregarNotificacoes();
-    const intervalo = window.setInterval(carregarNotificacoes, 15000);
-
-    return () => {
-      ativo = false;
-      window.clearInterval(intervalo);
-    };
+    fetch(`/api/notificacao?id_usuario=${usuarioLogado.id}&limit=5`)
+      .then(res => res.json())
+      .then(dados => {
+        const lista = Array.isArray(dados) ? dados : Array.isArray(dados?.dados) ? dados.dados : [];
+        setNotificacoes(lista.slice(0, 5));
+      })
+      .catch(() => setNotificacoes([]));
   }, [usuarioLogado?.id]);
 
   const totalNaoLidas = notificacoes.filter(n => !n.visualizada).length;
 
-  const marcarComoLida = async (notificacao: Notificacao) => {
-    await fetch(`/api/notificacao/${notificacao.id_notificacao}`, { method: "PATCH" });
-    setNotificacoes(prev =>
-      prev.map(n => n.id_notificacao === notificacao.id_notificacao ? { ...n, visualizada: true } : n)
-    );
-
-    if (notificacao.url_acao) {
-      router.push(resolveNotificationTarget(notificacao.url_acao));
+  // 2. Função para lidar com o redirecionamento ao apertar Enter
+  const lidarComPesquisa = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      // Se houver texto, envia o termo na query "?search=" (mesmo parâmetro lido por BuscarServicosView).
+      // Se estiver vazio, vai apenas para /buscar
+      const URLDestino = busca.trim() 
+        ? `/buscar?search=${encodeURIComponent(busca.trim())}` 
+        : "/buscar";
+      
+      router.push(URLDestino);
     }
+  };
+
+  const marcarComoLida = async (id: number) => {
+    await fetch(`/api/notificacao/${id}`, { method: "PATCH" });
+    setNotificacoes(prev =>
+      prev.map(n => n.id_notificacao === id ? { ...n, visualizada: true } : n)
+    );
   };
 
   const lidarComRedirecionamentoPerfil = (e: React.MouseEvent) => {
@@ -95,12 +92,17 @@ export default function SearchBar() {
           <div className="pl-3 pr-2 flex items-center justify-center text-gray-400">
             <Image src={iconSearch} alt="Buscar" width={18} height={18} />
           </div>
+          
+          {/* 3. Input atualizado com value, onChange e onKeyDown */}
           <input 
             type="text" 
             placeholder="Buscar serviços..."
-            aria-label="Buscar serviços"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            onKeyDown={lidarComPesquisa}
             className="flex-1 h-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
           />
+
           <button 
             type="button" 
             aria-label="Abrir filtros de busca"
@@ -111,7 +113,6 @@ export default function SearchBar() {
         </div>
 
         <div className="flex items-center gap-4">
-          
           <div className="relative flex items-center"> 
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none p-2 hover:bg-gray-50 rounded-full transition-colors relative">
@@ -144,7 +145,7 @@ export default function SearchBar() {
                     {notificacoes.map((notif) => (
                       <li
                         key={notif.id_notificacao}
-                        onClick={() => marcarComoLida(notif)}
+                        onClick={() => marcarComoLida(notif.id_notificacao)}
                         className={`flex items-start gap-3 py-3 px-1 cursor-pointer hover:bg-gray-50 rounded-lg transition ${!notif.visualizada ? "bg-blue-50/40" : ""}`}
                       >
                         <div className="flex-1 min-w-0">

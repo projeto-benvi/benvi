@@ -6,6 +6,7 @@ import {
     Ticket, AlertTriangle, Handshake, Settings, LogOut,
     Send, Eye, MoreVertical, X
 } from 'lucide-react';
+import { fetchTodosPrestadores } from '@/app/lib/fetchTodosPrestadores';
 
 // --- Interfaces de Tipagem das APIs ---
 interface DashboardData {
@@ -85,9 +86,8 @@ export default function AdminDashboard() {
                 const dataUsuarios = await resUsuarios.json();
                 const listaUsuarios = Array.isArray(dataUsuarios) ? dataUsuarios : [];
 
-                const resPrestadores = await fetch(`/api/prestador`);
-                const dataPrestadores = await resPrestadores.json();
-                const listaPrestadores = Array.isArray(dataPrestadores) ? dataPrestadores : [];
+                // API paginada; helper percorre as páginas para manter o total correto
+                const listaPrestadores = await fetchTodosPrestadores();
 
                 const totalUsuarios = listaUsuarios.length;
                 const totalPrestadores = listaPrestadores.length;
