@@ -21,6 +21,7 @@ import { up as createFavorito } from './021_create_favorito';
 import { up as productionReadinessIndexes } from './023_production_readiness_indexes';
 import { up as runtimeSchemaGuardsToMigrations } from './024_runtime_schema_guards_to_migrations';
 import { up as adminAlertsAccountDeletion } from './025_admin_alerts_account_deletion';
+import { up as chatAudioMessages } from './026_chat_audio_messages';
 
 
 const migrations = [
@@ -45,7 +46,8 @@ const migrations = [
   { name: '021_create_favorito', fn: createFavorito },
   { name: '023_production_readiness_indexes', fn: productionReadinessIndexes },
   { name: '024_runtime_schema_guards_to_migrations', fn: runtimeSchemaGuardsToMigrations },
-  { name: '025_admin_alerts_account_deletion', fn: adminAlertsAccountDeletion }
+  { name: '025_admin_alerts_account_deletion', fn: adminAlertsAccountDeletion },
+  { name: '026_chat_audio_messages', fn: chatAudioMessages }
 ];
 
 export async function runMigrations(): Promise<void> {
