@@ -29,8 +29,8 @@ export const ticketSuporteController = {
         id_servico: id_servico ? Number(id_servico) : null,
       });
       return NextResponse.json(novoTicket, { status: 201 });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao criar ticket', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao criar ticket' }, { status: 500 });
     }
   },
 
@@ -40,8 +40,8 @@ export const ticketSuporteController = {
       const idUsuario = searchParams.get('id_usuario');
       if (idUsuario) return NextResponse.json(await ticketSuporteService.listarPorUsuario(Number(idUsuario)));
       return NextResponse.json(await ticketSuporteService.listarTodos());
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao listar tickets', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao listar tickets' }, { status: 500 });
     }
   },
 
@@ -50,8 +50,8 @@ export const ticketSuporteController = {
       const ticket = await ticketSuporteService.buscarPorId(id);
       if (!ticket) return NextResponse.json({ erro: 'Ticket não encontrado' }, { status: 404 });
       return NextResponse.json(ticket);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao buscar ticket', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao buscar ticket' }, { status: 500 });
     }
   },
 
@@ -74,8 +74,8 @@ export const ticketSuporteController = {
       );
       if (!atualizado) return NextResponse.json({ erro: 'Ticket não encontrado para atualização' }, { status: 404 });
       return NextResponse.json({ mensagem: 'Ticket atualizado/respondido com sucesso' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao responder ticket', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao responder ticket' }, { status: 500 });
     }
   },
 
@@ -84,8 +84,8 @@ export const ticketSuporteController = {
       const deletado = await ticketSuporteService.deletar(id);
       if (!deletado) return NextResponse.json({ erro: 'Ticket não encontrado para exclusão' }, { status: 404 });
       return NextResponse.json({ mensagem: 'Ticket deletado com sucesso' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao deletar ticket', detalhes: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao deletar ticket' }, { status: 500 });
     }
   }
 };

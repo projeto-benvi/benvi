@@ -65,8 +65,13 @@ export default function BuscarServicosView() {
 
         const dadosPrestadores = await resPrestadores.json();
         const dadosCategorias = await resCategorias.json();
+        const listaPrestadores = Array.isArray(dadosPrestadores)
+          ? dadosPrestadores
+          : Array.isArray(dadosPrestadores?.dados)
+            ? dadosPrestadores.dados
+            : [];
 
-        setPrestadores(Array.isArray(dadosPrestadores) ? dadosPrestadores : []);
+        setPrestadores(listaPrestadores);
         setCategorias(Array.isArray(dadosCategorias) ? dadosCategorias : []);
       } catch {
         setPrestadores([]);
@@ -89,7 +94,7 @@ export default function BuscarServicosView() {
     if (apenasVerificados) params.set("verificados", "1");
 
     const query = params.toString();
-    router.push(query ? `/buscar-servicos?${query}` : "/buscar-servicos");
+    router.push(query ? `/buscar?${query}` : "/buscar");
   }
 
   const prestadoresFiltrados = prestadores.filter(p => {
@@ -121,21 +126,21 @@ export default function BuscarServicosView() {
     setCategoriaSelecionada("Todas");
     setLocalizacao("");
     setApenasVerificados(false);
-    router.push("/buscar-servicos");
+    router.push("/buscar");
   };
 
   const temFiltrosAtivos = termo || localizacao || categoriaSelecionada !== "Todas" || apenasVerificados;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto font-sans">
+    <div className="px-3 py-5 sm:p-6 lg:p-8 max-w-7xl mx-auto font-sans">
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Buscar Profissionais</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Buscar Profissionais</h1>
         <p className="text-sm text-gray-500 mt-1">Encontre profissionais de confiança para o que você precisa</p>
       </div>
 
       {/* Barra de busca */}
-      <form onSubmit={executarPesquisa} className="flex gap-3 mb-6">
+      <form onSubmit={executarPesquisa} className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="flex-1 flex items-center border border-gray-200 rounded-xl px-4 h-12 bg-white shadow-sm focus-within:border-blue-500 transition">
           <Search size={18} className="text-gray-400 shrink-0" />
           <input
@@ -154,7 +159,7 @@ export default function BuscarServicosView() {
         <button
           type="button"
           onClick={() => setMostrarFiltros(!mostrarFiltros)}
-          className={`flex items-center gap-2 px-4 h-12 rounded-xl border text-sm font-semibold transition cursor-pointer ${
+          className={`flex items-center justify-center gap-2 px-4 h-12 rounded-xl border text-sm font-semibold transition cursor-pointer ${
             mostrarFiltros || temFiltrosAtivos
               ? "bg-blue-600 text-white border-blue-600"
               : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"
@@ -172,7 +177,7 @@ export default function BuscarServicosView() {
 
       {/* Painel de filtros */}
       {mostrarFiltros && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-6 mb-6 shadow-sm space-y-5">
+        <div className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 mb-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-800">Filtros</h3>
             {temFiltrosAtivos && (

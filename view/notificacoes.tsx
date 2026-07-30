@@ -29,7 +29,8 @@ export default function NotificacoesView() {
     try {
       const res = await fetch(`/api/notificacao?id_usuario=${user.id}`);
       const dados = await res.json();
-      setNotificacoes(Array.isArray(dados) ? dados : []);
+      const lista = Array.isArray(dados) ? dados : Array.isArray(dados?.dados) ? dados.dados : [];
+      setNotificacoes(lista);
     } catch {
       setNotificacoes([]);
     } finally {

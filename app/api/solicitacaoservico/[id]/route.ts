@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SolicitacaoServicoController } from '@/controller/solicitacaoservicoController';
 import { authErrorResponse, requireUser } from '@/app/lib/authz';
+import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
 
 function assertSolicitacaoAccess(user: { id: number; isAdmin: boolean }, data: any) {
     const idUsuario = Number(data?.id_usuario ?? data?.usuario?.id_usuario);
@@ -18,7 +19,8 @@ export async function GET(
     try {
         const user = await requireUser();
         const { id } = await params;  
-        const numId = Number(id);
+        const numId = parseIdParam(id);
+        if (numId === null) return respostaIdInvalido('id');
         const data = await SolicitacaoServicoController.buscarPorId(numId);
         assertSolicitacaoAccess(user, data);
         return NextResponse.json(data, { status: 200 });
@@ -40,10 +42,12 @@ export async function PATCH(
     try {
         const user = await requireUser();
         const { id } = await params;
-        const atual = await SolicitacaoServicoController.buscarPorId(Number(id));
+        const numId = parseIdParam(id);
+        if (numId === null) return respostaIdInvalido('id');
+        const atual = await SolicitacaoServicoController.buscarPorId(numId);
         assertSolicitacaoAccess(user, atual);
         const body = await request.json();
-        await SolicitacaoServicoController.atualizar(Number(id), body);
+        await SolicitacaoServicoController.atualizar(numId, body);
         return NextResponse.json({ message: 'Solicitação atualizada com sucesso' });
     } catch (error) {
         const authResponse = authErrorResponse(error);
@@ -63,9 +67,11 @@ export async function DELETE(
     try {
         const user = await requireUser();
         const { id } = await params;
-        const atual = await SolicitacaoServicoController.buscarPorId(Number(id));
+        const numId = parseIdParam(id);
+        if (numId === null) return respostaIdInvalido('id');
+        const atual = await SolicitacaoServicoController.buscarPorId(numId);
         assertSolicitacaoAccess(user, atual);
-        const removido = await SolicitacaoServicoController.remover(Number(id));
+        const removido = await SolicitacaoServicoController.remover(numId);
         if (!removido) {
             return NextResponse.json({ error: 'Solicitação não encontrada' }, { status: 404 });
         }

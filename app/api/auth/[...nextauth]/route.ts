@@ -2,7 +2,7 @@ import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { usuarioService } from '@/service/usuarioService';
-import pool from '@/app/lib/dataBase';
+import pool, { hasRequiredDatabaseEnv } from '@/app/lib/dataBase';
 import { RowDataPacket } from 'mysql2/promise';
 
 const providers: NextAuthOptions['providers'] = [
@@ -14,6 +14,7 @@ const providers: NextAuthOptions['providers'] = [
     },
     async authorize(credentials) {
       if (!credentials?.email || !credentials?.password) return null;
+      if (!hasRequiredDatabaseEnv()) return null;
 
       const usuario = await usuarioService.validarLogin(
         credentials.email,
@@ -58,6 +59,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile, user }) {
       if (account?.provider !== 'google') return true;
+      if (!hasRequiredDatabaseEnv()) return false;
 
       const email = profile?.email ?? user?.email;
       if (!email) return false;
@@ -82,6 +84,8 @@ export const authOptions: NextAuthOptions = {
 
       // Login com Google
       if (account?.provider === 'google') {
+        if (!hasRequiredDatabaseEnv()) return token;
+
         const usuarioExistente = await usuarioService.buscarPorEmail(token.email!);
 
         if (usuarioExistente) {
@@ -124,6 +128,8 @@ export const authOptions: NextAuthOptions = {
 
       // Chamado quando atualizarSessao() é disparado no frontend
       if (trigger === 'update') {
+        if (!hasRequiredDatabaseEnv()) return token;
+
         const [rows] = await pool.query<RowDataPacket[]>(
           'SELECT foto_perfil, nome, telefone, cidade FROM usuario WHERE id_usuario = ?',
           [token.id]

@@ -1,19 +1,26 @@
 import { prestadorService } from '@/service/prestadorService';
 import { NextRequest, NextResponse } from 'next/server';
+import { parsePaginacao } from '@/app/lib/paginacao';
+import { DatabaseConfigurationError } from '@/app/lib/dataBase';
 
 export const prestadorController = {
 
   async listar(req?: NextRequest) {
     try {
-      const searchParams = req?.nextUrl.searchParams;
-      const prestadores = await prestadorService.listarTodos({
-        search: searchParams?.get("search") || searchParams?.get("termo") || undefined,
-        location: searchParams?.get("location") || searchParams?.get("localizacao") || searchParams?.get("cidade") || undefined,
-        categoria: searchParams?.get("categoria") || undefined,
-        apenasVerificados: searchParams?.get("verificados") === "1",
-      });
+      const searchParams = req?.nextUrl.searchParams ?? null;
+      const paginacao = parsePaginacao(searchParams);
+      const prestadores = await prestadorService.listarTodos(
+        {
+          search: searchParams?.get("search") || searchParams?.get("termo") || undefined,
+          location: searchParams?.get("location") || searchParams?.get("localizacao") || searchParams?.get("cidade") || undefined,
+          categoria: searchParams?.get("categoria") || undefined,
+          apenasVerificados: searchParams?.get("verificados") === "1",
+        },
+        paginacao
+      );
       return NextResponse.json(prestadores);
     } catch (e) {
+      console.error('ERRO AO LISTAR PRESTADORES:', e);
       return NextResponse.json({ erro: 'Erro ao listar prestadores' }, { status: 500 });
     }
   },
@@ -23,6 +30,10 @@ export const prestadorController = {
       const destaques = await prestadorService.listarDestaques();
       return NextResponse.json(destaques, { status: 200 });
     } catch (e) {
+      if (e instanceof DatabaseConfigurationError) {
+        return NextResponse.json([], { status: 200 });
+      }
+
       console.error('ERRO AO LISTAR DESTAQUES:', e);
       return NextResponse.json({ erro: 'Erro ao listar profissionais de destaque' }, { status: 500 });
     }
@@ -49,7 +60,7 @@ export const prestadorController = {
       return NextResponse.json({ id_usuario: id }, { status: 201 });
     } catch (e) {
       console.error('ERRO AO CRIAR PRESTADOR:', e);
-      return NextResponse.json({ erro: 'Erro ao criar prestador', detalhes: String(e) }, { status: 500 });
+      return NextResponse.json({ erro: 'Erro ao criar prestador' }, { status: 500 });
     }
   },
 

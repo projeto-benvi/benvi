@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Users, Wrench, ShieldAlert,
     Ticket, AlertTriangle, Handshake, Settings, LogOut,
-    Send, Eye, MoreVertical
+    Send, Eye, MoreVertical, X
 } from 'lucide-react';
+import { fetchTodosPrestadores } from '@/app/lib/fetchTodosPrestadores';
 
 // --- Interfaces de Tipagem das APIs ---
 interface DashboardData {
@@ -54,6 +55,16 @@ export default function AdminDashboard() {
     const [currentPartnerPage, setCurrentPartnerPage] = useState(0);
     const itemsPerPage = 4; // Quantidade de parcerias exibidas por vez
 
+    // Estados para Modal de Usuário e Menu Dropdown
+    const [usuarioSelecionado, setUsuarioSelecionado] = useState<RecentUser | null>(null);
+    const [menuAbertoPara, setMenuAbertoPara] = useState<number | null>(null);
+    
+    // Estados para Modal de Ticket
+    const [ticketSelecionado, setTicketSelecionado] = useState<TicketSuporte | null>(null);
+    const [respostaTicket, setRespostaTicket] = useState('');
+    const [novoStatusTicket, setNovoStatusTicket] = useState('');
+    const [enviandoTicket, setEnviandoTicket] = useState(false);
+
     // Estados do formulário de Alerta
     const [alertaTitulo, setAlertaTitulo] = useState('');
     const [alertaMensagem, setAlertaMensagem] = useState('');
@@ -75,9 +86,8 @@ export default function AdminDashboard() {
                 const dataUsuarios = await resUsuarios.json();
                 const listaUsuarios = Array.isArray(dataUsuarios) ? dataUsuarios : [];
 
-                const resPrestadores = await fetch(`/api/prestador`);
-                const dataPrestadores = await resPrestadores.json();
-                const listaPrestadores = Array.isArray(dataPrestadores) ? dataPrestadores : [];
+                // API paginada; helper percorre as páginas para manter o total correto
+                const listaPrestadores = await fetchTodosPrestadores();
 
                 const totalUsuarios = listaUsuarios.length;
                 const totalPrestadores = listaPrestadores.length;
@@ -151,6 +161,129 @@ export default function AdminDashboard() {
         setDestinatariosEstimados(null);
         setFeedbackAlerta('');
     }, [alertaPublico]);
+
+    // Handlers para Ações de Usuários
+    const handleBanirUsuario = async (usuarioId: number) => {
+        if (!confirm('Tem certeza que deseja banir este usuário? Essa ação é irreversível.')) return;
+
+        try {
+            const response = await fetch(`/api/usuario/${usuarioId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status_conta: 'banido' })
+            });
+
+            if (response.ok) {
+                alert('Usuário banido com sucesso!');
+                setMenuAbertoPara(null);
+                setUsuarioSelecionado(null);
+                // Recarregar dados
+                const resUsuarios = await fetch(`/api/usuario`);
+                const dataUsuarios = await resUsuarios.json();
+                const listaUsuarios = Array.isArray(dataUsuarios) ? dataUsuarios : [];
+                const resPrestadores = await fetch(`/api/prestador`);
+                const dataPrestadores = await resPrestadores.json();
+                const listaPrestadores = Array.isArray(dataPrestadores) ? dataPrestadores : [];
+
+                setRecentUsers(
+                    listaUsuarios.slice(0, 5).map((u: any) => ({
+                        id_usuario: u.id_usuario,
+                        nome: u.nome,
+                        email: u.email,
+                        status_conta: u.status_conta,
+                        is_prestador: listaPrestadores.some((p: any) => p.id_usuario === u.id_usuario),
+                    }))
+                );
+            } else {
+                const errData = await response.json();
+                alert(`Erro ao banir usuário: ${errData.erro || 'Falha no servidor.'}`);
+            }
+        } catch (error) {
+            console.error('Erro ao banir usuário:', error);
+            alert('Erro ao banir usuário');
+        }
+    };
+
+    const handleAtivarcDesativarUsuario = async (usuarioId: number, statusAtual: string) => {
+        const novoStatus = statusAtual === 'ativo' ? 'inativo' : 'ativo';
+        const acao = statusAtual === 'ativo' ? 'desativar' : 'ativar';
+        
+        if (!confirm(`Tem certeza que deseja ${acao} este usuário?`)) return;
+
+        try {
+            const response = await fetch(`/api/usuario/${usuarioId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status_conta: novoStatus })
+            });
+
+            if (response.ok) {
+                alert(`Usuário ${acao}do com sucesso!`);
+                setMenuAbertoPara(null);
+                // Recarregar dados
+                const resUsuarios = await fetch(`/api/usuario`);
+                const dataUsuarios = await resUsuarios.json();
+                const listaUsuarios = Array.isArray(dataUsuarios) ? dataUsuarios : [];
+                const resPrestadores = await fetch(`/api/prestador`);
+                const dataPrestadores = await resPrestadores.json();
+                const listaPrestadores = Array.isArray(dataPrestadores) ? dataPrestadores : [];
+
+                setRecentUsers(
+                    listaUsuarios.slice(0, 5).map((u: any) => ({
+                        id_usuario: u.id_usuario,
+                        nome: u.nome,
+                        email: u.email,
+                        status_conta: u.status_conta,
+                        is_prestador: listaPrestadores.some((p: any) => p.id_usuario === u.id_usuario),
+                    }))
+                );
+                setUsuarioSelecionado(null);
+            } else {
+                const errData = await response.json();
+                alert(`Erro: ${errData.erro || 'Falha no servidor.'}`);
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar usuário:', error);
+            alert('Erro ao atualizar usuário');
+        }
+    };
+
+    const handleResponderTicket = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!ticketSelecionado || !respostaTicket.trim()) return;
+
+        try {
+            setEnviandoTicket(true);
+            const response = await fetch(`/api/ticketSuporte/${ticketSelecionado.id_ticket}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: novoStatusTicket,
+                    resposta_admin: respostaTicket.trim()
+                })
+            });
+
+            if (response.ok) {
+                alert('Ticket atualizado com sucesso!');
+                setTicketSelecionado(null);
+                setRespostaTicket('');
+                setNovoStatusTicket('');
+                // Recarregar tickets
+                const resTickets = await fetch(`/api/ticketSuporte`);
+                const dataTickets = await resTickets.json();
+                const listaTickets = Array.isArray(dataTickets) ? dataTickets : [];
+                setTickets(listaTickets.slice(0, 6));
+            } else {
+                const errData = await response.json();
+                alert(`Erro: ${errData.erro || 'Falha no servidor.'}`);
+            }
+        } catch (error) {
+            console.error('Erro ao responder ticket:', error);
+            alert('Erro ao responder ticket');
+        } finally {
+            setEnviandoTicket(false);
+        }
+    };
 
     // Envio do formulário de Alerta
     const handleSendAlert = async (e: React.FormEvent) => {
@@ -297,9 +430,42 @@ export default function AdminDashboard() {
                                                 </span>
                                             </td>
                                             <td className="p-3 text-center">
-                                                <div className="flex justify-center gap-1 text-slate-400">
-                                                    <button className="hover:text-indigo-600 p-1"><Eye size={16} /></button>
-                                                    <button className="hover:text-slate-600 p-1"><MoreVertical size={16} /></button>
+                                                <div className="flex justify-center gap-1 text-slate-400 relative">
+                                                    <button 
+                                                        onClick={() => setUsuarioSelecionado(user)}
+                                                        className="hover:text-indigo-600 p-1 transition" 
+                                                        title="Visualizar detalhes"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <div className="relative">
+                                                        <button 
+                                                            onClick={() => setMenuAbertoPara(menuAbertoPara === user.id_usuario ? null : user.id_usuario)}
+                                                            className="hover:text-slate-600 p-1 transition"
+                                                            title="Mais ações"
+                                                        >
+                                                            <MoreVertical size={16} />
+                                                        </button>
+                                                        {menuAbertoPara === user.id_usuario && (
+                                                            <div className="absolute right-0 top-full mt-1 bg-white border border-slate-100 rounded-xl shadow-lg z-40 min-w-max">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleAtivarcDesativarUsuario(user.id_usuario, user.status_conta);
+                                                                        setMenuAbertoPara(null);
+                                                                    }}
+                                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition text-slate-700 font-medium"
+                                                                >
+                                                                    {user.status_conta === 'ativo' ? 'Desativar' : 'Ativar'}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleBanirUsuario(user.id_usuario)}
+                                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-rose-50 text-rose-600 transition font-medium"
+                                                                >
+                                                                    Banir usuário
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -327,7 +493,15 @@ export default function AdminDashboard() {
                                 </thead>
                                 <tbody className="text-sm divide-y divide-slate-100">
                                     {tickets.length > 0 ? tickets.map((ticket) => (
-                                        <tr key={ticket.id_ticket} className="hover:bg-slate-50/50 transition">
+                                        <tr 
+                                            key={ticket.id_ticket} 
+                                            className="hover:bg-slate-50/50 transition cursor-pointer"
+                                            onClick={() => {
+                                                setTicketSelecionado(ticket);
+                                                setNovoStatusTicket(ticket.status);
+                                                setRespostaTicket(ticket.resposta_admin || '');
+                                            }}
+                                        >
                                             <td className="p-3 font-semibold text-slate-800 .max-w-[120px] truncate">
                                                 {recentUsers.find(u => u.id_usuario === ticket.id_usuario)?.nome || `ID ${ticket.id_usuario}`}
                                             </td>
@@ -511,6 +685,138 @@ export default function AdminDashboard() {
 
                 </div>
             </main>
+
+            {/* ─── MODAL DE DETALHES DO USUÁRIO ─── */}
+            {usuarioSelecionado && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-xl p-6 relative">
+                        <button 
+                            onClick={() => setUsuarioSelecionado(null)}
+                            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div className="border-b border-slate-100 pb-3 mb-4">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Detalhes do Usuário</span>
+                            <h3 className="text-lg font-black text-slate-900 mt-0.5">{usuarioSelecionado.nome}</h3>
+                        </div>
+
+                        <div className="space-y-3 mb-4">
+                            <div>
+                                <p className="text-xs font-bold text-slate-500 uppercase mb-0.5">Email</p>
+                                <p className="text-sm text-slate-700 break-all">{usuarioSelecionado.email}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-bold text-slate-500 uppercase mb-0.5">Tipo de Usuário</p>
+                                <span className={`inline-block px-3 py-1 text-xs font-bold rounded-md ${
+                                    usuarioSelecionado.is_prestador 
+                                        ? 'bg-purple-100 text-purple-700' 
+                                        : 'bg-indigo-100 text-indigo-600'
+                                }`}>
+                                    {usuarioSelecionado.is_prestador ? 'Prestador' : 'Cliente'}
+                                </span>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-bold text-slate-500 uppercase mb-0.5">Status da Conta</p>
+                                <span className={`inline-block px-3 py-1 text-xs font-bold rounded-md ${
+                                    usuarioSelecionado.status_conta === 'ativo'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : usuarioSelecionado.status_conta === 'banido'
+                                        ? 'bg-rose-100 text-rose-700'
+                                        : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                    {usuarioSelecionado.status_conta.charAt(0).toUpperCase() + usuarioSelecionado.status_conta.slice(1)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 justify-end pt-2 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => setUsuarioSelecionado(null)}
+                                className="px-4 py-2 text-sm font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-xl transition"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── MODAL DE RESPOSTA A TICKET ─── */}
+            {ticketSelecionado && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-100 shadow-xl p-6 relative max-h-[90vh] overflow-y-auto">
+                        <button 
+                            onClick={() => setTicketSelecionado(null)}
+                            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div className="border-b border-slate-100 pb-3 mb-4">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Detalhes do Ticket #{ticketSelecionado.id_ticket}</span>
+                            <h3 className="text-lg font-black text-slate-900 mt-0.5">{ticketSelecionado.titulo}</h3>
+                            <p className="text-xs text-slate-400 mt-1">Aberto em: <strong className="text-slate-600">{new Date(ticketSelecionado.data_abertura).toLocaleDateString('pt-BR')}</strong></p>
+                        </div>
+
+                        <div className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100">
+                            <p className="text-xs font-bold text-slate-400 uppercase mb-1">Descrição do Problema:</p>
+                            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{ticketSelecionado.descricao}</p>
+                        </div>
+
+                        <form onSubmit={handleResponderTicket} className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Atualizar Status</label>
+                                <select
+                                    value={novoStatusTicket}
+                                    onChange={(e) => setNovoStatusTicket(e.target.value)}
+                                    className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500"
+                                    required
+                                >
+                                    <option value="Aberto">Aberto</option>
+                                    <option value="Em Andamento">Em Andamento</option>
+                                    <option value="Resolvido">Resolvido</option>
+                                    <option value="Fechado">Fechado</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Sua Resposta Admin</label>
+                                <textarea
+                                    rows={4}
+                                    value={respostaTicket}
+                                    onChange={(e) => setRespostaTicket(e.target.value)}
+                                    placeholder="Escreva aqui a resposta ou solução para o usuário..."
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition resize-none leading-relaxed"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex gap-2 justify-end pt-2 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setTicketSelecionado(null)}
+                                    className="px-4 py-2 text-sm font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-xl transition"
+                                >
+                                    Fechar Janela
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={enviandoTicket}
+                                    className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    <Send size={14} />
+                                    {enviandoTicket ? 'Salvando...' : 'Salvar Resposta'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

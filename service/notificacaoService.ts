@@ -1,26 +1,50 @@
 import pool from '@/app/lib/dataBase'; 
+import { DEFAULT_NOTIFICATION_TARGET, normalizeInternalNavigationTarget } from '@/app/lib/internal-navigation';
 import { Notificacao } from '@/model/notificacaoModel';
+import { ParametrosPaginacao, RespostaPaginada, contarTotal, montarRespostaPaginada } from '@/app/lib/paginacao';
 
 type NovaNotificacao = Omit<Notificacao, 'id_notificacao' | 'visualizada' | 'data_envio'> & {
   url_acao?: string | null;
   tipo?: string | null;
 };
 
+const COLUNAS_NOTIFICACAO = `
+  id_notificacao,
+  id_usuario,
+  titulo,
+  descricao,
+  url_acao,
+  tipo,
+  visualizada,
+  data_envio`;
+
 export const notificacaoService = {
   async criar(notificacao: NovaNotificacao): Promise<any> {
+    const rawUrlAcao = typeof notificacao.url_acao === 'string' ? notificacao.url_acao.trim() : notificacao.url_acao;
+    const normalizedUrlAcao = normalizeInternalNavigationTarget(rawUrlAcao);
+    const urlAcao = !rawUrlAcao
+      ? null
+      : normalizedUrlAcao ?? DEFAULT_NOTIFICATION_TARGET;
+
     const [result]: any = await pool.query(
       'INSERT INTO notificacao (id_usuario, titulo, descricao, url_acao, tipo) VALUES (?, ?, ?, ?, ?)',
-      [notificacao.id_usuario, notificacao.titulo, notificacao.descricao, notificacao.url_acao ?? null, notificacao.tipo ?? null]
+      [notificacao.id_usuario, notificacao.titulo, notificacao.descricao, urlAcao, notificacao.tipo ?? null]
     );
-    return { id_notificacao: result.insertId, ...notificacao, visualizada: false };
+    return { id_notificacao: result.insertId, ...notificacao, url_acao: urlAcao, visualizada: false };
   },
 
-  async listarPorUsuario(idUsuario: number): Promise<any[]> {
+  // Antes retornava todas as notificações do usuário de uma vez (SELECT *).
+  // Agora é paginada, mantendo notificações não lidas primeiro.
+  async listarPorUsuario(idUsuario: number, paginacao: ParametrosPaginacao): Promise<RespostaPaginada<any>> {
+    const sqlBase = `SELECT ${COLUNAS_NOTIFICACAO} FROM notificacao WHERE id_usuario = ?`;
+    const params = [idUsuario];
+
+    const total = await contarTotal(pool, sqlBase, params);
     const [rows]: any = await pool.query(
-      'SELECT * FROM notificacao WHERE id_usuario = ? ORDER BY visualizada ASC, data_envio DESC',
-      [idUsuario]
+      `${sqlBase} ORDER BY visualizada ASC, data_envio DESC LIMIT ? OFFSET ?`,
+      [...params, paginacao.limite, paginacao.offset]
     );
-    return rows;
+    return montarRespostaPaginada(rows, total, paginacao);
   },
 
   async buscarPorId(id: number): Promise<any | null> {

@@ -57,6 +57,6 @@ export async function GET(req: NextRequest) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;
 
-    return NextResponse.json({ erro: 'Erro ao carregar perfil', detalhes: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ erro: 'Erro ao carregar perfil' }, { status: 500 });
   }
 }

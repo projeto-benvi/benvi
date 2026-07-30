@@ -69,7 +69,7 @@ export async function substituirTagsDoPrestadorController(req: NextRequest, idPr
   } catch (error) {
     console.error("ERRO AO ATUALIZAR TAGS:", error);
     return NextResponse.json(
-      { erro: "Erro ao atualizar tags do prestador.", detalhes: String(error) },
+      { erro: "Erro ao atualizar tags do prestador." },
       { status: 500 }
     );
   }

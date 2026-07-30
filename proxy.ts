@@ -3,19 +3,35 @@
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Prefixos de rotas que exigem login
-// Ajuste conforme as pastas do seu projeto
 const ROTAS_PRIVADAS = [
+  '/alerta',
+  '/ajuda',
+  '/editarUsuario',
+  '/favoritos',
+  '/meusPedidos',
+  '/notificacoes',
+  '/pedidos',
   '/perfil/usuario',
-  '/agenda',
-  '/conversas',
   '/mensagens',
   '/tela-configuracoes',
+];
+
+const ROTAS_PRESTADOR = [
+  '/agendaPrestador',
+  '/impulsionarPrestador',
+  '/inicialPrestador',
+  '/servicoPrestador',
   '/tela-inicial-prestador',
 ];
 
+const ROTAS_ADMIN = ['/admin'];
+
 // Rotas que usuário logado não deve acessar
 const ROTAS_SO_DESLOGADO = ['/login', '/cadastro'];
+
+function correspondeAlgumPrefixo(pathname: string, prefixos: string[]) {
+  return prefixos.some((prefixo) => pathname === prefixo || pathname.startsWith(`${prefixo}/`));
+}
 
 export async function proxy(req: NextRequest) {
   const token = await getToken({
@@ -24,14 +40,25 @@ export async function proxy(req: NextRequest) {
   });
   const { pathname } = req.nextUrl;
 
-  const ePrivada = ROTAS_PRIVADAS.some((r) => pathname.startsWith(r));
-  const eSoDeslogado = ROTAS_SO_DESLOGADO.some((r) => pathname.startsWith(r));
+  const ePrivada = correspondeAlgumPrefixo(pathname, ROTAS_PRIVADAS);
+  const ePrestador = correspondeAlgumPrefixo(pathname, ROTAS_PRESTADOR);
+  const eAdmin = correspondeAlgumPrefixo(pathname, ROTAS_ADMIN);
+  const eSoDeslogado = correspondeAlgumPrefixo(pathname, ROTAS_SO_DESLOGADO);
+  const callbackUrl = `${pathname}${req.nextUrl.search}`;
 
   // Sem sessão tentando acessar rota privada → manda pro login
-  if (!token && ePrivada) {
+  if (!token && (ePrivada || ePrestador || eAdmin)) {
     const url = new URL('/login', req.url);
-    url.searchParams.set('callbackUrl', pathname);
+    url.searchParams.set('callbackUrl', callbackUrl);
     return NextResponse.redirect(url);
+  }
+
+  if (token && eAdmin && !token.isAdmin) {
+    return NextResponse.redirect(new URL('/', req.url));
+  }
+
+  if (token && ePrestador && !token.isPrestador && !token.isAdmin) {
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
   // Com sessão tentando acessar /login ou /cadastro → manda pro início

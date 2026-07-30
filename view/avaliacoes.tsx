@@ -117,15 +117,10 @@ export default function Avaliacoes() {
 
         } catch (error) {
 
-        console.error(
-            "Erro ao carregar avaliações",
-            error
-        );
+        console.error("Erro ao carregar avaliações.");
         setAvaliacoes([]);
         setErroCarregamento(
-            error instanceof Error
-            ? error.message
-            : "Não foi possível carregar as avaliações."
+            "Não foi possível carregar as avaliações."
         );
         setLoading(false);
 
@@ -138,8 +133,6 @@ export default function Avaliacoes() {
     }, [idPrestadorAvaliacoes, status]);
 
     
-    console.log("Estado avaliacoes:", avaliacoes);
-
     const percentual5 =
     totalAvaliacoes > 0
         ? (qtd5 / totalAvaliacoes) * 100

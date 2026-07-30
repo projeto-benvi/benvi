@@ -4,12 +4,14 @@ import Image from "next/image";
 import { useRouter } from "next/navigation"; 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import iconSearch from "@/assets/icons/search.svg";
 import iconFilter from "@/assets/icons/filter-alt-2.svg";
 import iconNotification from "@/assets/icons/notification.svg";
 import iconPerfil from "@/assets/comSearchBar/nft-profile.svg";
 import iconConfig from "@/assets/comSearchBar/iconConfig.svg";
+import { resolveNotificationTarget } from "@/app/lib/internal-navigation";
 
 interface Notificacao {
   id_notificacao: number;
@@ -18,14 +20,16 @@ interface Notificacao {
   descricao: string;
   visualizada: boolean;
   data_envio: string;
-  url_acao?: string;
-  tipo?: string;
+  url_acao?: string | null;
 }
 
 export default function SearchBar() {
   const { data: session } = useSession();
   const router = useRouter();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  
+  // 1. Estado criado para controlar o texto da busca
+  const [busca, setBusca] = useState("");
 
   const usuarioLogado = session?.user as any;
   const nomeUsuario = usuarioLogado?.name || usuarioLogado?.nome || "Visitante";
@@ -38,64 +42,41 @@ export default function SearchBar() {
 
   useEffect(() => {
     if (!usuarioLogado?.id) return;
-
-    let ativo = true;
-    const carregarNotificacoes = () => {
-      fetch(`/api/notificacao?id_usuario=${usuarioLogado.id}`, { cache: "no-store" })
-        .then(res => res.json())
-        .then(dados => {
-          if (ativo) setNotificacoes(Array.isArray(dados) ? dados.slice(0, 5) : []);
-        })
-        .catch(() => {
-          if (ativo) setNotificacoes([]);
-        });
-    };
-
-    carregarNotificacoes();
-    const intervalo = window.setInterval(carregarNotificacoes, 15000);
-
-    return () => {
-      ativo = false;
-      window.clearInterval(intervalo);
-    };
+    fetch(`/api/notificacao?id_usuario=${usuarioLogado.id}&limit=5`)
+      .then(res => res.json())
+      .then(dados => {
+        const lista = Array.isArray(dados) ? dados : Array.isArray(dados?.dados) ? dados.dados : [];
+        setNotificacoes(lista.slice(0, 5));
+      })
+      .catch(() => setNotificacoes([]));
   }, [usuarioLogado?.id]);
 
   const totalNaoLidas = notificacoes.filter(n => !n.visualizada).length;
 
-  const marcarComoLida = async (notificacao: Notificacao) => {
-    await fetch(`/api/notificacao/${notificacao.id_notificacao}`, {
-      method: "PATCH",
-    });
+  // 2. Função para lidar com o redirecionamento ao apertar Enter
+  const lidarComPesquisa = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      // Se houver texto, envia o termo na query "?search=" (mesmo parâmetro lido por BuscarServicosView).
+      // Se estiver vazio, vai apenas para /buscar
+      const URLDestino = busca.trim() 
+        ? `/buscar?search=${encodeURIComponent(busca.trim())}` 
+        : "/buscar";
+      
+      router.push(URLDestino);
+    }
+  };
 
-    setNotificacoes((prev) =>
-      prev.map((n) =>
+  const marcarComoLida = async (notificacao: Notificacao) => {
+    await fetch(`/api/notificacao/${notificacao.id_notificacao}`, { method: "PATCH" });
+    setNotificacoes(prev =>
+      prev.map(n =>
         n.id_notificacao === notificacao.id_notificacao
           ? { ...n, visualizada: true }
           : n
       )
     );
-
-    const destino = notificacao.url_acao;
-
-    const rotasPermitidas = [
-      "/mensagens",
-      "/perfil",
-      "/perfil/usuario",
-      "/perfil/prestador",
-      "/notificacoes",
-    ];
-    console.log("URL:", notificacao.url_acao);
-    if (
-      destino &&
-      rotasPermitidas.some((rota) => destino.startsWith(rota))
-    ) {
-      router.push(destino);
-    } else {
-      router.push("/notificacoes");
-    }
+    router.push(resolveNotificationTarget(notificacao.url_acao));
   };
-
-  
 
   const lidarComRedirecionamentoPerfil = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -118,13 +99,20 @@ export default function SearchBar() {
           <div className="pl-3 pr-2 flex items-center justify-center text-gray-400">
             <Image src={iconSearch} alt="Buscar" width={18} height={18} />
           </div>
+          
+          {/* 3. Input atualizado com value, onChange e onKeyDown */}
           <input 
             type="text" 
             placeholder="Buscar serviços..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            onKeyDown={lidarComPesquisa}
             className="flex-1 h-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
           />
+
           <button 
             type="button" 
+            aria-label="Abrir filtros de busca"
             className="px-3 border-l border-gray-200 h-6 flex items-center justify-center hover:opacity-70 transition-opacity"
           >
             <Image src={iconFilter} alt="Filtro" width={18} height={18} />
@@ -132,7 +120,6 @@ export default function SearchBar() {
         </div>
 
         <div className="flex items-center gap-4">
-          
           <div className="relative flex items-center"> 
             <details className="relative inline-block text-left group">
               <summary className="flex items-center cursor-pointer list-none p-2 hover:bg-gray-50 rounded-full transition-colors relative">
@@ -149,9 +136,9 @@ export default function SearchBar() {
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                     Notificações
                   </h4>
-                  <a href="/notificacoes" className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition">
+                  <Link href="/notificacoes" className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition">
                     Ver todas
-                  </a>
+                  </Link>
                 </div>
                 
                 {notificacoes.length === 0 ? (
@@ -225,10 +212,10 @@ export default function SearchBar() {
                   </button>
                 </li>
                 <li>
-                  <a href="/tela-configuracoes" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-50">
+                  <Link href="/tela-configuracoes" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-50">
                     <Image src={iconConfig} alt="icon configurações" className="mr-2.5" width={18} height={18} />
                     Configurações
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </details>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SolicitacaoServicoController } from '@/controller/solicitacaoservicoController';
 import { authErrorResponse, requireAdmin, requireResourceOwner, requireUser } from '@/app/lib/authz';
+import { parsePaginacao } from '@/app/lib/paginacao';
+import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
 
 export async function GET(request: NextRequest) {
     try {
@@ -8,18 +10,23 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const id_usuario   = searchParams.get('id_usuario');
         const id_prestador = searchParams.get('id_prestador');
+        const paginacao = parsePaginacao(searchParams);
 
         let data;
 
         if (id_usuario) {
-            requireResourceOwner(user, id_usuario);
-            data = await SolicitacaoServicoController.listarPorUsuario(Number(id_usuario));
+            const idUsuarioNum = parseIdParam(id_usuario);
+            if (idUsuarioNum === null) return respostaIdInvalido('id_usuario');
+            requireResourceOwner(user, idUsuarioNum);
+            data = await SolicitacaoServicoController.listarPorUsuario(idUsuarioNum, paginacao);
         } else if (id_prestador) {
-            requireResourceOwner(user, id_prestador);
-            data = await SolicitacaoServicoController.listarPorPrestador(Number(id_prestador));
+            const idPrestadorNum = parseIdParam(id_prestador);
+            if (idPrestadorNum === null) return respostaIdInvalido('id_prestador');
+            requireResourceOwner(user, idPrestadorNum);
+            data = await SolicitacaoServicoController.listarPorPrestador(idPrestadorNum, paginacao);
         } else {
             await requireAdmin();
-            data = await SolicitacaoServicoController.listar();
+            data = await SolicitacaoServicoController.listar(paginacao);
         }
 
         return NextResponse.json(data, { status: 200 });

@@ -8,6 +8,7 @@ import BotaoVoltarDinamico from "@/components/BotaoVoltarDinamico";
 import FavoritarPrestadorButton from "@/components/FavoritarPrestadorButton";
 import { CategoriaIcon } from "@/components/CategoriaIcon";
 import * as avaliacaoModulo from "@/service/avaliacaoService";
+import Link from "next/link";
 const AvaliacaoService = (avaliacaoModulo as any).AvaliacaoService || (avaliacaoModulo as any).avaliacaoService;
 
 export const dynamic = 'force-dynamic';
@@ -17,8 +18,6 @@ interface PerfilPrestadorViewProps {
 }
 
 export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewProps)  {
-
-  console.log("ID recebido para o perfil do prestador:", id); 
   const idPrestador = id ? parseInt(id) : 1;
 
   const session = await getServerSession(authOptions);
@@ -44,7 +43,11 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
           <BotaoVoltarDinamico />
           <h1 className="text-2xl font-bold -mt-1">Perfil Profissional</h1>
           <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <p className="text-sm text-gray-500">Prestador não encontrado.</p>
+            <h1 className="text-xl font-bold text-gray-800">Prestador não encontrado</h1>
+            <p className="mt-2 text-sm text-gray-500">Este perfil não existe ou não está mais disponível.</p>
+            <Link href="/buscar" className="mt-5 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
+              Buscar outros profissionais
+            </Link>
           </section>
         </div>
       </div>
@@ -57,7 +60,8 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
         .filter(Boolean)
     : [];
 
-  const todosServicos = await servicoService.buscarPorPrestador(idPrestador) || [];
+  const resultadoServicos = await servicoService.buscarPorPrestador(idPrestador, { pagina: 1, limite: 20, offset: 0 });
+  const todosServicos = resultadoServicos?.dados ?? [];
   const servicosConcluidos = todosServicos.filter((servico: any) => {
     const statusServico = String(servico.status_servico || "").toLowerCase();
     return statusServico === "concluido" || statusServico === "concluído";

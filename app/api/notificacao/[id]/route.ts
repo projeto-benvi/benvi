@@ -2,6 +2,7 @@ import { notificacaoController } from '@/controller/notificacaoController';
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthorizationError, authErrorResponse, requireUser, type AuthenticatedUser } from '@/app/lib/authz';
 import { notificacaoService } from '@/service/notificacaoService';
+import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -26,7 +27,8 @@ export async function GET(
   try {
     const params = await context.params;
     const user = await requireUser();
-    const id = Number(params.id);
+    const id = parseIdParam(params.id);
+    if (id === null) return respostaIdInvalido('id');
     await assertNotificationAccess(id, user);
     return notificacaoController.buscarPorId(id);
   } catch (error) {
@@ -41,7 +43,8 @@ export async function PATCH(
   try {
     const params = await context.params;
     const user = await requireUser();
-    const id = Number(params.id);
+    const id = parseIdParam(params.id);
+    if (id === null) return respostaIdInvalido('id');
     await assertNotificationAccess(id, user);
     return notificacaoController.marcarComoVisualizada(id);
   } catch (error) {
@@ -56,7 +59,8 @@ export async function DELETE(
   try {
     const params = await context.params;
     const user = await requireUser();
-    const id = Number(params.id);
+    const id = parseIdParam(params.id);
+    if (id === null) return respostaIdInvalido('id');
     await assertNotificationAccess(id, user);
     return notificacaoController.deletar(id);
   } catch (error) {

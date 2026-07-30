@@ -1,5 +1,6 @@
 import pool from '@/app/lib/dataBase';
 import { Prestador } from '@/model/prestador';
+import { ParametrosPaginacao, RespostaPaginada, contarTotal, montarRespostaPaginada } from '@/app/lib/paginacao';
 
 type PrestadorComTags = Prestador & { id_categorias?: number[] };
 
@@ -33,7 +34,11 @@ async function salvarTagsPrestador(idPrestador: number, idsCategorias: unknown) 
 
 export const prestadorService = {
 
-  async listarTodos(filtros: FiltrosPrestador = {}) {
+  // Listagem principal de busca de prestadores (paginada).
+  // Antes retornava todos os registros de uma vez com `p.*`; agora usa
+  // colunas explícitas e LIMIT/OFFSET no mesmo contrato de paginação
+  // padronizado em app/lib/paginacao.ts.
+  async listarTodos(filtros: FiltrosPrestador = {}, paginacao: ParametrosPaginacao): Promise<RespostaPaginada<any>> {
     const params: unknown[] = [];
     const whereParts: string[] = [];
     const termo = filtros.search?.trim();
@@ -72,9 +77,15 @@ export const prestadorService = {
 
     const whereClause = whereParts.length ? ` WHERE ${whereParts.join(' AND ')}` : '';
 
-    const [rows] = await pool.query(
-      `SELECT
-        p.*,
+    const sqlBase = `
+      SELECT
+        p.id_usuario,
+        p.descricao_profissional,
+        p.status_verificado,
+        p.status_social,
+        p.impulsiona_perfil,
+        p.categoria_principal,
+        p.is_vulneravel,
         u.nome,
         u.email,
         u.telefone,
@@ -120,11 +131,15 @@ export const prestadorService = {
         LEFT JOIN categoria c ON c.id_categoria = s.id_categoria
         GROUP BY s.id_prestador
        ) servicos ON servicos.id_prestador = p.id_usuario
-       ${whereClause}
-       ORDER BY p.impulsiona_perfil DESC, av.media_nota DESC, u.nome ASC`,
-      params
+       ${whereClause}`;
+
+    const total = await contarTotal(pool, sqlBase, params);
+    const [rows]: any = await pool.query(
+      `${sqlBase} ORDER BY p.impulsiona_perfil DESC, av.media_nota DESC, u.nome ASC LIMIT ? OFFSET ?`,
+      [...params, paginacao.limite, paginacao.offset]
     );
-    return rows;
+
+    return montarRespostaPaginada(rows as any[], total, paginacao);
   },
 
   async listarDestaques() {

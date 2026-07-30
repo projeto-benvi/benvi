@@ -1,36 +1,44 @@
 import { notificacaoService } from '@/service/notificacaoService';
 import { NextResponse, NextRequest } from 'next/server';
+import { parsePaginacao } from '@/app/lib/paginacao';
+import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
 
 export const notificacaoController = {
   async criar(req: NextRequest) {
     try {
       const body = await req.json();
-      const { id_usuario, titulo, descricao } = body;
+      const { id_usuario, titulo, descricao, url_acao, tipo } = body;
 
       if (!id_usuario || !titulo || !descricao) {
         return NextResponse.json({ erro: 'Campos obrigatórios ausentes' }, { status: 400 });
       }
 
-      const novaNotificacao = await notificacaoService.criar({ id_usuario, titulo, descricao });
+      const novaNotificacao = await notificacaoService.criar({ id_usuario, titulo, descricao, url_acao, tipo });
       return NextResponse.json(novaNotificacao, { status: 201 });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao criar notificação', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao criar notificação' }, { status: 500 });
     }
   },
 
   async listarPorUsuario(req: NextRequest) {
     try {
       const { searchParams } = new URL(req.url);
-      const idUsuario = searchParams.get('id_usuario');
+      const idUsuarioParam = searchParams.get('id_usuario');
 
-      if (!idUsuario) {
+      if (!idUsuarioParam) {
         return NextResponse.json({ erro: 'O parâmetro id_usuario é obrigatório' }, { status: 400 });
       }
 
-      const notificacoes = await notificacaoService.listarPorUsuario(Number(idUsuario));
+      const idUsuario = parseIdParam(idUsuarioParam);
+      if (idUsuario === null) {
+        return respostaIdInvalido('id_usuario');
+      }
+
+      const paginacao = parsePaginacao(searchParams);
+      const notificacoes = await notificacaoService.listarPorUsuario(idUsuario, paginacao);
       return NextResponse.json(notificacoes);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao listar notificações', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao listar notificações' }, { status: 500 });
     }
   },
 
@@ -41,8 +49,8 @@ export const notificacaoController = {
         return NextResponse.json({ erro: 'Notificação não encontrada' }, { status: 404 });
       }
       return NextResponse.json(notificacao);
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao buscar notificação', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao buscar notificação' }, { status: 500 });
     }
   },
 
@@ -53,8 +61,8 @@ export const notificacaoController = {
         return NextResponse.json({ erro: 'Notificação não encontrada para atualizar' }, { status: 404 });
       }
       return NextResponse.json({ mensagem: 'Notificação marcada como visualizada' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao atualizar notificação', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao atualizar notificação' }, { status: 500 });
     }
   },
 
@@ -65,8 +73,8 @@ export const notificacaoController = {
         return NextResponse.json({ erro: 'Notificação não encontrada para exclusão' }, { status: 404 });
       }
       return NextResponse.json({ mensagem: 'Notificação deletada com sucesso' });
-    } catch (e) {
-      return NextResponse.json({ erro: 'Erro ao deletar notificação', detalhes: String(e) }, { status: 500 });
+    } catch {
+      return NextResponse.json({ erro: 'Erro ao deletar notificação' }, { status: 500 });
     }
   }
 };
