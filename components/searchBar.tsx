@@ -15,10 +15,12 @@ import { resolveNotificationTarget } from "@/app/lib/internal-navigation";
 
 interface Notificacao {
   id_notificacao: number;
+  id_usuario: number;
   titulo: string;
   descricao: string;
   visualizada: boolean;
   data_envio: string;
+  url_acao?: string | null;
 }
 
 export default function SearchBar() {
@@ -64,11 +66,16 @@ export default function SearchBar() {
     }
   };
 
-  const marcarComoLida = async (id: number) => {
-    await fetch(`/api/notificacao/${id}`, { method: "PATCH" });
+  const marcarComoLida = async (notificacao: Notificacao) => {
+    await fetch(`/api/notificacao/${notificacao.id_notificacao}`, { method: "PATCH" });
     setNotificacoes(prev =>
-      prev.map(n => n.id_notificacao === id ? { ...n, visualizada: true } : n)
+      prev.map(n =>
+        n.id_notificacao === notificacao.id_notificacao
+          ? { ...n, visualizada: true }
+          : n
+      )
     );
+    router.push(resolveNotificationTarget(notificacao.url_acao));
   };
 
   const lidarComRedirecionamentoPerfil = (e: React.MouseEvent) => {
@@ -145,7 +152,7 @@ export default function SearchBar() {
                     {notificacoes.map((notif) => (
                       <li
                         key={notif.id_notificacao}
-                        onClick={() => marcarComoLida(notif.id_notificacao)}
+                        onClick={() => marcarComoLida(notif)}
                         className={`flex items-start gap-3 py-3 px-1 cursor-pointer hover:bg-gray-50 rounded-lg transition ${!notif.visualizada ? "bg-blue-50/40" : ""}`}
                       >
                         <div className="flex-1 min-w-0">

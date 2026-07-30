@@ -7,6 +7,7 @@ interface DadosNovaMensagem {
   idConversa: number;
   idRemetente: number;
   conteudo: string;
+  clientTempId?: string;
 }
 
 interface DadosNovaMensagemAudio {
@@ -30,7 +31,7 @@ function mensagemParaCliente(mensagem: RowDataPacket) {
 
 export class MensagemService {
   async enviarMensagem(dados: DadosNovaMensagem) {
-    const { idConversa, idRemetente, conteudo } = dados;
+    const { idConversa, idRemetente, conteudo, clientTempId } = dados;
     const agora = new Date();
     const conexao = await pool.getConnection();
 
@@ -58,7 +59,15 @@ export class MensagemService {
         }
       }
 
-      return { idMensagem: resultadoMensagem.insertId, idConversa, idRemetente, conteudo, criadoEm: agora, lida: false };
+      return {
+        idMensagem: resultadoMensagem.insertId,
+        idConversa,
+        idRemetente,
+        conteudo,
+        criadoEm: agora,
+        lida: false,
+        clientTempId,
+      };
     } catch (erro) {
       await conexao.rollback();
       throw erro;
@@ -155,5 +164,67 @@ export class MensagemService {
       [idMensagem]
     );
     return rows[0] ?? null;
+  }
+
+  async listarMensagensDesdeId(idConversa: number, afterId: number, limite = 50) {
+    const [historico] = await pool.execute<RowDataPacket[]>(
+      `SELECT * FROM mensagens
+       WHERE idConversa = ? AND idMensagem > ?
+       ORDER BY idMensagem ASC
+       LIMIT ${limite}`,
+      [idConversa, afterId]
+    );
+    return historico.map(mensagemParaCliente);
+  }
+
+  async listarUltimasMensagens(idConversa: number, limite = 30) {
+  const [historico] = await pool.query<RowDataPacket[]>(
+    `
+      SELECT *
+      FROM mensagens
+      WHERE idConversa = ?
+      ORDER BY idMensagem DESC
+      LIMIT ${limite}
+    `,
+    [idConversa]
+  );
+
+  return historico.reverse().map(mensagemParaCliente);
+  }
+
+  async listarMensagensAntes(
+    idConversa: number,
+    beforeId: number,
+    limite = 30
+  ) {
+    const [historico] = await pool.query<RowDataPacket[]>(
+      `
+        SELECT *
+        FROM mensagens
+        WHERE idConversa = ?
+        AND idMensagem < ?
+        ORDER BY idMensagem DESC
+        LIMIT ${limite}
+      `,
+      [idConversa, beforeId]
+    );
+
+    return historico.reverse().map(mensagemParaCliente);
+  }
+
+  async marcarComoLidas(
+    idConversa: number,
+    idUsuario: number
+  ) {
+    await pool.execute(
+      `
+        UPDATE mensagens
+        SET lida = 1
+        WHERE idConversa = ?
+        AND idRemetente <> ?
+        AND lida = 0
+      `,
+      [idConversa, idUsuario]
+    );
   }
 }
