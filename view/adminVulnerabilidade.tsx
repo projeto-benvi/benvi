@@ -182,7 +182,7 @@ export default function PrestadoresPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-white font-sans text-slate-800 p-8">
+    <div className="w-full min-h-screen bg-white font-sans text-slate-800 p-4 sm:p-6 lg:p-8">
 
       {/* ─── CABEÇALHO DA PÁGINA ─── */}
       <div className="mb-8">

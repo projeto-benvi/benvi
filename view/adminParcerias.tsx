@@ -311,7 +311,7 @@ export default function ParceriasPage() {
   });
 
   return (
-    <div className="w-full min-h-screen bg-[#FAFBFF] p-8 font-sans antialiased text-slate-800">
+    <div className="w-full min-h-screen bg-[#FAFBFF] p-4 sm:p-6 lg:p-8 font-sans antialiased text-slate-800">
 
       {/* ─── TOPO ─── */}
       <div className="flex justify-between items-center mb-8">
@@ -365,7 +365,7 @@ export default function ParceriasPage() {
       {/* ─── FILTROS ─── */}
       <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.01)] mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4 flex-1">
-          <div className="relative min-w-[280px]">
+          <div className="relative w-full min-w-0 sm:min-w-[280px]">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
               type="text"
@@ -655,7 +655,7 @@ export default function ParceriasPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cidade</label>
                       <input
@@ -692,7 +692,7 @@ export default function ParceriasPage() {
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Data de início</label>
                       <input
@@ -772,7 +772,7 @@ export default function ParceriasPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cidade</label>
                   <input

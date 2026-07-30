@@ -255,7 +255,7 @@ export default function AdminUsuarios() {
     };
 
     return (
-        <div className="w-full min-h-screen bg-slate-50 font-sans text-slate-800 p-8">
+        <div className="w-full min-h-screen bg-slate-50 font-sans text-slate-800 p-4 sm:p-6 lg:p-8">
 
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-slate-900">Usuários</h1>

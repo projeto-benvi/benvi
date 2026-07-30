@@ -103,7 +103,7 @@ export default function CentralAlertas() {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-8">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 sm:p-6 lg:p-8">
             <header className="mb-6">
                 <h1 className="text-2xl font-bold text-slate-900">Central de alertas</h1>
             </header>
@@ -111,7 +111,7 @@ export default function CentralAlertas() {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
 
                 {/* ─── FORMULÁRIO PRINCIPAL ─── */}
-                <form onSubmit={handleCreateAlert} className="xl:col-span-2 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+                <form onSubmit={handleCreateAlert} className="xl:col-span-2 bg-white p-4 sm:p-6 lg:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
                     <h2 className="text-xl font-bold text-slate-900">Criar novo alerta</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

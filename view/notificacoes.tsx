@@ -91,7 +91,7 @@ export default function NotificacoesView() {
   const totalMensagens = notificacoes.filter(n => isMensagem(n.titulo)).length;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto font-sans">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto font-sans">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -118,7 +118,7 @@ export default function NotificacoesView() {
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
         {[
           { id: "todas", label: "Todas" },
           { id: "nao_lidas", label: "Não Lidas", count: totalNaoLidas },
@@ -169,7 +169,7 @@ export default function NotificacoesView() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") abrirNotificacao(n);
                 }}
-                className={`flex items-start gap-4 px-6 py-4 hover:bg-gray-50 transition group ${
+                className={`flex items-start gap-3 sm:gap-4 px-3 sm:px-6 py-4 hover:bg-gray-50 transition group ${
                   !n.visualizada ? "bg-blue-50/30" : ""
                 }`}
               >
@@ -185,7 +185,7 @@ export default function NotificacoesView() {
                   <p className={`text-sm font-semibold text-gray-800 ${!n.visualizada ? "font-bold" : ""}`}>
                     {n.titulo}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">{n.descricao}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 break-words sm:truncate">{n.descricao}</p>
                 </div>
 
                 {/* Direita */}

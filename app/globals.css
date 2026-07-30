@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+@layer base {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-width: 320px;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    min-width: 0;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-top {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+}

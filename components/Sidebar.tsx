@@ -65,7 +65,8 @@ export default function Sidebar() {
       {/* Botão Hambúrguer para Mobile */}
       <button
         onClick={() => setMenuAberto(true)}
-        className="lg:hidden fixed top-5 left-5 z-40 bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 transition cursor-pointer flex items-center justify-center text-gray-700"
+        className="lg:hidden fixed top-3 left-3 z-40 bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 transition cursor-pointer flex items-center justify-center text-gray-700"
+        aria-label="Abrir menu principal"
       >
         <Menu size={22} />
       </button>
@@ -76,11 +77,11 @@ export default function Sidebar() {
       )}
 
       {/* Sidebar Principal */}
-      <aside className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 px-5 py-6 flex flex-col justify-between select-none z-50 .w-[250px] transition-transform duration-300 ease-in-out lg:sticky lg:translate-x-0 ${menuAberto ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed top-0 left-0 h-[100dvh] w-[min(82vw,280px)] bg-white border-r border-gray-200 px-4 sm:px-5 py-5 sm:py-6 flex flex-col justify-between select-none z-50 overflow-y-auto transition-transform duration-300 ease-in-out lg:sticky lg:w-[250px] lg:shrink-0 lg:translate-x-0 ${menuAberto ? "translate-x-0" : "-translate-x-full"}`}>
         <div>
           <div className="flex items-center justify-between mb-10">
             <Image src={logo} alt="Logo Benvi" width={135} height={45} priority />
-            <button onClick={() => setMenuAberto(false)} className="lg:hidden p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition cursor-pointer">
+            <button onClick={() => setMenuAberto(false)} className="lg:hidden p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition cursor-pointer" aria-label="Fechar menu principal">
               <X size={20} />
             </button>
           </div>

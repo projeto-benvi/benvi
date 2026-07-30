@@ -16,7 +16,7 @@ export default function TelaInicialPrestador() {
   ];
 
   return (
-    <div className="w-full min-h-screen p-8 bg-slate-50 text-slate-800 flex flex-col overflow-y-auto">
+    <div className="w-full min-h-screen p-4 sm:p-6 lg:p-8 bg-slate-50 text-slate-800 flex flex-col overflow-y-auto">
       
       {/* O SearchBar agora é independente e busca o user no hook */}
       <header className="mb-6 w-full">

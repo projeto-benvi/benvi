@@ -333,7 +333,7 @@ export default function AdminDashboard() {
 
     if (loading) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-slate-50 text-indigo-600 font-medium">
+            <div className="flex min-h-[100dvh] w-full items-center justify-center bg-slate-50 px-4 text-center text-indigo-600 font-medium">
                 A carregar ecossistema integrado Benvi...
             </div>
         );
@@ -343,7 +343,7 @@ export default function AdminDashboard() {
         <div className="flex min-h-screen bg-slate-50 font-sans text-slate-800">
 
             {/* ─── CONTEÚDO PRINCIPAL ─── */}
-            <main className="flex-1 p-8 overflow-y-auto">
+            <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 <h1 className="text-2xl font-bold text-slate-900 mb-6">Dashboard</h1>
 
                 {/* ─── CARDS DE MÉTRICAS SUPERIORES ─── */}

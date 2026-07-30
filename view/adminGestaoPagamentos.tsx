@@ -85,7 +85,7 @@ export default function GestaoPagamentos() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-8">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 sm:p-6 lg:p-8">
             
             {/* Cabeçalho */}
             <header className="mb-8 flex items-center gap-4">
@@ -277,7 +277,7 @@ export default function GestaoPagamentos() {
                         </div>
 
                         {/* Legendas customizadas */}
-                        <div className="grid grid-cols-2 gap-4 w-full text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full text-xs">
                             <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500 block" /> <span>Pago</span></div>
                             <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-400 block" /> <span>Pendente</span></div>
                             <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-rose-500 block" /> <span>Vencido</span></div>

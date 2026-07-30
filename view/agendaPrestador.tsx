@@ -386,7 +386,7 @@ export default function AgendaPrestador() {
 
 
   return (
-    <div className="flex flex-col h-screen w-full bg-white text-slate-800 font-sans overflow-hidden">
+    <div className="flex flex-col h-[100dvh] w-full bg-white text-slate-800 font-sans overflow-hidden">
       
       <SearchBar />
 
@@ -439,17 +439,17 @@ export default function AgendaPrestador() {
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
           
           {/* TOPO DA GRADE */}
-          <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-6">
+          <div className="p-3 sm:p-4 bg-white border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:gap-6">
               
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-1 sm:gap-3">
                 <button 
                   onClick={() => mudarPeriodo(-1)}
                   className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
                 </button>
-                <h2 className="text-xl font-bold text-slate-800 min-w-[200px] text-center">{textoPeriodo}</h2>
+                <h2 className="min-w-0 flex-1 text-base sm:text-xl font-bold text-slate-800 sm:min-w-[200px] text-center truncate">{textoPeriodo}</h2>
                 <button 
                   onClick={() => mudarPeriodo(1)}
                   className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
@@ -493,7 +493,8 @@ export default function AgendaPrestador() {
           {tipoVisualizacao === 'mes' ? (
             
             /* VISUALIZAÇÃO DE MÊS (GRID) */
-            <div className="flex-1 flex flex-col bg-white overflow-hidden">
+            <div className="flex-1 flex flex-col bg-white overflow-x-auto overflow-y-hidden">
+              <div className="flex min-h-full min-w-[700px] flex-1 flex-col">
               <div className="grid grid-cols-7 border-b border-slate-100 text-center text-xs font-bold text-slate-500 py-3 bg-slate-50/50">
                 {nomesDias.map((dia, idx) => <div key={idx} className="uppercase tracking-wider">{dia}</div>)}
               </div>
@@ -519,12 +520,14 @@ export default function AgendaPrestador() {
                   </div>
                 ))}
               </div>
+              </div>
             </div>
 
           ) : (
             
             /* VISUALIZAÇÃO DE DIA E SEMANA (TIMELINE) */
-            <div className="flex-1 overflow-y-auto relative bg-white">
+            <div className="flex-1 overflow-auto relative bg-white">
+              <div className={tipoVisualizacao === 'semana' ? 'min-w-[760px]' : 'min-w-full'}>
               
               {/* CABEÇALHO DA TIMELINE */}
               <div className={`grid ${tipoVisualizacao === 'dia' ? 'grid-cols-[64px_1fr]' : 'grid-cols-[64px_1fr_1fr_1fr_1fr_1fr_1fr_1fr]'} border-b border-slate-100 sticky top-0 bg-white z-20 text-center text-xs font-semibold text-slate-500 py-3 shadow-sm`}>
@@ -601,6 +604,7 @@ export default function AgendaPrestador() {
                     })
                   )}
                 </div>
+              </div>
               </div>
             </div>
           )}

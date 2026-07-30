@@ -105,7 +105,7 @@ export default function PerfilUsuario() {
 
   if (authCarregando || buscandoDados) {
     return (
-      <div className="w-full h-screen bg-gray-50 flex items-center justify-center">
+      <div className="w-full min-h-[100dvh] bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500 font-medium text-sm animate-pulse">Carregando dados do perfil...</p>
       </div>
     );
@@ -118,7 +118,7 @@ export default function PerfilUsuario() {
     <main className="min-h-screen bg-[#F8FAFC] flex flex-col w-full">
       <SearchBar />
 
-      <div className="px-6 py-6 flex flex-col gap-5 w-full max-w-[1200px] mx-auto">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 flex flex-col gap-5 w-full max-w-[1200px] mx-auto">
         
         {/* BOTÃO VOLTAR DINÂMICO ADICIONADO AQUI */}
         <button 
@@ -147,7 +147,7 @@ export default function PerfilUsuario() {
             </button>
           </div>
 
-          <div className="px-8 pb-6 pt-14 grid grid-cols-3 items-center relative">
+          <div className="px-4 sm:px-8 pb-6 pt-14 grid grid-cols-1 gap-4 sm:grid-cols-3 items-center relative text-center sm:text-left">
             <div className="absolute left-8 -top-14 flex flex-col items-center gap-2 w-28">
               <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-md bg-white relative flex-shrink-0">
                 {user?.avatar ? (

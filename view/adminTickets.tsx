@@ -202,7 +202,7 @@ export default function SuportePage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 font-sans text-slate-800 p-8">
+    <div className="w-full min-h-screen bg-slate-50 font-sans text-slate-800 p-4 sm:p-6 lg:p-8">
       
       {/* ─── CABEÇALHO ─── */}
       <div className="mb-6">
@@ -268,7 +268,7 @@ export default function SuportePage() {
         <div className="p-5 border-b border-slate-100 flex flex-col lg:flex-row justify-between items-center gap-4">
           <div className="flex flex-wrap flex-1 w-full gap-3 items-center">
             
-            <div className="relative flex-1 min-w-[260px] max-w-md">
+            <div className="relative w-full min-w-0 flex-1 sm:min-w-[260px] sm:max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text" 
@@ -473,7 +473,7 @@ export default function SuportePage() {
             </div>
 
             <form onSubmit={handleSalvarResposta} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Atualizar Status</label>
                   <select
