@@ -47,13 +47,15 @@ export default function Conversa() {
     erro?: boolean;
     tempId?: string;
     clientTempId?: string;
-    tipo_mensagem?: "texto" | "audio";
+    tipo_mensagem?: "texto" | "audio" | "imagem" | "video" | "documento";
     arquivo_url?: string;
     arquivo_mime?: string;
     arquivo_tamanho?: number;
     audio_duracao?: number;
     audioLocalUrl?: string;
     audioBlob?: Blob;
+    anexoArquivo?: File;
+    anexoLocalUrl?: string;
   };
 
   type ConteudoAnexo = {
@@ -308,6 +310,7 @@ export default function Conversa() {
   const inputRef = useRef<HTMLInputElement>(null);
   const inputMensagemRef = useRef<HTMLInputElement>(null);
   const inputBuscaMensagemRef = useRef<HTMLInputElement>(null);
+  const inputAnexoRef = useRef<HTMLInputElement>(null);
 
 
 
@@ -332,6 +335,7 @@ export default function Conversa() {
   const audioPreviewUrlRef = useRef("");
   const descartarAudioRef = useRef(false);
   const audioTempCounterRef = useRef(0);
+  const anexoTempCounterRef = useRef(0);
 
 
 
@@ -536,6 +540,30 @@ export default function Conversa() {
     } catch {
       return null;
     }
+  };
+
+  const anexoDaMensagem = (mensagem: Mensagem): ConteudoAnexo | null => {
+    if (
+      mensagem.tipo_mensagem === "imagem" ||
+      mensagem.tipo_mensagem === "video" ||
+      mensagem.tipo_mensagem === "documento"
+    ) {
+      const tipo =
+        mensagem.tipo_mensagem === "imagem"
+          ? "imagem"
+          : mensagem.tipo_mensagem === "video"
+            ? "video"
+            : "pdf";
+      return {
+        tipo,
+        nome: mensagem.conteudo || "Anexo",
+        mimeType: mensagem.arquivo_mime || "application/octet-stream",
+        url: mensagem.anexoLocalUrl || mensagem.arquivo_url || "",
+      };
+    }
+    return ehConteudoAnexo(mensagem.conteudo)
+      ? interpretarConteudo(mensagem.conteudo)
+      : null;
   };
 
   const abrirAnexoEmDestaque = (
@@ -1319,7 +1347,7 @@ export default function Conversa() {
     }
   };
 
-  const salvarMensagemAudioNoEstado = (mensagem: Mensagem, tempId: string) => {
+  const salvarMensagemNoEstado = (mensagem: Mensagem, tempId: string) => {
     setListaChats((anterior) =>
       anterior.map((chat) =>
         chat.idConversa === mensagem.idConversa
@@ -1374,7 +1402,7 @@ export default function Conversa() {
       audioLocalUrl: localUrl,
       audioBlob: blob,
     };
-    salvarMensagemAudioNoEstado(temporaria, tempId);
+    salvarMensagemNoEstado(temporaria, tempId);
     setEstadoAudio("sending");
     requestAnimationFrame(() => rolarParaFim(true));
 
@@ -1388,11 +1416,11 @@ export default function Conversa() {
       const confirmada = await response.json();
       if (!response.ok) throw new Error(confirmada.erro || "Não foi possível enviar o áudio.");
 
-      salvarMensagemAudioNoEstado(confirmada, tempId);
+      salvarMensagemNoEstado(confirmada, tempId);
       limparGravacaoAudio();
       exibirNotificacao("Áudio enviado", "A mensagem de áudio foi enviada.", "sucesso");
     } catch (error) {
-      salvarMensagemAudioNoEstado({ ...temporaria, enviando: false, erro: true }, tempId);
+      salvarMensagemNoEstado({ ...temporaria, enviando: false, erro: true }, tempId);
       setEstadoAudio("error");
       exibirNotificacao(
         "Falha ao enviar",
@@ -1405,6 +1433,98 @@ export default function Conversa() {
   const tentarReenviarAudio = (mensagem: Mensagem) => {
     if (mensagem.audioBlob && mensagem.tempId) {
       enviarAudio(mensagem.audioBlob, mensagem.tempId);
+    }
+  };
+
+  const tipoMensagemDoArquivo = (
+    mimeType: string
+  ): "imagem" | "video" | "documento" => {
+    if (mimeType.startsWith("image/")) return "imagem";
+    if (mimeType.startsWith("video/")) return "video";
+    return "documento";
+  };
+
+  const enviarAnexo = async (arquivo: File, tempIdExistente?: string) => {
+    if (!chatSelecionado) return;
+
+    const formatosPermitidos = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "video/mp4",
+      "video/webm",
+      "application/pdf",
+    ];
+    if (!formatosPermitidos.includes(arquivo.type)) {
+      exibirNotificacao(
+        "Formato não permitido",
+        "Envie uma imagem JPG, PNG ou WebP, um vídeo MP4 ou WebM, ou um PDF.",
+        "erro"
+      );
+      return;
+    }
+    if (arquivo.size > 10 * 1024 * 1024) {
+      exibirNotificacao("Arquivo muito grande", "O limite por anexo é de 10 MB.", "erro");
+      return;
+    }
+
+    anexoTempCounterRef.current += 1;
+    const tempId =
+      tempIdExistente ??
+      `anexo-${idUsuarioLogado}-${anexoTempCounterRef.current}`;
+    const localUrl = URL.createObjectURL(arquivo);
+    const tipoMensagem = tipoMensagemDoArquivo(arquivo.type);
+    const temporaria: Mensagem = {
+      idMensagem: -1000000 - anexoTempCounterRef.current,
+      idConversa: chatSelecionado.idConversa,
+      idRemetente: idUsuarioLogado,
+      conteudo: arquivo.name,
+      criadoEm: new Date().toISOString(),
+      lida: false,
+      tipo_mensagem: tipoMensagem,
+      arquivo_mime: arquivo.type,
+      arquivo_tamanho: arquivo.size,
+      anexoArquivo: arquivo,
+      anexoLocalUrl: localUrl,
+      tempId,
+      enviando: true,
+    };
+    salvarMensagemNoEstado(temporaria, tempId);
+    requestAnimationFrame(() => rolarParaFim(true));
+
+    try {
+      const formData = new FormData();
+      formData.append("idConversa", String(chatSelecionado.idConversa));
+      formData.append("clientTempId", tempId);
+      formData.append("arquivo", arquivo);
+
+      const response = await fetch("/api/mensagens/anexo", {
+        method: "POST",
+        body: formData,
+      });
+      const confirmada = await response.json();
+      if (!response.ok) {
+        throw new Error(confirmada.erro || "Não foi possível enviar o anexo.");
+      }
+
+      salvarMensagemNoEstado(confirmada, tempId);
+      URL.revokeObjectURL(localUrl);
+      exibirNotificacao("Anexo enviado", "O arquivo foi enviado com segurança.", "sucesso");
+    } catch (error) {
+      salvarMensagemNoEstado({ ...temporaria, enviando: false, erro: true }, tempId);
+      exibirNotificacao(
+        "Falha ao enviar",
+        error instanceof Error ? error.message : "Tente novamente em instantes.",
+        "erro"
+      );
+    } finally {
+      if (inputAnexoRef.current) inputAnexoRef.current.value = "";
+    }
+  };
+
+  const tentarReenviarAnexo = (mensagem: Mensagem) => {
+    if (mensagem.anexoArquivo && mensagem.tempId) {
+      enviarAnexo(mensagem.anexoArquivo, mensagem.tempId);
     }
   };
 
@@ -2464,7 +2584,7 @@ export default function Conversa() {
 
               const enviadaPorMim = msg.idRemetente === idUsuarioLogado;
               const mensagemAudio = msg.tipo_mensagem === "audio";
-              const anexo = ehConteudoAnexo(msg.conteudo) ? interpretarConteudo(msg.conteudo) : null;
+              const anexo = anexoDaMensagem(msg);
               const textoMensagem = anexo ? null : msg.conteudo;
 
               return (
@@ -2508,9 +2628,19 @@ export default function Conversa() {
                         )}
                       </div>
                     ) : anexo ? (
-                      <button
-                        type="button"
-                        onClick={() => abrirAnexoEmDestaque(anexo)}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => !msg.enviando && !msg.erro && abrirAnexoEmDestaque(anexo)}
+                        onKeyDown={(event) => {
+                          if (
+                            !msg.enviando &&
+                            !msg.erro &&
+                            (event.key === "Enter" || event.key === " ")
+                          ) {
+                            abrirAnexoEmDestaque(anexo);
+                          }
+                        }}
                         className="w-full space-y-3 rounded-2xl text-left transition hover:scale-[1.01]"
                       >
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide opacity-80">
@@ -2548,7 +2678,23 @@ export default function Conversa() {
                             </div>
                           </div>
                         )}
-                      </button>
+                        {msg.enviando && (
+                          <p className="text-xs font-medium opacity-80">Enviando anexo...</p>
+                        )}
+                        {msg.erro && (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              tentarReenviarAnexo(msg);
+                            }}
+                            className="flex items-center gap-1 text-xs font-semibold underline"
+                          >
+                            <RotateCw size={13} />
+                            Falha no envio — tentar novamente
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <p className="break-words text-sm md:text-base">
                         {textoMensagem}
@@ -2615,7 +2761,7 @@ export default function Conversa() {
               <p className="mb-2 text-xs text-slate-500">Sua mensagem será enviada como ticket para o administrador.</p>
             ) : (
               <p className="text-xs text-slate-500 mb-2">
-                Anexos estão temporariamente bloqueados até haver armazenamento privado no chat.
+                Imagens, vídeos e PDFs são armazenados com acesso protegido. Limite de 10 MB.
               </p>
             )}
 
@@ -2748,17 +2894,23 @@ export default function Conversa() {
 
               </div>
 
+              <input
+                ref={inputAnexoRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,application/pdf"
+                className="hidden"
+                onChange={(event) => {
+                  const arquivo = event.target.files?.[0];
+                  if (arquivo) enviarAnexo(arquivo);
+                }}
+              />
               <button
-                onClick={() =>
-                  exibirNotificacao(
-                    "Anexos indisponíveis",
-                    "Por segurança, anexos ficam bloqueados até o chat ter armazenamento privado.",
-                    "info"
-                  )
-                }
-                aria-label="Anexos temporariamente indisponíveis"
-                title="Anexos temporariamente indisponíveis"
-                className="p-2 md:p-2 rounded-full cursor-not-allowed opacity-50"
+                type="button"
+                onClick={() => inputAnexoRef.current?.click()}
+                disabled={!chatSelecionado}
+                aria-label="Enviar imagem, vídeo ou PDF"
+                title="Enviar anexo"
+                className="p-2 md:p-2 rounded-full cursor-pointer hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Plus size={20} color="#3D64FD"/>
               </button>
