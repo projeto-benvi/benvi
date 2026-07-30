@@ -44,6 +44,7 @@ export default function Conversa() {
     enviando?: boolean;
     erro?: boolean;
     tempId?: string;
+    clientTempId?: string;
   };
 
   type ConteudoAnexo = {
@@ -76,6 +77,27 @@ export default function Conversa() {
     lado: "usuario" | "admin";
     texto: string;
     data: string;
+  };
+
+  const mesclarMensagens = (atuais: Mensagem[], recebidas: Mensagem[]) => {
+    const porId = new Map<number, Mensagem>();
+    const temporarias = atuais.filter((mensagem) => mensagem.idMensagem < 0);
+
+    for (const mensagem of [...atuais, ...recebidas]) {
+      if (mensagem.idMensagem > 0) porId.set(mensagem.idMensagem, mensagem);
+    }
+
+    const tempIdsConfirmados = new Set(
+      recebidas.map((mensagem) => mensagem.clientTempId).filter(Boolean)
+    );
+
+    return [
+      ...temporarias.filter((mensagem) => !tempIdsConfirmados.has(mensagem.tempId)),
+      ...Array.from(porId.values()),
+    ].sort((a, b) => {
+      const data = new Date(a.criadoEm).getTime() - new Date(b.criadoEm).getTime();
+      return data || a.idMensagem - b.idMensagem;
+    });
   };
 
 
@@ -259,7 +281,6 @@ export default function Conversa() {
   const inputRef = useRef<HTMLInputElement>(null);
   const inputMensagemRef = useRef<HTMLInputElement>(null);
   const inputBuscaMensagemRef = useRef<HTMLInputElement>(null);
-  const inputAnexoRef = useRef<HTMLInputElement>(null);
 
 
 
@@ -273,6 +294,7 @@ export default function Conversa() {
   const primeiraCargaRef = useRef(true);
   const carregandoHistoricoRef = useRef(false);
   const buscandoNovasMensagensRef = useRef(false);
+  const proximoTempIdRef = useRef(0);
 
   const chatSelecionadoRef = useRef<Chat | null>(null);
   const ultimoIdRecebidoRef = useRef(0);
@@ -418,8 +440,6 @@ export default function Conversa() {
   };
 
   const rolarParaFim = (suave = false) => {
-    console.trace("ROLAR PARA FIM");
-
     if (!listaMensagensRef.current) return;
 
     listaMensagensRef.current.scrollTo({
@@ -499,22 +519,6 @@ export default function Conversa() {
   // ==========================================================
   // HELPERS - ARQUIVOS
   // ==========================================================
-
-  const lerArquivoComoDataURL = (arquivo: File) =>
-    new Promise<string>((resolve, reject) => {
-      const leitor = new FileReader();
-
-      leitor.onload = () => resolve(String(leitor.result ?? ""));
-      leitor.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
-      leitor.readAsDataURL(arquivo);
-    });
-
-  const identificarTipoArquivo = (mimeType: string): ConteudoAnexo["tipo"] | null => {
-    if (mimeType.startsWith("image/")) return "imagem";
-    if (mimeType.startsWith("video/")) return "video";
-    if (mimeType === "application/pdf") return "pdf";
-    return null;
-  };
 
   const montarCategoriasDoPrestador = (dadosPrestador: any) => {
     const nomes = [
@@ -764,37 +768,11 @@ export default function Conversa() {
         listaChats.map(c => c.idConversa)
       );
 
-      setListaChats((anterior) => {
-        console.log(
-          "MAP",
-          anterior.map(c => c.idConversa),
-          "procurando",
-          idConversa
-        );
-
-        const novaLista = anterior.map((chat) => {
-          if (chat.idConversa === idConversa) {
-            console.log("ENCONTROU", chat.idConversa);
-
-            return {
-              ...chat,
-              mensagens,
-            };
-          }
-
-          return chat;
-        });
-
-        console.log(
-          "RESULTADO",
-          novaLista.map(c => ({
-            id: c.idConversa,
-            msgs: c.mensagens?.length,
-          }))
-        );
-
-        return novaLista;
-      });
+      setListaChats((anterior) =>
+        anterior.map((chat) =>
+          chat.idConversa === idConversa ? { ...chat, mensagens } : chat
+        )
+      );
 
       setChatSelecionado((anterior) =>
         anterior && anterior.idConversa === idConversa
@@ -858,10 +836,7 @@ export default function Conversa() {
         anterior.map((chat) => {
           if (chat.idConversa !== chatSelecionado.idConversa) return chat;
 
-          const mensagens = [...historico, ...(chat.mensagens ?? [])].filter(
-            (msg, index, self) =>
-              index === self.findIndex((m) => m.idMensagem === msg.idMensagem)
-          );
+          const mensagens = mesclarMensagens(historico, chat.mensagens ?? []);
 
           return { ...chat, mensagens };
         })
@@ -870,10 +845,7 @@ export default function Conversa() {
       setChatSelecionado((anterior) => {
         if (!anterior) return anterior;
 
-        const mensagens = [...historico, ...(anterior.mensagens ?? [])].filter(
-          (msg, index, self) =>
-            index === self.findIndex((m) => m.idMensagem === msg.idMensagem)
-        );
+        const mensagens = mesclarMensagens(historico, anterior.mensagens ?? []);
 
         return {
           ...anterior,
@@ -900,7 +872,6 @@ export default function Conversa() {
   };
 
   const carregarNovasMensagens = async (idConversa: number, afterId: number) => {
-    console.log("afterId enviado:", afterId);
     try {
       if (buscandoNovasMensagensRef.current) {
         return;
@@ -914,18 +885,7 @@ export default function Conversa() {
       
       const novas: Mensagem[] = await response.json();
 
-      console.log(
-        "POLL RECEBEU",
-        idConversa,
-        afterId,
-        novas.map((m) => ({
-          id: m.idMensagem,
-          remetente: m.idRemetente,
-          conteudo: m.conteudo,
-        }))
-      );
-
-      if (!Array.isArray(novas) || novas.length === 0) {
+      if (!response.ok || !Array.isArray(novas) || novas.length === 0) {
         return;
       }
 
@@ -933,31 +893,11 @@ export default function Conversa() {
         novas[novas.length - 1].idMensagem
       );
 
-      console.log(
-        "afterId:",
-        afterId,
-        "ids:",
-        novas.map((m) => m.idMensagem)
-      );
-
       const usuarioEstavaNoFim = estaNoFimDaConversa();
-      console.log(
-        "ANTES",
-        {
-          lista:
-            listaChats.find(c => c.idConversa === idConversa)?.mensagens?.length,
-          chat:
-            chatSelecionadoRef.current?.mensagens?.length,
-          novas: novas.length
-        }
-      );
       setListaChats((anterior) =>
         anterior.map((chat) => {
           if (chat.idConversa !== idConversa) return chat;
-          const montagem = [...(chat.mensagens ?? []), ...novas].filter(
-            (mensagem, index, self) =>
-              index === self.findIndex((item) => item.idMensagem === mensagem.idMensagem)
-          );
+          const montagem = mesclarMensagens(chat.mensagens ?? [], novas);
           return { ...chat, mensagens: montagem };
         })
       );
@@ -966,23 +906,11 @@ export default function Conversa() {
 
       setChatSelecionado((anterior) => {
         if (!anterior || anterior.idConversa !== idConversa) return anterior;
-        const montagem = [...(anterior.mensagens ?? []), ...novas].filter(
-          (mensagem, index, self) =>
-            index === self.findIndex((item) => item.idMensagem === mensagem.idMensagem)
-        );
-        return { ...anterior, mensagens: montagem } as any;
+        return {
+          ...anterior,
+          mensagens: mesclarMensagens(anterior.mensagens ?? [], novas),
+        };
       });
-      setTimeout(() => {
-        console.log(
-          "DEPOIS",
-          {
-            lista:
-              listaChats.find(c => c.idConversa === idConversa)?.mensagens?.length,
-            chat:
-              chatSelecionadoRef.current?.mensagens?.length,
-          }
-        );
-      }, 0);
       if (usuarioEstavaNoFim) {
         rolarParaFim();
         setNovasMensagensPendentes(0);
@@ -1031,10 +959,12 @@ export default function Conversa() {
 
     if (!chatSelecionado) return;
 
-    const tempId = `temp-${Date.now()}`;
+    proximoTempIdRef.current += 1;
+    const tempNumericId = proximoTempIdRef.current;
+    const tempId = `temp-${idUsuarioLogado}-${tempNumericId}`;
 
     const mensagemTemporaria: Mensagem = {
-      idMensagem: -Date.now(),
+      idMensagem: -tempNumericId,
       tempId,
       idConversa: chatSelecionado.idConversa,
       idRemetente: idUsuarioLogado,
@@ -1078,33 +1008,26 @@ export default function Conversa() {
         },
         body: JSON.stringify({
           idConversa: chatSelecionado.idConversa,
-          idRemetente: idUsuarioLogado,
           conteudo: novaMensagem,
+          clientTempId: tempId,
         }),
       });
 
       const mensagemReal = await response.json();
-      console.log("RESPOSTA POST", mensagemReal);
       if (!response.ok) {
         throw new Error(mensagemReal.erro ?? "Erro ao enviar");
       }
 
-      setUltimoIdRecebido(mensagemReal.idMensagem);
+      setUltimoIdRecebido((atual) => Math.max(atual, mensagemReal.idMensagem));
 
       setChatSelecionado((anterior) => {
         if (!anterior) return anterior;
 
         return {
           ...anterior,
-          mensagens: anterior.mensagens?.map((msg) =>
-            msg.tempId === tempId
-              ? {
-                  ...mensagemReal,
-                  tempId: undefined,
-                  enviando: false,
-                  erro: false,
-                }
-              : msg
+          mensagens: mesclarMensagens(
+            (anterior.mensagens ?? []).filter((msg) => msg.tempId !== tempId),
+            [mensagemReal]
           ),
         };
       });
@@ -1114,22 +1037,16 @@ export default function Conversa() {
           chat.idConversa === chatSelecionado.idConversa
             ? {
                 ...chat,
-                mensagens: chat.mensagens?.map((msg) =>
-                    msg.tempId === tempId
-                        ? {
-                            ...mensagemReal,
-                            tempId: undefined,
-                            enviando: false,
-                            erro: false,
-                        }
-                        : msg
+                mensagens: mesclarMensagens(
+                  (chat.mensagens ?? []).filter((msg) => msg.tempId !== tempId),
+                  [mensagemReal]
                 ),
               }
             : chat
         )
       );
 
-      setUltimoIdRecebido(mensagemReal.idMensagem);
+      setUltimoIdRecebido((atual) => Math.max(atual, mensagemReal.idMensagem));
       await carregarNovasMensagens(
         chatSelecionado.idConversa,
         mensagemReal.idMensagem
@@ -1182,6 +1099,80 @@ export default function Conversa() {
     }
   };
 
+  const tentarEnviarNovamente = async (mensagem: Mensagem) => {
+    if (!mensagem.tempId || !mensagem.erro) return;
+
+    const atualizarTemporaria = (patch: Partial<Mensagem>) => {
+      setChatSelecionado((anterior) =>
+        anterior
+          ? {
+              ...anterior,
+              mensagens: anterior.mensagens?.map((item) =>
+                item.tempId === mensagem.tempId ? { ...item, ...patch } : item
+              ),
+            }
+          : anterior
+      );
+      setListaChats((anterior) =>
+        anterior.map((chat) =>
+          chat.idConversa === mensagem.idConversa
+            ? {
+                ...chat,
+                mensagens: chat.mensagens?.map((item) =>
+                  item.tempId === mensagem.tempId ? { ...item, ...patch } : item
+                ),
+              }
+            : chat
+        )
+      );
+    };
+
+    atualizarTemporaria({ enviando: true, erro: false });
+
+    try {
+      const response = await fetch('/api/mensagens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idConversa: mensagem.idConversa,
+          conteudo: mensagem.conteudo,
+          clientTempId: mensagem.tempId,
+        }),
+      });
+      const confirmada = await response.json();
+      if (!response.ok) throw new Error(confirmada.erro ?? 'Erro ao reenviar');
+
+      setUltimoIdRecebido((atual) => Math.max(atual, confirmada.idMensagem));
+      setChatSelecionado((anterior) =>
+        anterior
+          ? {
+              ...anterior,
+              mensagens: mesclarMensagens(
+                (anterior.mensagens ?? []).filter((item) => item.tempId !== mensagem.tempId),
+                [confirmada]
+              ),
+            }
+          : anterior
+      );
+      setListaChats((anterior) =>
+        anterior.map((chat) =>
+          chat.idConversa === mensagem.idConversa
+            ? {
+                ...chat,
+                mensagens: mesclarMensagens(
+                  (chat.mensagens ?? []).filter((item) => item.tempId !== mensagem.tempId),
+                  [confirmada]
+                ),
+              }
+            : chat
+        )
+      );
+    } catch {
+      atualizarTemporaria({ enviando: false, erro: true });
+      exibirNotificacao('Falha ao reenviar', 'Verifique a conexão e tente novamente.', 'erro');
+    }
+  };
+
   const enviarLike = async () => {
     if (!chatSelecionado) return;
 
@@ -1198,55 +1189,6 @@ export default function Conversa() {
     });
 
     carregarMensagens(chatSelecionado.idConversa);
-  };
-
-  const anexarArquivosNaConversa = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (!chatSelecionado) return;
-
-    const arquivos = Array.from(e.target.files || []);
-
-    if (arquivos.length === 0) return;
-
-    try {
-      await Promise.all(
-        arquivos.map(async (arquivo) => {
-          const tipo = identificarTipoArquivo(arquivo.type);
-
-          if (!tipo) {
-            throw new Error(`O arquivo ${arquivo.name} não é imagem, vídeo ou PDF.`);
-          }
-
-          const url = await lerArquivoComoDataURL(arquivo);
-
-          return fetch("/api/mensagens", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              idConversa: chatSelecionado.idConversa,
-              idRemetente: idUsuarioLogado,
-              conteudo: JSON.stringify({
-                tipo,
-                nome: arquivo.name,
-                mimeType: arquivo.type,
-                url,
-              } satisfies ConteudoAnexo),
-            }),
-          });
-        })
-      );
-
-      await carregarMensagens(chatSelecionado.idConversa);
-      exibirNotificacao("Arquivo enviado", "O anexo foi publicado na conversa.", "sucesso");
-    } catch (error) {
-      console.error(error);
-      exibirNotificacao("Falha no envio", error instanceof Error ? error.message : "Não foi possível enviar o anexo.", "erro");
-    } finally {
-      e.target.value = "";
-    }
   };
 
 
@@ -1488,70 +1430,10 @@ export default function Conversa() {
 
 
   // ==========================================================
-  // API - SINCRONIZAÇÃO DE MENSAGENS
-  // ==========================================================
-
-  const sincronizarMensagens = async (idConversa: number) => {
-    try {
-      const response = await fetch(
-        `/api/mensagens?idConversa=${idConversa}&limit=30`
-      );
-
-      const mensagens: Mensagem[] = await response.json();
-
-      if (!response.ok || !Array.isArray(mensagens)) {
-        return;
-      }
-
-      setListaChats((anterior) =>
-        anterior.map((chat) =>
-          chat.idConversa === idConversa
-            ? {
-                ...chat,
-                mensagens: chat.mensagens?.map((msg) => {
-                  const atualizada = mensagens.find(
-                    (m) => m.idMensagem === msg.idMensagem
-                  );
-                  return atualizada ?? msg;
-                }),
-              }
-            : chat
-        )
-      );
-
-      setChatSelecionado((anterior) => {
-        if (!anterior || anterior.idConversa !== idConversa) {
-          return anterior;
-        }
-
-        return {
-          ...anterior,
-          mensagens: anterior.mensagens?.map((msg) => {
-            const atualizada = mensagens.find(
-              (m) => m.idMensagem === msg.idMensagem
-            );
-            return atualizada ?? msg;
-          }),
-        };
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-
-
-  // ==========================================================
   // USE EFFECTS - REFS
   // ==========================================================
 
   useEffect(() => {
-    console.log(
-      "REF atualizado:",
-      ultimoIdRecebido,
-      "->",
-      ultimoIdRecebidoRef.current
-    );
     chatSelecionadoRef.current = chatSelecionado;
   }, [chatSelecionado]);
 
@@ -1728,27 +1610,13 @@ export default function Conversa() {
       const chat = chatSelecionadoRef.current;
       
       if (!chat) return;
-      if (!ultimoIdRecebidoRef.current) return;
-      console.log({
-        chatRef: chatSelecionadoRef.current?.idConversa,
-        ultimoRef: ultimoIdRecebidoRef.current,
-        state: ultimoIdRecebido,
-      });
-      console.log(
-        "POLL",
-        "conversa:",
-        chat.idConversa,
-        "after:",
-        ultimoIdRecebidoRef.current
-      );
-      
       carregarNovasMensagens(
         chat.idConversa,
         ultimoIdRecebidoRef.current
       );
 
       // sincronizarMensagens(chat.idConversa);
-    }, 3000);
+    }, 7000);
 
     return () => {
       window.clearInterval(intervalo);
@@ -1758,6 +1626,11 @@ export default function Conversa() {
     suporteAtivo,
     abaVisivel,
   ]);
+
+  useEffect(() => {
+    if (!abaVisivel || suporteAtivo || !chatSelecionado) return;
+    carregarNovasMensagens(chatSelecionado.idConversa, ultimoIdRecebidoRef.current);
+  }, [abaVisivel, chatSelecionado?.idConversa, suporteAtivo]);
 
 
 
@@ -2352,7 +2225,7 @@ export default function Conversa() {
 
               return (
                 <div
-                  key={msg.idMensagem}
+                  key={msg.tempId ?? msg.idMensagem}
                   className={`mb-3 md:mb-5 flex ${
                     enviadaPorMim
                       ? "justify-end"
@@ -2420,9 +2293,14 @@ export default function Conversa() {
                     )}
 
                     {msg.erro && (
-                      <p className="mt-1 text-[11px] text-red-300">
-                        Falha ao enviar
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => tentarEnviarNovamente(msg)}
+                        className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-200 underline"
+                      >
+                        <RotateCw size={12} />
+                        Falha ao enviar — tentar novamente
+                      </button>
                     )}
                     
                     <div
@@ -2469,7 +2347,7 @@ export default function Conversa() {
               <p className="mb-2 text-xs text-slate-500">Sua mensagem será enviada como ticket para o administrador.</p>
             ) : (
               <p className="text-xs text-slate-500 mb-2">
-                Fotos, vídeos e PDFs são enviados como pré-visualização dentro da conversa.
+                Anexos estão temporariamente bloqueados até haver armazenamento privado no chat.
               </p>
             )}
 
@@ -2551,20 +2429,19 @@ export default function Conversa() {
               </div>
               
               <button
-                onClick={() => inputAnexoRef.current?.click()}
-                className="p-2 md:p-2 hover:bg-cyan-200 rounded-full cursor-pointer"
+                onClick={() =>
+                  exibirNotificacao(
+                    "Anexos indisponíveis",
+                    "Por segurança, anexos ficam bloqueados até o chat ter armazenamento privado.",
+                    "info"
+                  )
+                }
+                aria-label="Anexos temporariamente indisponíveis"
+                title="Anexos temporariamente indisponíveis"
+                className="p-2 md:p-2 rounded-full cursor-not-allowed opacity-50"
               >
                 <Plus size={20} color="#3D64FD"/>
               </button>
-
-              <input
-                ref={inputAnexoRef}
-                type="file"
-                multiple
-                accept="image/*,video/*,application/pdf"
-                onChange={anexarArquivosNaConversa}
-                className="hidden"
-              />
 
               <button onClick={() => exibirNotificacao("Áudio em desenvolvimento", "O envio de áudio ainda não foi ativado.", "info")}
               className="hidden md:block p-2 hover:bg-cyan-200 cursor-pointer rounded-full">

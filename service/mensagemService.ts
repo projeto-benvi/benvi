@@ -7,11 +7,12 @@ interface DadosNovaMensagem {
   idConversa: number;
   idRemetente: number;
   conteudo: string;
+  clientTempId?: string;
 }
 
 export class MensagemService {
   async enviarMensagem(dados: DadosNovaMensagem) {
-    const { idConversa, idRemetente, conteudo } = dados;
+    const { idConversa, idRemetente, conteudo, clientTempId } = dados;
     const agora = new Date();
     const conexao = await pool.getConnection();
 
@@ -39,7 +40,15 @@ export class MensagemService {
         }
       }
 
-      return { idMensagem: resultadoMensagem.insertId, idConversa, idRemetente, conteudo, criadoEm: agora, lida: false };
+      return {
+        idMensagem: resultadoMensagem.insertId,
+        idConversa,
+        idRemetente,
+        conteudo,
+        criadoEm: agora,
+        lida: false,
+        clientTempId,
+      };
     } catch (erro) {
       await conexao.rollback();
       throw erro;
@@ -56,9 +65,12 @@ export class MensagemService {
     return historico;
   }
 
-  async listarMensagensDesdeId(idConversa: number, afterId: number) {
+  async listarMensagensDesdeId(idConversa: number, afterId: number, limite = 50) {
     const [historico] = await pool.execute<RowDataPacket[]>(
-      'SELECT * FROM mensagens WHERE idConversa = ? AND idMensagem > ? ORDER BY criadoEm ASC',
+      `SELECT * FROM mensagens
+       WHERE idConversa = ? AND idMensagem > ?
+       ORDER BY idMensagem ASC
+       LIMIT ${limite}`,
       [idConversa, afterId]
     );
     return historico;
@@ -71,7 +83,7 @@ export class MensagemService {
       FROM mensagens
       WHERE idConversa = ?
       ORDER BY idMensagem DESC
-      LIMIT ${Number(limite)}
+      LIMIT ${limite}
     `,
     [idConversa]
   );
@@ -91,7 +103,7 @@ export class MensagemService {
         WHERE idConversa = ?
         AND idMensagem < ?
         ORDER BY idMensagem DESC
-        LIMIT ${Number(limite)}
+        LIMIT ${limite}
       `,
       [idConversa, beforeId]
     );

@@ -1,5 +1,17 @@
 export const DEFAULT_NOTIFICATION_TARGET = '/notificacoes';
 
+const NOTIFICATION_ROUTES = [
+  '/notificacoes',
+  '/mensagens',
+  '/perfil',
+  '/agendaPrestador',
+  '/pedidos',
+  '/servicoPrestador',
+  '/ajuda',
+  '/alerta',
+  '/buscar',
+] as const;
+
 export function normalizeInternalNavigationTarget(value: unknown) {
   if (value === undefined || value === null) return null;
   if (typeof value !== 'string') return null;
@@ -16,5 +28,19 @@ export function normalizeInternalNavigationTarget(value: unknown) {
 }
 
 export function resolveNotificationTarget(value: unknown) {
-  return normalizeInternalNavigationTarget(value) ?? DEFAULT_NOTIFICATION_TARGET;
+  const target = normalizeInternalNavigationTarget(value);
+  if (!target) return DEFAULT_NOTIFICATION_TARGET;
+
+  let pathname: string;
+  try {
+    pathname = new URL(target, 'https://benvi.local').pathname.replace(/\/+$/, '') || '/';
+  } catch {
+    return DEFAULT_NOTIFICATION_TARGET;
+  }
+
+  const permitido = NOTIFICATION_ROUTES.some(
+    (rota) => pathname === rota || pathname.startsWith(`${rota}/`)
+  );
+
+  return permitido ? target : DEFAULT_NOTIFICATION_TARGET;
 }

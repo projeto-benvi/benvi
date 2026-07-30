@@ -43,8 +43,7 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("ERRO REAL:");
-  console.error(err);
+main().catch(() => {
+  console.error("Erro ao executar migrations. Verifique as variaveis DB_* e a conectividade com o MySQL.");
   process.exit(1);
 });

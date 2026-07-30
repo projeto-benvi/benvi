@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, Check, MessageSquare, Settings, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { resolveNotificationTarget } from "@/app/lib/internal-navigation";
 
 interface Notificacao {
   id_notificacao: number;
@@ -19,6 +21,7 @@ type Filtro = "todas" | "nao_lidas" | "mensagens";
 
 export default function NotificacoesView() {
   const { user } = useAuth();
+  const router = useRouter();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [filtro, setFiltro] = useState<Filtro>("todas");
@@ -47,6 +50,11 @@ export default function NotificacoesView() {
     setNotificacoes(prev =>
       prev.map(n => n.id_notificacao === id ? { ...n, visualizada: true } : n)
     );
+  };
+
+  const abrirNotificacao = async (notificacao: Notificacao) => {
+    if (!notificacao.visualizada) await marcarComoLida(notificacao.id_notificacao);
+    router.push(resolveNotificationTarget(notificacao.url_acao));
   };
 
   const marcarTodasComoLidas = async () => {
@@ -155,6 +163,12 @@ export default function NotificacoesView() {
             {notificacoesFiltradas.map((n) => (
               <div
                 key={n.id_notificacao}
+                role="link"
+                tabIndex={0}
+                onClick={() => abrirNotificacao(n)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") abrirNotificacao(n);
+                }}
                 className={`flex items-start gap-4 px-6 py-4 hover:bg-gray-50 transition group ${
                   !n.visualizada ? "bg-blue-50/30" : ""
                 }`}
@@ -180,7 +194,10 @@ export default function NotificacoesView() {
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
                     {!n.visualizada && (
                       <button
-                        onClick={() => marcarComoLida(n.id_notificacao)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          marcarComoLida(n.id_notificacao);
+                        }}
                         title="Marcar como lida"
                         className="text-blue-500 hover:text-blue-700 transition cursor-pointer"
                       >
@@ -188,7 +205,10 @@ export default function NotificacoesView() {
                       </button>
                     )}
                     <button
-                      onClick={() => deletar(n.id_notificacao)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        deletar(n.id_notificacao);
+                      }}
                       title="Deletar"
                       className="text-gray-400 hover:text-red-500 transition cursor-pointer"
                     >

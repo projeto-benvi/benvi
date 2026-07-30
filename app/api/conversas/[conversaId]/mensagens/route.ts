@@ -22,12 +22,68 @@ type RouteContext = {
   params: Promise<{ conversaId: string }>;
 };
 
-export async function GET(_: NextRequest, { params }: RouteContext) {
+function parsePositiveInteger(value: string, campo: string, zeroAllowed = false) {
+  const numero = Number(value);
+  if (!Number.isSafeInteger(numero) || numero < (zeroAllowed ? 0 : 1)) {
+    throw new Error(`${campo} inválido.`);
+  }
+  return numero;
+}
+
+function parseLimit(value: string | null) {
+  if (value === null) return 30;
+  const limite = parsePositiveInteger(value, 'limit');
+  if (limite > 100) throw new Error('limit deve ser no máximo 100.');
+  return limite;
+}
+
+function validarConteudo(value: unknown) {
+  if (typeof value !== 'string' || !value.trim() || value.length > 5000) {
+    throw new Error('Conteúdo de mensagem inválido.');
+  }
+  const conteudo = value.trim();
+  if (/data:[^;,]+;base64,/i.test(conteudo)) {
+    throw new Error('Anexos estão temporariamente indisponíveis neste chat.');
+  }
+  try {
+    const parsed = JSON.parse(conteudo);
+    if (parsed && typeof parsed === 'object' && ('url' in parsed || 'mimeType' in parsed)) {
+      throw new Error('Anexos estão temporariamente indisponíveis neste chat.');
+    }
+  } catch (erro) {
+    if (erro instanceof Error && erro.message.startsWith('Anexos')) throw erro;
+  }
+  return conteudo;
+}
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const user = await requireUser();
     const { conversaId } = await params;
-    await assertConversaAccess(Number(conversaId), user);
-    const resultado = await mensagemController.listarMensagens(conversaId);
+    const idConversa = parsePositiveInteger(conversaId, 'conversaId');
+    await assertConversaAccess(idConversa, user);
+
+    const afterId = request.nextUrl.searchParams.get('afterId');
+    const beforeId = request.nextUrl.searchParams.get('beforeId');
+    if (afterId !== null && beforeId !== null) throw new Error('Use apenas afterId ou beforeId.');
+    const limite = parseLimit(request.nextUrl.searchParams.get('limit'));
+
+    const resultado =
+      afterId !== null
+        ? await mensagemController.listarMensagensDesdeId(
+            idConversa,
+            parsePositiveInteger(afterId, 'afterId', true),
+            limite
+          )
+        : beforeId !== null
+          ? await mensagemController.listarMensagensAntes(
+              idConversa,
+              parsePositiveInteger(beforeId, 'beforeId'),
+              limite
+            )
+          : await mensagemController.listarUltimasMensagens(idConversa, limite);
+
+    await mensagemController.marcarComoLidas(idConversa, user.id);
     return NextResponse.json(resultado, { status: 200 });
   } catch (erro) {
     const authResponse = authErrorResponse(erro);
@@ -44,12 +100,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
     const user = await requireUser();
     const { conversaId } = await params;
-    await assertConversaAccess(Number(conversaId), user);
+    const idConversa = parsePositiveInteger(conversaId, 'conversaId');
+    await assertConversaAccess(idConversa, user);
     const corpo = await request.json();
+    const conteudo = validarConteudo(corpo.conteudo);
     const resultado = await mensagemController.enviarMensagem({
-      ...corpo,
-      idConversa: conversaId,
+      idConversa,
       idRemetente: user.id,
+      conteudo,
+      clientTempId:
+        typeof corpo.clientTempId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(corpo.clientTempId)
+          ? corpo.clientTempId
+          : undefined,
     });
     return NextResponse.json(resultado, { status: 201 });
   } catch (erro) {
