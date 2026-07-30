@@ -354,7 +354,7 @@ export default function ImpulsionarPrestadorView() {
 
   if (!logado) {
     return (
-      <div className="mx-auto mt-14 w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+      <div className="mx-auto mt-8 sm:mt-14 w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-4 sm:p-8 text-center shadow-sm">
         <h2 className="text-2xl font-bold text-gray-900">Entre para acessar</h2>
         <p className="mt-2 text-sm text-gray-600">
           Faça login para acessar o impulsionamento e concluir sua assinatura.
@@ -425,7 +425,7 @@ export default function ImpulsionarPrestadorView() {
       )}
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 px-10 py-8">
+      <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
         {/* Cabeçalho da Página */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-black mb-2">
@@ -453,7 +453,7 @@ export default function ImpulsionarPrestadorView() {
         {/* Container do Card Centralizado */}
         <div className="flex justify-center items-start">
           {/* Card de Assinatura com a Sombra em Degradê Verde */}
-          <div className="w-full max-w-3xl border border-gray-200 rounded-[2rem] p-10 bg-white shadow-[0_20px_40px_-15px_rgba(22,163,74,0.15),0_1px_3px_rgba(0,0,0,0.05)]">
+          <div className="w-full max-w-3xl border border-gray-200 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 lg:p-10 bg-white shadow-[0_20px_40px_-15px_rgba(22,163,74,0.15),0_1px_3px_rgba(0,0,0,0.05)]">
             
             <div className="text-center mb-6">
               <h2 className="text-3xl font-bold text-black tracking-tight">Impulsionado</h2>

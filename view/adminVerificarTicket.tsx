@@ -73,7 +73,7 @@ export default function SuporteTickets() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-8">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 sm:p-6 lg:p-8">
             {/* Header seguindo a estrutura do painel */}
             <header className="mb-6 flex items-center gap-4">
                 <button 

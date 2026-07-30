@@ -39,7 +39,7 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
     return (
       <div className="w-full min-h-screen bg-[#F9FAFB]">
         <SearchBar />
-        <div className="text-[#1F2937] p-6 w-full max-w-[1200px] mx-auto flex flex-col gap-5">
+        <div className="text-[#1F2937] p-4 sm:p-6 w-full max-w-[1200px] mx-auto flex flex-col gap-5">
           <BotaoVoltarDinamico />
           <h1 className="text-2xl font-bold -mt-1">Perfil Profissional</h1>
           <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
@@ -104,7 +104,7 @@ export default async function PerfilPrestadorView({ id }: PerfilPrestadorViewPro
       
       <SearchBar />
 
-      <div className="text-[#1F2937] p-6 w-full max-w-[1200px] mx-auto flex flex-col gap-5">
+      <div className="text-[#1F2937] p-4 sm:p-6 w-full max-w-[1200px] mx-auto flex flex-col gap-5">
       
         <BotaoVoltarDinamico />
 

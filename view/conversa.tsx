@@ -1991,19 +1991,19 @@ export default function Conversa() {
     chatSelecionado?.mensagens?.length
   );
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-[100dvh] min-h-0 flex flex-col bg-white overflow-hidden">
 
       {anexoEmDestaque && (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-2 sm:p-4 backdrop-blur-sm"
           onClick={fecharAnexoEmDestaque}
         >
           <div
             className="w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-3 py-3 md:px-6 md:py-4">
-              <div>
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-3 md:px-6 md:py-4">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {obterLabelAnexo(anexoEmDestaque.mimeType)}
                 </p>
@@ -2017,7 +2017,7 @@ export default function Conversa() {
                   href={anexoEmDestaque.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:block"
                 >
                   Abrir em nova aba
                 </a>
@@ -2062,7 +2062,7 @@ export default function Conversa() {
       )}
 
       {notificacao && (
-        <div className="fixed right-5 top-5 z-[80] w-[320px] rounded-2xl border border-white/20 bg-slate-950/95 text-white shadow-2xl shadow-slate-950/20 backdrop-blur-xl overflow-hidden">
+        <div className="fixed left-3 right-3 top-3 z-[80] rounded-2xl border border-white/20 bg-slate-950/95 text-white shadow-2xl shadow-slate-950/20 backdrop-blur-xl overflow-hidden sm:left-auto sm:right-5 sm:top-5 sm:w-[320px]">
           <div className={`h-1 w-full ${notificacao.tipo === "sucesso" ? "bg-emerald-400" : notificacao.tipo === "erro" ? "bg-rose-400" : "bg-sky-400"}`} />
           <div className="p-4">
             <div className="flex items-start justify-between gap-4">
@@ -2095,8 +2095,8 @@ export default function Conversa() {
             md:flex
           `}
         >
-          <div className="h-20 px-4 border-b border-[#CDCDCD] flex items-center">
-            <div className="flex items-center gap-4 rounded-full border-hidden bg-cyan-50 border-[#CDCDCD] px-7 h-12 w-full">
+          <div className="h-16 sm:h-20 px-3 sm:px-4 border-b border-[#CDCDCD] flex items-center">
+            <div className="flex items-center gap-3 rounded-full border-hidden bg-cyan-50 border-[#CDCDCD] px-4 sm:px-7 h-11 sm:h-12 w-full">
               <button onClick={() => inputRef.current?.focus()}
               className="cursor-pointer">
                 <Search size={18} color="blue" />
@@ -2210,7 +2210,7 @@ export default function Conversa() {
         >
 
           {/* Header da conversa */}
-          <div className="h-20 border-b border-[#CDCDCD] px-3 md:px-6 flex items-center justify-between gap-2">
+          <div className="h-16 sm:h-20 border-b border-[#CDCDCD] px-2 sm:px-3 md:px-6 flex items-center justify-between gap-1 sm:gap-2">
 
             <div className="flex items-center gap-2 min-w-0 flex-1">
 
@@ -2412,7 +2412,7 @@ export default function Conversa() {
 
           {/* Barra de busca */}
           {mostrarBuscaMensagens && (
-              <div className="border-b border-[#CDCDCD] bg-white px-6 py-3 shrink-0">
+              <div className="border-b border-[#CDCDCD] bg-white px-3 sm:px-6 py-3 shrink-0">
                 <input
                   ref={inputBuscaMensagemRef}
                   value={buscaMensagens}
@@ -2445,7 +2445,7 @@ export default function Conversa() {
 
                 {suporteMensagens.map((mensagem) => (
                   <div key={mensagem.id} className={`mb-3 md:mb-5 flex ${mensagem.lado === "usuario" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[70%] whitespace-pre-line rounded-2xl px-5 py-3 ${mensagem.lado === "usuario" ? "bg-[#2F80ED] text-white rounded-br-none" : "bg-white border border-slate-200 text-slate-700 rounded-bl-none"}`}>
+                    <div className={`max-w-[88%] sm:max-w-[70%] whitespace-pre-line rounded-2xl px-4 sm:px-5 py-3 ${mensagem.lado === "usuario" ? "bg-[#2F80ED] text-white rounded-br-none" : "bg-white border border-slate-200 text-slate-700 rounded-bl-none"}`}>
                       <p>{mensagem.texto}</p>
                       <p className={`mt-1 text-[11px] ${mensagem.lado === "usuario" ? "text-blue-100" : "text-slate-400"}`}>
                         {new Date(mensagem.data).toLocaleString()}
@@ -2484,7 +2484,7 @@ export default function Conversa() {
                     }`}
                   >
                     {mensagemAudio ? (
-                      <div className="min-w-[220px] max-w-full space-y-2">
+                      <div className="w-[min(72vw,320px)] max-w-full space-y-2">
                         <audio
                           controls
                           preload="metadata"
@@ -2609,7 +2609,7 @@ export default function Conversa() {
           </div>
 
           {/* Input */}
-          <div className="border-t border-[#CDCDCD] bg-white px-3 py-3 md:px-6 md:py-4">
+          <div className="safe-bottom border-t border-[#CDCDCD] bg-white px-2 py-2 sm:px-3 sm:py-3 md:px-6 md:py-4">
 
             {suporteAtivo ? (
               <p className="mb-2 text-xs text-slate-500">Sua mensagem será enviada como ticket para o administrador.</p>
@@ -2697,7 +2697,7 @@ export default function Conversa() {
                 <p className="mt-2 text-xs text-slate-500">Máximo de 2 minutos e 8 MB.</p>
               </div>
             )}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-3">
 
               <div className="relative">
                 <button
@@ -2790,11 +2790,11 @@ export default function Conversa() {
       </div>
       {modalSolicitacaoAberto && podeSolicitarServico && (
       <div
-      className="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50 inset-0 bg-black/40 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center z-50 p-2 sm:p-4"
       onClick={() => setModalSolicitacaoAberto(false)}
       >
         <div
-        className="bg-white rounded-xl w-full max-w-[700px] max-h-[90vh] overflow-y-auto shadow-xl"
+        className="bg-white rounded-xl w-full max-w-[700px] max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto shadow-xl"
         onClick={(e) => e.stopPropagation()}
         >
           {/* Conteúdo do modal */}

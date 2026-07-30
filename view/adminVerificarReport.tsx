@@ -135,7 +135,7 @@ export default function AdminVerificarReport() {
 
   if (!reporte) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 text-center text-slate-500 font-medium">
+      <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 text-center text-slate-500 font-medium">
         Reporte não localizado ou removido.
         <br />
         <a href="/admin/reportes" className="text-indigo-600 underline mt-2 inline-block">Voltar para a lista</a>

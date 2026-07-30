@@ -113,7 +113,7 @@ export default function InicialPrestador() {
     <div className="flex bg-[#F8FAFC] min-h-screen antialiased text-gray-800 w-full">
       <div className="flex-1 flex flex-col min-w-0">
         <SearchBar />
-        <main className="flex-1 p-8 flex gap-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col xl:flex-row gap-6 lg:gap-8 overflow-y-auto">
           <div className="flex-1 flex flex-col gap-6 min-w-0">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Olá, {carregando ? "..." : nomePrestador}</h1>
@@ -121,7 +121,7 @@ export default function InicialPrestador() {
               {erro && <p className="text-xs text-red-500 font-semibold mt-2">{erro}</p>}
             </div>
 
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               <ResumoCard icone="📅" titulo="Agendamentos hoje" valor={carregandoDados ? "..." : String(agendaHoje.length)} href="/agendaPrestador" textoLink="Ver agenda ➔" />
               <ResumoCard icone="⭐" titulo="Avaliação média" valor={carregandoDados ? "..." : mediaAvaliacoes ? mediaAvaliacoes.toFixed(1) : "--"} href="/avaliacoes" textoLink="Ver avaliações ➔" />
               <ResumoCard icone="📋" titulo="Serviços concluídos" valor={carregandoDados ? "..." : String(servicosConcluidos)} href="/servicoPrestador" textoLink="Ver todos ➔" />
@@ -141,8 +141,8 @@ export default function InicialPrestador() {
                   servicosDoBanco.map((servico) => {
                     const concluido = String(servico.status_servico).toLowerCase().includes("conclu");
                     return (
-                      <div key={servico.id_servico} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition">
-                        <div className="flex items-center gap-4">
+                      <div key={servico.id_servico} className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition">
+                        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                           <div className="w-16 h-12 bg-gray-200 rounded-lg shrink-0 flex items-center justify-center text-xs text-gray-400 font-semibold">Foto</div>
                           <div className="flex flex-col">
                             <h4 className="text-xs font-bold text-gray-900">{servico.titulo}</h4>
@@ -159,7 +159,7 @@ export default function InicialPrestador() {
             </div>
           </div>
 
-          <div className="w-[360px] bg-white border border-gray-100 rounded-2xl p-6 flex flex-col shadow-sm shrink-0 h-[520px]">
+          <div className="w-full xl:w-[360px] bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 flex flex-col shadow-sm shrink-0 min-h-[360px] xl:h-[520px]">
             <h2 className="text-base font-bold text-gray-900 mb-6">Agenda de hoje</h2>
             {carregandoDados ? (
               <div className="flex-1 flex items-center justify-center text-xs text-gray-400">Carregando agenda...</div>

@@ -262,7 +262,7 @@ export default function AdminPrestadores() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-white font-sans text-slate-800 p-8">
+    <div className="w-full min-h-screen bg-white font-sans text-slate-800 p-4 sm:p-6 lg:p-8">
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Prestadores</h1>

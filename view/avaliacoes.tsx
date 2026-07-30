@@ -230,15 +230,15 @@ export default function Avaliacoes() {
         <div className="border-b border-[#CDCDCD] shrink-0 bg-white">
             <SearchBar />
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         {/* Cabeçalho */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-8">
             <div className="w-14 h-14 rounded-xl bg-[#FBE8D8] flex items-center justify-center">
             <MessageSquareText />
             </div>
 
             <div>
-            <h1 className="text-3xl font-semibold">
+            <h1 className="text-2xl sm:text-3xl font-semibold">
                 Avaliações recebidas
             </h1>
 
@@ -252,7 +252,7 @@ export default function Avaliacoes() {
         <div className="flex flex-wrap gap-4 mb-8 items-end">
 
             {/* Nota geral */}
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-6 w-[220px] shadow-sm">
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-6 w-full sm:w-[220px] shadow-sm">
 
             <h3 className="font-semibold">
                 Nota média geral
@@ -275,9 +275,9 @@ export default function Avaliacoes() {
             </div>
 
             {/* Cards estrelas */}
-            <div className="flex gap-2 flex-wrap flex-1 items-stretch">
+            <div className="grid w-full flex-1 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-stretch">
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 min-w-0 sm:w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
                 <p className="font-medium">⭐ 5 estrelas</p>
 
                 <p className="text-2xl font-semibold text-center mt-3">
@@ -297,7 +297,7 @@ export default function Avaliacoes() {
                 </p>
             </div>
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 min-w-0 sm:w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
                 <p className="font-medium">⭐ 4 estrelas</p>
 
                 <p className="text-2xl font-semibold text-center mt-3">
@@ -315,7 +315,7 @@ export default function Avaliacoes() {
                 </p>
             </div>
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 min-w-0 sm:w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
                 <p className="font-medium">⭐ 3 estrelas</p>
 
                 <p className="text-2xl font-semibold text-center mt-3">
@@ -333,7 +333,7 @@ export default function Avaliacoes() {
                 </p>
             </div>
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 min-w-0 sm:w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
                 <p className="font-medium">⭐ 2 estrelas</p>
 
                 <p className="text-2xl font-semibold text-center mt-3">
@@ -351,7 +351,7 @@ export default function Avaliacoes() {
                 </p>
             </div>
 
-            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
+            <div className="bg-white border border-[#E2D5D5] rounded-2xl p-3 min-w-0 sm:w-[140px] h-[165px] shadow-sm flex flex-col justify-between">
                 <p className="font-medium">⭐ 1 estrela</p>
 
                 <p className="text-2xl font-semibold text-center mt-3">

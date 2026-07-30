@@ -806,19 +806,19 @@ export default function ServicoPrestador() {
 
   if (status === "loading") {
     return (
-      <div className="h-screen bg-[#F8FAFC] flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[#F8FAFC] flex items-center justify-center">
         <p className="text-sm text-gray-400">Verificando acesso...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-[#F8FAFC] flex flex-col font-sans text-gray-800 overflow-hidden relative">
+    <div className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col font-sans text-gray-800 relative">
       <SearchBar />
 
-      <div className="flex-1 max-w-[1440px] w-full mx-auto p-8 flex gap-6 overflow-hidden">
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <div className="flex justify-between items-start pb-4 shrink-0">
+      <div className="flex-1 max-w-[1440px] w-full mx-auto p-4 sm:p-6 lg:p-8 flex gap-6 min-h-0">
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start pb-4 shrink-0">
             <div>
               <h1 className="text-2xl font-bold text-[#0B1B4D]">
                 {activeFilter === "Solicitacoes"
@@ -833,14 +833,14 @@ export default function ServicoPrestador() {
 
             <button
               onClick={() => setModalAdicionarAberto(true)}
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] transition text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer shadow-sm"
+              className="w-full sm:w-auto justify-center bg-[#2563EB] hover:bg-[#1D4ED8] transition text-white px-5 sm:px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <Plus size={18} />
               Adicionar Serviços
             </button>
           </div>
 
-          <div className="flex gap-3 pb-6 shrink-0">
+          <div className="flex gap-2 sm:gap-3 pb-6 shrink-0 overflow-x-auto">
             <button
               onClick={() => setActiveFilter("Todos")}
               className={`min-w-[105px] px-6 py-2.5 rounded-xl text-sm font-semibold border cursor-pointer ${
@@ -908,10 +908,10 @@ export default function ServicoPrestador() {
                     <div
                       key={solicitacao.id_solicitacao}
                       onClick={() => setSolicitacaoEmDetalhe(solicitacao)}
-                      className="p-4 flex gap-4 items-center justify-between bg-white hover:bg-[#F8FAFC] transition cursor-pointer"
+                    className="p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white hover:bg-[#F8FAFC] transition cursor-pointer"
                     >
-                      <div className="flex gap-4 items-center flex-1">
-                        <div className="w-[104px] h-[82px] bg-[#EAF2FF] text-[#2563EB] rounded-xl flex items-center justify-center font-bold text-xl uppercase">
+                      <div className="flex min-w-0 gap-3 sm:gap-4 items-center flex-1">
+                        <div className="w-16 h-16 sm:w-[104px] sm:h-[82px] shrink-0 bg-[#EAF2FF] text-[#2563EB] rounded-xl flex items-center justify-center font-bold text-xl uppercase">
                           {(solicitacao.nome_usuario || "C")
                             .charAt(0)
                             .toUpperCase()}
@@ -941,7 +941,7 @@ export default function ServicoPrestador() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 min-w-[210px] justify-end">
+                      <div className="flex w-full gap-2 sm:w-auto sm:min-w-[210px] justify-end">
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
@@ -993,10 +993,10 @@ export default function ServicoPrestador() {
                     <div
                       key={service.id_servico}
                       onClick={() => setServicoEmDetalhe(service)}
-                      className="px-4 py-3 flex gap-4 items-center justify-between bg-white hover:bg-[#F8FAFC] transition cursor-pointer"
+                      className="px-4 py-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white hover:bg-[#F8FAFC] transition cursor-pointer"
                     >
                       <div className="flex gap-4 items-center flex-1 min-w-0">
-                        <div className="w-[104px] h-[82px] bg-[#E5E7EB] rounded-xl shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-semibold overflow-hidden">
+                        <div className="w-16 h-16 sm:w-[104px] sm:h-[82px] bg-[#E5E7EB] rounded-xl shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-semibold overflow-hidden">
                           {imagemCapa ? (
                             <img
                               src={imagemCapa}
@@ -1031,8 +1031,8 @@ export default function ServicoPrestador() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 shrink-0">
-                        <div className="flex flex-col items-end justify-between h-20 min-w-[120px]">
+                      <div className="flex w-full items-center gap-4 shrink-0 sm:w-auto">
+                        <div className="flex w-full flex-row items-center justify-between sm:h-20 sm:min-w-[120px] sm:flex-col sm:items-end">
                           <span
                             className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                               isPendente

@@ -245,7 +245,7 @@ export default function AdminPerfilPrestador() {
                 </button>
 
                 {/* Header com informações principais */}
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 mb-6">
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-4 sm:p-6 lg:p-8 mb-6">
                     <div className="flex items-start justify-between gap-6">
                         <div className="flex-1">
                             <div className="flex items-center gap-4 mb-4">

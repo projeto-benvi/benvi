@@ -21,9 +21,9 @@ export default function ClientLayout({
     <SessionProvider>
     
       <AuthProvider>
-        <div className="flex min-h-screen">
+        <div className="flex min-h-[100dvh] w-full min-w-0 overflow-x-hidden">
           {!esconderSidebar && <Sidebar />}
-          <main className="flex-1 overflow-y-auto">
+          <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
             {children}
           </main>
         </div>
