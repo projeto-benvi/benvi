@@ -22,9 +22,21 @@ export type PrivateAudioUploadResult = {
   duration: number;
 };
 
+export type ChatAttachmentResourceType = "image" | "video" | "raw";
+
+export type PrivateChatAttachmentUploadResult = {
+  secureUrl: string;
+  publicId: string;
+  format: string;
+  mimeType: string;
+  bytes: number;
+  resourceType: ChatAttachmentResourceType;
+};
+
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 export const MAX_CHAT_AUDIO_SIZE_BYTES = 8 * 1024 * 1024;
 export const MAX_CHAT_AUDIO_DURATION_SECONDS = 120;
+export const MAX_CHAT_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Map([
   ["image/jpeg", ["jpg", "jpeg"]],
   ["image/png", ["png"]],
@@ -36,6 +48,17 @@ const ALLOWED_AUDIO_TYPES = new Map([
   ["audio/mp4", ["m4a", "mp4"]],
   ["audio/mpeg", ["mp3"]],
   ["audio/wav", ["wav"]],
+]);
+const ALLOWED_CHAT_ATTACHMENT_TYPES = new Map<
+  string,
+  { extensions: string[]; resourceType: ChatAttachmentResourceType }
+>([
+  ["image/jpeg", { extensions: ["jpg", "jpeg"], resourceType: "image" }],
+  ["image/png", { extensions: ["png"], resourceType: "image" }],
+  ["image/webp", { extensions: ["webp"], resourceType: "image" }],
+  ["video/mp4", { extensions: ["mp4"], resourceType: "video" }],
+  ["video/webm", { extensions: ["webm"], resourceType: "video" }],
+  ["application/pdf", { extensions: ["pdf"], resourceType: "raw" }],
 ]);
 
 export class StorageNotConfiguredError extends Error {
@@ -63,6 +86,13 @@ export class AudioStorageNotConfiguredError extends Error {
   constructor() {
     super("O envio de áudio não está disponível neste ambiente.");
     this.name = "AudioStorageNotConfiguredError";
+  }
+}
+
+export class ChatAttachmentStorageNotConfiguredError extends Error {
+  constructor() {
+    super("O envio de anexos não está disponível neste ambiente.");
+    this.name = "ChatAttachmentStorageNotConfiguredError";
   }
 }
 
@@ -99,6 +129,14 @@ function configureAudioCloudinary() {
     configureCloudinary();
   } catch {
     throw new AudioStorageNotConfiguredError();
+  }
+}
+
+function configureChatAttachmentCloudinary() {
+  try {
+    configureCloudinary();
+  } catch {
+    throw new ChatAttachmentStorageNotConfiguredError();
   }
 }
 
@@ -159,6 +197,48 @@ function validateAudioFile(file: File, buffer: Buffer) {
   if (!hasValidAudioSignature(buffer, mimeType)) {
     throw new StorageValidationError("O conteúdo do arquivo não corresponde ao formato informado.");
   }
+}
+
+function hasValidChatAttachmentSignature(buffer: Buffer, mimeType: string) {
+  if (mimeType === "image/jpeg") {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+  if (mimeType === "image/png") {
+    return buffer.length >= 8 &&
+      buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+  if (mimeType === "image/webp") {
+    return buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+      buffer.subarray(8, 12).toString("ascii") === "WEBP";
+  }
+  if (mimeType === "video/mp4") return buffer.subarray(4, 8).toString("ascii") === "ftyp";
+  if (mimeType === "video/webm") {
+    return buffer.length >= 4 && buffer.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]));
+  }
+  if (mimeType === "application/pdf") return buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+  return false;
+}
+
+function validateChatAttachment(file: File, buffer: Buffer) {
+  if (!file || file.size <= 0 || file.size !== buffer.length) {
+    throw new StorageValidationError("Arquivo inválido.");
+  }
+  if (file.size > MAX_CHAT_ATTACHMENT_SIZE_BYTES) {
+    throw new StorageValidationError("O anexo excede o limite de 10 MB.");
+  }
+
+  const mimeType = file.type.split(";")[0].toLowerCase();
+  const allowed = ALLOWED_CHAT_ATTACHMENT_TYPES.get(mimeType);
+  if (!allowed) {
+    throw new StorageValidationError("Formato não permitido. Envie JPG, PNG, WebP, MP4, WebM ou PDF.");
+  }
+  if (!allowed.extensions.includes(getExtension(file.name))) {
+    throw new StorageValidationError("A extensão do arquivo não corresponde ao formato informado.");
+  }
+  if (!hasValidChatAttachmentSignature(buffer, mimeType)) {
+    throw new StorageValidationError("O conteúdo do arquivo não corresponde ao formato informado.");
+  }
+  return { mimeType, ...allowed };
 }
 
 function cloudinaryFolder(folder: PublicImageFolder) {
@@ -273,9 +353,82 @@ export function getPrivateChatAudioUrl(publicId: string, format: string) {
   });
 }
 
+export async function uploadPrivateChatAttachment(
+  file: File
+): Promise<PrivateChatAttachmentUploadResult> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const validated = validateChatAttachment(file, buffer);
+  configureChatAttachmentCloudinary();
+
+  const result = await new Promise<{
+    secure_url: string;
+    public_id: string;
+    format?: string;
+    bytes?: number;
+  }>((resolve, reject) => {
+    const extension = getExtension(file.name);
+    const publicId =
+      validated.resourceType === "raw" ? `${randomUUID()}.${extension}` : randomUUID();
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "benvi/chat-attachments",
+        public_id: publicId,
+        resource_type: validated.resourceType,
+        type: "authenticated",
+        overwrite: false,
+        use_filename: false,
+      },
+      (error, uploadResult) => {
+        if (error || !uploadResult) {
+          reject(new StorageUploadError());
+          return;
+        }
+        resolve(uploadResult);
+      }
+    );
+    stream.end(buffer);
+  });
+
+  return {
+    secureUrl: result.secure_url,
+    publicId: result.public_id,
+    format: String(result.format || getExtension(file.name)),
+    mimeType: validated.mimeType,
+    bytes: Number(result.bytes ?? file.size),
+    resourceType: validated.resourceType,
+  };
+}
+
+export async function deletePrivateChatAttachment(
+  publicId: string,
+  resourceType: ChatAttachmentResourceType
+) {
+  configureChatAttachmentCloudinary();
+  await cloudinary.uploader.destroy(publicId, {
+    resource_type: resourceType,
+    type: "authenticated",
+    invalidate: true,
+  });
+}
+
+export function getPrivateChatAttachmentUrl(
+  publicId: string,
+  format: string,
+  resourceType: ChatAttachmentResourceType
+) {
+  configureChatAttachmentCloudinary();
+  return cloudinary.utils.private_download_url(publicId, format, {
+    resource_type: resourceType,
+    type: "authenticated",
+    expires_at: Math.floor(Date.now() / 1000) + 5 * 60,
+    attachment: false,
+  });
+}
+
 export function storageErrorStatus(error: unknown) {
   if (error instanceof StorageValidationError) return 400;
   if (error instanceof AudioStorageNotConfiguredError) return 503;
+  if (error instanceof ChatAttachmentStorageNotConfiguredError) return 503;
   if (error instanceof StorageNotConfiguredError) return 503;
   if (error instanceof StorageUploadError) return 503;
   return 500;
