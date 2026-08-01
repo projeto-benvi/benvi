@@ -3,6 +3,7 @@ import { SolicitacaoServicoController } from '@/controller/solicitacaoservicoCon
 import { authErrorResponse, requireAdmin, requireResourceOwner, requireUser } from '@/app/lib/authz';
 import { parsePaginacao } from '@/app/lib/paginacao';
 import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
+import { genericApiError } from '@/app/lib/api-error';
 
 export async function GET(request: NextRequest) {
     try {
@@ -35,10 +36,7 @@ export async function GET(request: NextRequest) {
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao buscar solicitações' },
-            { status: 500 }
-        );
+        return genericApiError(error, { context: 'solicitacao.listar', publicMessage: 'Erro ao buscar solicitações.' });
     }
 }
 
@@ -72,9 +70,6 @@ export async function POST(request: NextRequest) {
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro interno' },
-            { status: 400 }
-        );
+        return genericApiError(error, { context: 'solicitacao.criar', publicMessage: 'Não foi possível criar a solicitação.', status: 400 });
     }
 }

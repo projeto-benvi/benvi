@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ParceriaController } from '@/controller/parceriaController';
 import { authErrorResponse, requireAdmin } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 type Params = Promise<{ id: string }>;
 
@@ -17,10 +18,7 @@ export async function GET(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Parceria não encontrada' },
-            { status: 404 }
-        );
+        return genericApiError(error, { context: 'parceria.buscar', publicMessage: 'Parceria não encontrada.', status: 404 });
     }
 }
 
@@ -41,10 +39,7 @@ export async function PATCH(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao atualizar' },
-            { status: 400 }
-        );
+        return genericApiError(error, { context: 'parceria.atualizar', publicMessage: 'Não foi possível atualizar a parceria.', status: 400 });
     }
 }
 
@@ -69,9 +64,8 @@ export async function DELETE(
             { status: 200 }
         );
     } catch (error) {
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao remover' },
-            { status: 500 }
-        );
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
+        return genericApiError(error, { context: 'parceria.remover', publicMessage: 'Não foi possível remover a parceria.' });
     }
 }

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AgendaController } from '@/controller/agendaController';
 import { authErrorResponse, requireAdmin, requireResourceOwner, requireUser } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 export async function GET(request: NextRequest) {
     try {
@@ -28,10 +29,7 @@ export async function GET(request: NextRequest) {
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao buscar agendas' },
-            { status: 500 }
-        );
+        return genericApiError(error, { context: 'agenda.listar', publicMessage: 'Erro ao buscar agendas.' });
     }
 }
 
@@ -64,9 +62,8 @@ export async function POST(request: NextRequest) {
         );
 
     } catch (error) {
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro interno' },
-            { status: 400 }
-        );
+        const authResponse = authErrorResponse(error);
+        if (authResponse) return authResponse;
+        return genericApiError(error, { context: 'agenda.criar', publicMessage: 'Não foi possível criar a agenda.', status: 400 });
     }
 }

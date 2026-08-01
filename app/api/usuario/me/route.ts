@@ -1,6 +1,7 @@
 import { authErrorResponse, requireUser } from '@/app/lib/authz';
 import { usuarioService } from '@/service/usuarioService';
 import { NextRequest, NextResponse } from 'next/server';
+import { logSafeApiError } from '@/app/lib/api-error';
 
 function mapSelfDeletionError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
@@ -18,10 +19,7 @@ function mapSelfDeletionError(error: unknown) {
     return NextResponse.json({ erro: respostas[message].erro }, { status: respostas[message].status });
   }
 
-  console.error('Erro seguro na exclusão da própria conta.', {
-    tipo: error instanceof Error ? error.name : typeof error,
-    mensagem: message,
-  });
+  logSafeApiError('usuario.excluir-propria-conta', error);
 
   return NextResponse.json({ erro: 'Erro ao excluir conta.' }, { status: 500 });
 }

@@ -59,7 +59,8 @@ Configuracao recomendada:
 - Copiar host, porta, usuario, senha e database para as variaveis `DB_*`.
 - Em `DB_HOST`, usar somente o host exibido pelo Railway; a porta fica exclusivamente em `DB_PORT`.
 - Usar `DB_SSL=true` somente se a conexao Railway escolhida exigir SSL.
-- Manter limite baixo de conexoes no pool da aplicacao.
+- Manter `connectionLimit: 5` e um unico pool por instancia serverless.
+- Dimensionar o limite do Railway considerando que varias instancias podem multiplicar o total de conexoes (`instancias x 5`).
 - Rodar migrations manualmente antes de promover deploy para producao.
 
 ## Migrations

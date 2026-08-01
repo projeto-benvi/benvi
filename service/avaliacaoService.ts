@@ -5,6 +5,14 @@ import { AvaliacaoModel } from '@/model/avaliacaoModel';
 
 export const AvaliacaoService = {
 
+    async buscarAutorId(id: number): Promise<number | null> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT id_usuario FROM avaliacao WHERE id_avaliacao = ? LIMIT 1',
+            [id]
+        );
+        return rows[0] ? Number(rows[0].id_usuario) : null;
+    },
+
     async listar(): Promise<AvaliacaoModel[]> {
         const [rows] = await pool.query<(RowDataPacket & any)[]>(
             `

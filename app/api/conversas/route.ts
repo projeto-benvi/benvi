@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { ConversaController } from '@/controller/conversaController'; // Ajuste o caminho se não usar @/
 import { authErrorResponse, requireAdmin, requireResourceOwner, requireUser } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 const conversaController = new ConversaController();
 
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     const authResponse = authErrorResponse(erro);
     if (authResponse) return authResponse;
 
-    return NextResponse.json({ erro: erro.message }, { status: 400 });
+    return genericApiError(erro, { context: 'conversa.criar', publicMessage: 'Não foi possível abrir a conversa.', status: 400, field: 'erro' });
   }
 }
 
@@ -48,6 +49,6 @@ export async function GET(request: Request) {
     const authResponse = authErrorResponse(erro);
     if (authResponse) return authResponse;
 
-    return NextResponse.json({ erro: erro.message }, { status: 400 });
+    return genericApiError(erro, { context: 'conversa.listar', publicMessage: 'Não foi possível listar as conversas.', status: 400, field: 'erro' });
   }
 }

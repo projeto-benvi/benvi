@@ -2,6 +2,7 @@ import { MensagemController } from '@/controller/mensagemController';
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/app/lib/dataBase';
 import { AuthorizationError, authErrorResponse, requireUser } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 const mensagemController = new MensagemController();
 
@@ -89,10 +90,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     const authResponse = authErrorResponse(erro);
     if (authResponse) return authResponse;
 
-    return NextResponse.json(
-      { erro: erro instanceof Error ? erro.message : 'Erro ao listar mensagens.' },
-      { status: 400 }
-    );
+    return genericApiError(erro, { context: 'mensagem.listar-conversa', publicMessage: 'Requisição de mensagens inválida.', status: 400, field: 'erro' });
   }
 }
 
@@ -118,9 +116,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const authResponse = authErrorResponse(erro);
     if (authResponse) return authResponse;
 
-    return NextResponse.json(
-      { erro: erro instanceof Error ? erro.message : 'Erro ao enviar mensagem.' },
-      { status: 400 }
-    );
+    return genericApiError(erro, { context: 'mensagem.enviar-conversa', publicMessage: 'Não foi possível enviar a mensagem.', status: 400, field: 'erro' });
   }
 }

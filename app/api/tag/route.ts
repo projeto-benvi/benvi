@@ -5,7 +5,8 @@ import {
   deletarTagController,
   substituirTagsDoPrestadorController,
 } from "@/controller/tagController";
-import { authErrorResponse, requireUser } from "@/app/lib/authz";
+import { AuthorizationError, authErrorResponse, requireUser } from "@/app/lib/authz";
+import { buscarProprietarioDaTag } from "@/service/tagService";
 
 export async function GET(req: NextRequest) {
   const idPrestador = req.nextUrl.searchParams.get("id_prestador");
@@ -40,7 +41,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const id = req.nextUrl.searchParams.get("id");
 
     if (!id) {
@@ -50,7 +51,16 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    return deletarTagController(Number(id));
+    const idTag = Number(id);
+    const ownerId = await buscarProprietarioDaTag(idTag);
+    if (ownerId === null) {
+      throw new AuthorizationError("Tag não encontrada.", 404);
+    }
+    if (!user.isAdmin && ownerId !== user.id) {
+      throw new AuthorizationError("Voce nao tem permissao para excluir esta tag.", 403);
+    }
+
+    return deletarTagController(idTag);
   } catch (error) {
     return authErrorResponse(error) ?? NextResponse.json({ erro: "Erro ao deletar tag." }, { status: 500 });
   }

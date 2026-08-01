@@ -347,7 +347,7 @@ export default function AdminReportPage() {
                           <td className="p-4 text-center">
                             <div className="flex items-center justify-center gap-1.5">
                               <a 
-                                href={`/admin/reportes/verificar?id=${reporte.id_reporte}`}
+                                href={`/admin/verificarReport?id=${reporte.id_reporte}`}
                                 className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition"
                                 title="Analisar Reporte"
                               >
@@ -404,7 +404,7 @@ export default function AdminReportPage() {
                         <span className="text-slate-400">{dt.data} às {dt.hora}</span>
                         <div className="flex gap-1">
                           <a 
-                            href={`/admin/reportes/verificar?id=${reporte.id_reporte}`}
+                            href={`/admin/verificarReport?id=${reporte.id_reporte}`}
                             className="text-indigo-600 hover:bg-indigo-50 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
                           >
                             <Eye size={14} /> Analisar

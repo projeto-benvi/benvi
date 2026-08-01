@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { popularCategoriasIniciais } from "@/service/categoriaService"; 
 import { authErrorResponse, requireAdmin } from "@/app/lib/authz";
+import { genericApiError } from "@/app/lib/api-error";
 export async function GET() {
   try {
     await requireAdmin();
@@ -10,6 +11,6 @@ export async function GET() {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;
 
-    return NextResponse.json({ erro: error.message }, { status: 500 });
+    return genericApiError(error, { context: 'categoria.seed', publicMessage: 'Não foi possível preparar as categorias.', field: 'erro' });
   }
 }

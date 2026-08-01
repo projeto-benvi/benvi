@@ -26,9 +26,9 @@ A conexao usa exclusivamente:
 
 Configuracao aplicada:
 
-- Pool reutilizavel em modulo compartilhado.
+- Um pool reutilizavel por instancia serverless, preservado em `globalThis`.
 - `mysql2/promise`.
-- Limite baixo de conexoes.
+- `connectionLimit: 5`; nao aumentar sem medir o limite do plano Railway e a concorrencia real.
 - Timeout de conexao.
 - SSL ativado somente com `DB_SSL=true`.
 - `DB_HOST` validado como host puro, sem protocolo, credenciais, porta, database ou query string.
@@ -41,6 +41,8 @@ Checklist Railway:
 - Confirmar se a URL escolhida exige SSL e definir `DB_SSL` corretamente.
 - Usar banco na regiao mais proxima possivel da Vercel.
 - Monitorar conexoes ativas, CPU, memoria e queries lentas.
+- Considerar que cada instancia serverless pode manter ate cinco conexoes; o total potencial e `instancias simultaneas x 5`.
+- Configurar alerta antes do limite do plano e reduzir concorrencia/instancias ou adotar proxy de conexoes se houver saturacao.
 - Criar snapshot antes de rodar migrations em producao.
 
 ## Cloudinary

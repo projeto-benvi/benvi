@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AvaliacaoController } from '@/controller/avaliacaoController';
 import { authErrorResponse, requireUser } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 export async function GET() {
 
@@ -67,14 +68,6 @@ export async function POST(request: Request) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;
 
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Erro interno'
-      },
-      { status: 400 }
-    );
+    return genericApiError(error, { context: 'avaliacao.criar', publicMessage: 'Não foi possível criar a avaliação.', status: 400 });
   }
 }

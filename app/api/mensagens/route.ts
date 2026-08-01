@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { MensagemController } from '@/controller/mensagemController';
 import pool from '@/app/lib/dataBase';
 import { AuthorizationError, authErrorResponse, requireUser } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 const mensagemController = new MensagemController();
 const LIMITE_PADRAO = 30;
@@ -82,10 +83,7 @@ export async function POST(request: Request) {
     const authResponse = authErrorResponse(erro);
     if (authResponse) return authResponse;
 
-    return NextResponse.json(
-      { erro: erro instanceof Error ? erro.message : 'Requisição inválida.' },
-      { status: 400 }
-    );
+    return genericApiError(erro, { context: 'mensagem.enviar', publicMessage: 'Não foi possível enviar a mensagem.', status: 400, field: 'erro' });
   }
 }
 
@@ -138,9 +136,6 @@ export async function GET(request: Request) {
   } catch (erro) {
     const authResponse = authErrorResponse(erro);
     if (authResponse) return authResponse;
-    return NextResponse.json(
-      { erro: erro instanceof Error ? erro.message : 'Requisição inválida.' },
-      { status: 400 }
-    );
+    return genericApiError(erro, { context: 'mensagem.listar', publicMessage: 'Requisição de mensagens inválida.', status: 400, field: 'erro' });
   }
 }

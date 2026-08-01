@@ -1,15 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SolicitacaoServicoController } from '@/controller/solicitacaoservicoController';
-import { authErrorResponse, requireUser } from '@/app/lib/authz';
+import { AuthorizationError, authErrorResponse, requireUser, type AuthenticatedUser } from '@/app/lib/authz';
 import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
+import { genericApiError } from '@/app/lib/api-error';
 
-function assertSolicitacaoAccess(user: { id: number; isAdmin: boolean }, data: any) {
-    const idUsuario = Number(data?.id_usuario ?? data?.usuario?.id_usuario);
-    const idPrestador = Number(data?.id_prestador ?? data?.prestador?.id_usuario);
+function participantes(data: any) {
+    return {
+        idUsuario: Number(data?.id_usuario ?? data?.usuario?.id_usuario),
+        idPrestador: Number(data?.id_prestador ?? data?.prestador?.id_usuario),
+    };
+}
+
+function assertSolicitacaoAccess(user: AuthenticatedUser, data: any) {
+    const { idUsuario, idPrestador } = participantes(data);
 
     if (!user.isAdmin && idUsuario !== user.id && idPrestador !== user.id) {
-        throw new Error('Voce nao tem permissao para acessar esta solicitacao.');
+        throw new AuthorizationError('Voce nao tem permissao para acessar esta solicitacao.', 403);
     }
+}
+
+function solicitacaoPendente(data: any) {
+    return data?.status === false || data?.status === 0 || String(data?.status).toLowerCase() === 'pendente';
+}
+
+function payloadAtualizacao(user: AuthenticatedUser, atual: any, body: unknown) {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        throw new AuthorizationError('Payload de atualização inválido.', 400);
+    }
+
+    const dados = body as Record<string, unknown>;
+    const chaves = Object.keys(dados);
+    const { idUsuario, idPrestador } = participantes(atual);
+
+    if (chaves.length === 0) {
+        throw new AuthorizationError('Nenhum campo válido foi informado.', 400);
+    }
+
+    if (user.isAdmin) {
+        const permitidos = new Set(['endereco', 'data_agendamento', 'status', 'descricao_servico', 'complemento']);
+        if (chaves.some((chave) => !permitidos.has(chave))) {
+            throw new AuthorizationError('Payload contém campos não permitidos.', 400);
+        }
+        if ('status' in dados && ![true, false, 1, 0, '1', '0'].includes(dados.status as any)) {
+            throw new AuthorizationError('Status de solicitação inválido.', 400);
+        }
+        return dados;
+    }
+
+    if (!solicitacaoPendente(atual)) {
+        throw new AuthorizationError('Solicitações já processadas não podem ser alteradas.', 409);
+    }
+
+    if (user.id === idPrestador) {
+        if (chaves.length !== 1 || chaves[0] !== 'status' || ![true, 1, '1', 'aceito'].includes(dados.status as any)) {
+            throw new AuthorizationError('O prestador pode apenas aceitar uma solicitação pendente.', 403);
+        }
+        return { status: 1 };
+    }
+
+    if (user.id === idUsuario) {
+        const permitidos = new Set(['endereco', 'data_agendamento', 'descricao_servico', 'complemento']);
+        if (chaves.some((chave) => !permitidos.has(chave))) {
+            throw new AuthorizationError('O cliente pode alterar apenas os dados da solicitação pendente.', 403);
+        }
+        return dados;
+    }
+
+    throw new AuthorizationError('Voce nao tem permissao para atualizar esta solicitação.', 403);
 }
 
 export async function GET(
@@ -28,10 +85,7 @@ export async function GET(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Solicitação não encontrada' },
-            { status: 404 }
-        );
+        return genericApiError(error, { context: 'solicitacao.buscar', publicMessage: 'Solicitação não encontrada.', status: 404 });
     }
 }
 
@@ -47,16 +101,14 @@ export async function PATCH(
         const atual = await SolicitacaoServicoController.buscarPorId(numId);
         assertSolicitacaoAccess(user, atual);
         const body = await request.json();
-        await SolicitacaoServicoController.atualizar(numId, body);
+        const dadosPermitidos = payloadAtualizacao(user, atual, body);
+        await SolicitacaoServicoController.atualizar(numId, dadosPermitidos);
         return NextResponse.json({ message: 'Solicitação atualizada com sucesso' });
     } catch (error) {
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao atualizar' },
-            { status: 400 }
-        );
+        return genericApiError(error, { context: 'solicitacao.atualizar', publicMessage: 'Não foi possível atualizar a solicitação.', status: 400 });
     }
 }
 
@@ -71,6 +123,9 @@ export async function DELETE(
         if (numId === null) return respostaIdInvalido('id');
         const atual = await SolicitacaoServicoController.buscarPorId(numId);
         assertSolicitacaoAccess(user, atual);
+        if (!user.isAdmin && !solicitacaoPendente(atual)) {
+            throw new AuthorizationError('Solicitações já processadas não podem ser removidas.', 409);
+        }
         const removido = await SolicitacaoServicoController.remover(numId);
         if (!removido) {
             return NextResponse.json({ error: 'Solicitação não encontrada' }, { status: 404 });
@@ -80,9 +135,6 @@ export async function DELETE(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao remover' },
-            { status: 500 }
-        );
+        return genericApiError(error, { context: 'solicitacao.remover', publicMessage: 'Não foi possível remover a solicitação.' });
     }
 }

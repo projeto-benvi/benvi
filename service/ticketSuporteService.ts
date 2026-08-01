@@ -10,6 +10,14 @@ type NovoTicket = Omit<TicketSuporte, 'id_ticket' | 'status' | 'resposta_admin' 
 };
 
 export const ticketSuporteService = {
+  async buscarProprietario(id: number): Promise<number | null> {
+    const [rows]: any = await pool.query(
+      'SELECT id_usuario FROM ticketsuporte WHERE id_ticket = ? LIMIT 1',
+      [id]
+    );
+    return rows[0] ? Number(rows[0].id_usuario) : null;
+  },
+
   async criar(ticket: NovoTicket): Promise<any> {
     const [result]: any = await pool.query(
       'INSERT INTO ticketsuporte (id_usuario, id_prestador, id_servico, titulo, descricao, categoria, prioridade, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',

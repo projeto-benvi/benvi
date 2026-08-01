@@ -1,6 +1,7 @@
 import { ticketSuporteController } from '@/controller/ticketSuporteController';
 import { NextRequest, NextResponse } from 'next/server';
-import { authErrorResponse, requireAdmin, requireUser } from '@/app/lib/authz';
+import { AuthorizationError, authErrorResponse, requireAdmin, requireUser } from '@/app/lib/authz';
+import { ticketSuporteService } from '@/service/ticketSuporteService';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -12,8 +13,16 @@ export async function GET(
 ) {
   try {
     const params = await context.params;
-    await requireUser();
-    return ticketSuporteController.buscarPorId(Number(params.id));
+    const user = await requireUser();
+    const id = Number(params.id);
+    const ownerId = await ticketSuporteService.buscarProprietario(id);
+    if (ownerId === null) {
+      throw new AuthorizationError('Ticket não encontrado.', 404);
+    }
+    if (!user.isAdmin && ownerId !== user.id) {
+      throw new AuthorizationError('Voce nao tem permissao para acessar este ticket.', 403);
+    }
+    return ticketSuporteController.buscarPorId(id);
   } catch (error) {
     return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao buscar ticket.' }, { status: 500 });
   }

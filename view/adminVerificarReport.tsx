@@ -138,7 +138,7 @@ export default function AdminVerificarReport() {
       <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 text-center text-slate-500 font-medium">
         Reporte não localizado ou removido.
         <br />
-        <a href="/admin/reportes" className="text-indigo-600 underline mt-2 inline-block">Voltar para a lista</a>
+        <a href="/admin/reports" className="text-indigo-600 underline mt-2 inline-block">Voltar para a lista</a>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export default function AdminVerificarReport() {
         
         {/* Navigation back */}
         <a 
-          href="/admin/reportes" 
+          href="/admin/reports"
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition mb-6 group"
         >
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" /> 

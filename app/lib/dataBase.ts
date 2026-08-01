@@ -94,9 +94,9 @@ function getPool(): Pool {
   const newPool = createPool();
   attachPoolErrorHandler(newPool);
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPool.__benviMySqlPool = newPool;
-  }
+  // Uma instancia serverless aquecida deve reutilizar sempre o mesmo pool.
+  // Sem este cache, cada acesso ao Proxy abaixo poderia criar outro pool em producao.
+  globalForPool.__benviMySqlPool = newPool;
 
   return newPool;
 }

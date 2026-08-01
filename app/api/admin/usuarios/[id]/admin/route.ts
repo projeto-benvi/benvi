@@ -1,6 +1,7 @@
 import { authErrorResponse, requireAdmin } from '@/app/lib/authz';
 import { adminService } from '@/service/usuarioService';
 import { NextRequest, NextResponse } from 'next/server';
+import { logSafeApiError } from '@/app/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -20,10 +21,7 @@ function mapAdminPermissionError(error: unknown) {
     );
   }
 
-  console.error('Erro seguro na rota administrativa de permissao.', {
-    tipo: error instanceof Error ? error.name : typeof error,
-    mensagem: message,
-  });
+  logSafeApiError('admin.permissao', error);
 
   return NextResponse.json({ erro: 'Erro ao atualizar permissão administrativa.' }, { status: 500 });
 }

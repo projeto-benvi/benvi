@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ReporteController } from '@/controller/reporteController';
 import { authErrorResponse, requireAdmin, requireUser } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 type Params = Promise<{ id: string }>;
 
@@ -17,10 +18,7 @@ export async function GET(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Reporte não encontrado' },
-            { status: 404 }
-        );
+        return genericApiError(error, { context: 'reporte.buscar', publicMessage: 'Reporte não encontrado.', status: 404 });
     }
 }
 
@@ -41,10 +39,7 @@ export async function PATCH(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao atualizar' },
-            { status: 400 }
-        );
+        return genericApiError(error, { context: 'reporte.atualizar', publicMessage: 'Não foi possível atualizar o reporte.', status: 400 });
     }
 }
 
@@ -72,9 +67,6 @@ export async function DELETE(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao remover' },
-            { status: 500 }
-        );
+        return genericApiError(error, { context: 'reporte.remover', publicMessage: 'Não foi possível remover o reporte.' });
     }
 }

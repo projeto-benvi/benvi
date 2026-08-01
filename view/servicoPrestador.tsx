@@ -443,9 +443,6 @@ export default function ServicoPrestador() {
           },
           body: JSON.stringify({
             status: 1,
-            id_usuario: solicitacao.id_usuario,
-            id_prestador: idPrestadorServico,
-            complemento: solicitacao.complemento || "Sem complemento",
           }),
         }
       );
