@@ -23,6 +23,12 @@ function solicitacaoPendente(data: any) {
     return data?.status === false || data?.status === 0 || String(data?.status).toLowerCase() === 'pendente';
 }
 
+function normalizarStatus(value: unknown): 0 | 1 | null {
+    if ([true, 1, '1', 'aceito'].includes(value as any)) return 1;
+    if ([false, 0, '0', 'pendente'].includes(value as any)) return 0;
+    return null;
+}
+
 function payloadAtualizacao(user: AuthenticatedUser, atual: any, body: unknown) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
         throw new AuthorizationError('Payload de atualização inválido.', 400);
@@ -41,8 +47,13 @@ function payloadAtualizacao(user: AuthenticatedUser, atual: any, body: unknown) 
         if (chaves.some((chave) => !permitidos.has(chave))) {
             throw new AuthorizationError('Payload contém campos não permitidos.', 400);
         }
-        if ('status' in dados && ![true, false, 1, 0, '1', '0'].includes(dados.status as any)) {
-            throw new AuthorizationError('Status de solicitação inválido.', 400);
+        if ('status' in dados) {
+            const status = normalizarStatus(dados.status);
+            if (status === null) throw new AuthorizationError('Status de solicitação inválido.', 400);
+            if (!solicitacaoPendente(atual) && status !== 1) {
+                throw new AuthorizationError('Solicitações processadas não podem voltar ao estado pendente.', 409);
+            }
+            dados.status = status;
         }
         return dados;
     }
@@ -52,7 +63,7 @@ function payloadAtualizacao(user: AuthenticatedUser, atual: any, body: unknown) 
     }
 
     if (user.id === idPrestador) {
-        if (chaves.length !== 1 || chaves[0] !== 'status' || ![true, 1, '1', 'aceito'].includes(dados.status as any)) {
+        if (chaves.length !== 1 || chaves[0] !== 'status' || normalizarStatus(dados.status) !== 1) {
             throw new AuthorizationError('O prestador pode apenas aceitar uma solicitação pendente.', 403);
         }
         return { status: 1 };

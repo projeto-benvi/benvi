@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   LayoutDashboard, Users as UsersIcon, Wrench, ShieldAlert, 
   Ticket, AlertTriangle, Handshake, Settings, LogOut, 
-  Send, Eye, MoreVertical 
+  Send, Eye
 } from 'lucide-react';
 
 interface DashboardData {
@@ -104,8 +105,13 @@ export default function Usuarios() {
                   </td>
                   <td className="p-3 text-center">
                     <div className="flex justify-center gap-1 text-slate-400">
-                      <button className="hover:text-indigo-600 p-1"><Eye size={16} /></button>
-                      <button className="hover:text-slate-600 p-1"><MoreVertical size={16} /></button>
+                      <Link
+                        href={`/admin/usuarios/${user.id_usuario}`}
+                        className="hover:text-indigo-600 p-1"
+                        aria-label={`Visualizar usuário ${user.nome}`}
+                      >
+                        <Eye size={16} />
+                      </Link>
                     </div>
                   </td>
                 </tr>

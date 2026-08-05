@@ -7,6 +7,8 @@ import {
 } from "@/controller/tagController";
 import { AuthorizationError, authErrorResponse, requireUser } from "@/app/lib/authz";
 import { buscarProprietarioDaTag } from "@/service/tagService";
+import { parseIdParam, respostaIdInvalido } from "@/app/lib/validacao";
+import { genericApiError } from "@/app/lib/api-error";
 
 export async function GET(req: NextRequest) {
   const idPrestador = req.nextUrl.searchParams.get("id_prestador");
@@ -51,7 +53,8 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const idTag = Number(id);
+    const idTag = parseIdParam(id);
+    if (idTag === null) return respostaIdInvalido("id");
     const ownerId = await buscarProprietarioDaTag(idTag);
     if (ownerId === null) {
       throw new AuthorizationError("Tag não encontrada.", 404);
@@ -62,6 +65,10 @@ export async function DELETE(req: NextRequest) {
 
     return deletarTagController(idTag);
   } catch (error) {
-    return authErrorResponse(error) ?? NextResponse.json({ erro: "Erro ao deletar tag." }, { status: 500 });
+    return authErrorResponse(error) ?? genericApiError(error, {
+      context: "tag.excluir",
+      publicMessage: "Não foi possível excluir a tag.",
+      field: "erro",
+    });
   }
 }

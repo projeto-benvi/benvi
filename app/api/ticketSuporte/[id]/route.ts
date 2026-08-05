@@ -1,7 +1,9 @@
 import { ticketSuporteController } from '@/controller/ticketSuporteController';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { AuthorizationError, authErrorResponse, requireAdmin, requireUser } from '@/app/lib/authz';
 import { ticketSuporteService } from '@/service/ticketSuporteService';
+import { parseIdParam, respostaIdInvalido } from '@/app/lib/validacao';
+import { genericApiError } from '@/app/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -14,7 +16,8 @@ export async function GET(
   try {
     const params = await context.params;
     const user = await requireUser();
-    const id = Number(params.id);
+    const id = parseIdParam(params.id);
+    if (id === null) return respostaIdInvalido('id');
     const ownerId = await ticketSuporteService.buscarProprietario(id);
     if (ownerId === null) {
       throw new AuthorizationError('Ticket não encontrado.', 404);
@@ -24,7 +27,7 @@ export async function GET(
     }
     return ticketSuporteController.buscarPorId(id);
   } catch (error) {
-    return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao buscar ticket.' }, { status: 500 });
+    return authErrorResponse(error) ?? genericApiError(error, { context: 'ticket.buscar', publicMessage: 'Não foi possível buscar o ticket.', field: 'erro' });
   }
 }
 
@@ -35,9 +38,11 @@ export async function PATCH(
   try {
     const params = await context.params;
     await requireAdmin();
-    return ticketSuporteController.responder(Number(params.id), req);
+    const id = parseIdParam(params.id);
+    if (id === null) return respostaIdInvalido('id');
+    return ticketSuporteController.responder(id, req);
   } catch (error) {
-    return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao responder ticket.' }, { status: 500 });
+    return authErrorResponse(error) ?? genericApiError(error, { context: 'ticket.responder', publicMessage: 'Não foi possível responder o ticket.', field: 'erro' });
   }
 }
 
@@ -48,8 +53,10 @@ export async function DELETE(
   try {
     const params = await context.params;
     await requireAdmin();
-    return ticketSuporteController.deletar(Number(params.id));
+    const id = parseIdParam(params.id);
+    if (id === null) return respostaIdInvalido('id');
+    return ticketSuporteController.deletar(id);
   } catch (error) {
-    return authErrorResponse(error) ?? NextResponse.json({ erro: 'Erro ao deletar ticket.' }, { status: 500 });
+    return authErrorResponse(error) ?? genericApiError(error, { context: 'ticket.excluir', publicMessage: 'Não foi possível excluir o ticket.', field: 'erro' });
   }
 }

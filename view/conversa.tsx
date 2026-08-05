@@ -329,6 +329,7 @@ export default function Conversa() {
   const chatSelecionadoRef = useRef<Chat | null>(null);
   const ultimoIdRecebidoRef = useRef(0);
   const carregarMensagensRef = useRef<(idConversa: number) => Promise<void>>(async () => undefined);
+  const carregarMensagensControllerRef = useRef<AbortController | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -769,9 +770,13 @@ export default function Conversa() {
 
   const carregarMensagens = useCallback(async (idConversa: number) => {
     console.log("CARREGANDO CONVERSA", idConversa);
+    carregarMensagensControllerRef.current?.abort();
+    const controller = new AbortController();
+    carregarMensagensControllerRef.current = controller;
     try {
       const response = await fetch(
-        `/api/mensagens?idConversa=${idConversa}&limit=30`
+        `/api/mensagens?idConversa=${idConversa}&limit=30`,
+        { signal: controller.signal }
       );
 
       const mensagens: Mensagem[] = await response.json();
@@ -840,7 +845,12 @@ export default function Conversa() {
 
 
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error(error);
+    } finally {
+      if (carregarMensagensControllerRef.current === controller) {
+        carregarMensagensControllerRef.current = null;
+      }
     }
   }, []);
 
@@ -920,7 +930,7 @@ export default function Conversa() {
     }
   };
 
-  const carregarNovasMensagens = useCallback(async (idConversa: number, afterId: number) => {
+  const carregarNovasMensagens = useCallback(async (idConversa: number, afterId: number, signal?: AbortSignal) => {
     try {
       if (buscandoNovasMensagensRef.current) {
         return;
@@ -929,7 +939,8 @@ export default function Conversa() {
       buscandoNovasMensagensRef.current = true;
 
       const response = await fetch(
-        `/api/mensagens?idConversa=${idConversa}&afterId=${afterId}`
+        `/api/mensagens?idConversa=${idConversa}&afterId=${afterId}`,
+        { signal }
       );
 
       const novas: Mensagem[] = await response.json();
@@ -997,6 +1008,7 @@ export default function Conversa() {
         }));
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error(error);
     } finally {
       buscandoNovasMensagensRef.current = false;
@@ -1803,6 +1815,7 @@ export default function Conversa() {
 
   useEffect(() => {
     return () => {
+      carregarMensagensControllerRef.current?.abort();
       if (notificacaoTimerRef.current) {
         window.clearTimeout(notificacaoTimerRef.current);
       }
@@ -1960,6 +1973,7 @@ export default function Conversa() {
 
   useEffect(() => {
     if (!chatSelecionadoRef.current || suporteAtivo || !abaVisivel) return;
+    const controller = new AbortController();
 
     const intervalo = window.setInterval(() => {
 
@@ -1968,13 +1982,16 @@ export default function Conversa() {
       if (!chat) return;
       carregarNovasMensagens(
         chat.idConversa,
-        ultimoIdRecebidoRef.current
+        ultimoIdRecebidoRef.current,
+        controller.signal
       );
 
       // sincronizarMensagens(chat.idConversa);
     }, 7000);
 
     return () => {
+      controller.abort();
+      buscandoNovasMensagensRef.current = false;
       window.clearInterval(intervalo);
     };
   }, [
@@ -1987,7 +2004,12 @@ export default function Conversa() {
   useEffect(() => {
     const idConversa = chatSelecionado?.idConversa;
     if (!abaVisivel || suporteAtivo || !idConversa) return;
-    carregarNovasMensagens(idConversa, ultimoIdRecebidoRef.current);
+    const controller = new AbortController();
+    carregarNovasMensagens(idConversa, ultimoIdRecebidoRef.current, controller.signal);
+    return () => {
+      controller.abort();
+      buscandoNovasMensagensRef.current = false;
+    };
   }, [abaVisivel, chatSelecionado?.idConversa, suporteAtivo, carregarNovasMensagens]);
 
 

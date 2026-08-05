@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    Users, Wrench, UserCheck, MapPin, UserPlus, Info, Send, Calendar
+    Users, Wrench, UserCheck, MapPin, UserPlus, Info, Send
 } from 'lucide-react';
 
 interface CidadeAtendida {
@@ -55,10 +55,10 @@ export default function CentralAlertas() {
             let prioridadeCalculada = 2; // Média por padrão
             if (tipoAlerta === 'Urgente') prioridadeCalculada = 3;
 
-            // 2. URL de ação baseada na cidade selecionada
+            // 2. Rota interna existente e segura para a ação da notificação
             const urlGerada = cidadeSelecionada
-                ? `https://benvi.com/painel?cidade=${encodeURIComponent(cidadeSelecionada)}`
-                : 'https://benvi.com/painel';
+                ? `/notificacoes?cidade=${encodeURIComponent(cidadeSelecionada)}`
+                : '/notificacoes';
 
             // 3. Monta o payload incluindo o id_usuario exigido pelo relacionamento do banco
             const payload = {
