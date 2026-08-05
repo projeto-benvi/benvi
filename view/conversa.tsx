@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 
@@ -90,7 +90,7 @@ export default function Conversa() {
     data: string;
   };
 
-  const mesclarMensagens = (atuais: Mensagem[], recebidas: Mensagem[]) => {
+  const mesclarMensagens = useCallback((atuais: Mensagem[], recebidas: Mensagem[]) => {
     const porId = new Map<number, Mensagem>();
     const temporarias = new Map<string | number, Mensagem>();
 
@@ -115,7 +115,7 @@ export default function Conversa() {
       const data = new Date(a.criadoEm).getTime() - new Date(b.criadoEm).getTime();
       return data || a.idMensagem - b.idMensagem;
     });
-  };
+  }, []);
 
 
 
@@ -328,6 +328,8 @@ export default function Conversa() {
 
   const chatSelecionadoRef = useRef<Chat | null>(null);
   const ultimoIdRecebidoRef = useRef(0);
+  const carregarMensagensRef = useRef<(idConversa: number) => Promise<void>>(async () => undefined);
+  const carregarMensagensControllerRef = useRef<AbortController | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -458,7 +460,7 @@ export default function Conversa() {
   // HELPERS - SCROLL
   // ==========================================================
 
-  const estaNoFimDaConversa = () => {
+  const estaNoFimDaConversa = useCallback(() => {
     const lista = listaMensagensRef.current;
 
     if (!lista) return false;
@@ -469,7 +471,7 @@ export default function Conversa() {
         lista.clientHeight <
       80
     );
-  };
+  }, []);
 
   const irParaUltimaMensagem = () => {
     rolarParaFim();
@@ -477,7 +479,7 @@ export default function Conversa() {
     setNovasMensagensPendentes(0);
   };
 
-  const rolarParaFim = (suave = false) => {
+  const rolarParaFim = useCallback((suave = false) => {
     if (!listaMensagensRef.current) return;
 
     listaMensagensRef.current.scrollTo({
@@ -486,7 +488,7 @@ export default function Conversa() {
     });
 
     setNovasMensagensPendentes(0);
-  };
+  }, []);
 
 
 
@@ -582,7 +584,7 @@ export default function Conversa() {
   // HELPERS - ARQUIVOS
   // ==========================================================
 
-  const montarCategoriasDoPrestador = (dadosPrestador: any) => {
+  const montarCategoriasDoPrestador = useCallback((dadosPrestador: any) => {
     const nomes = [
       ...(Array.isArray(dadosPrestador?.categorias_vinculadas)
         ? dadosPrestador.categorias_vinculadas.map((categoriaVinculada: CategoriaVinculada) =>
@@ -593,7 +595,7 @@ export default function Conversa() {
     ].filter(Boolean) as string[];
 
     return Array.from(new Set(nomes));
-  };
+  }, []);
 
 
 
@@ -733,7 +735,7 @@ export default function Conversa() {
   // API - CONVERSAS
   // ==========================================================
 
-  const carregarConversas = async () => {
+  const carregarConversas = useCallback(async () => {
     console.log("ENTROU carregarConversas");
 
     if (!idUsuarioLogado) {
@@ -750,15 +752,15 @@ export default function Conversa() {
       console.log(dados);
       setListaChats(Array.isArray(dados) ? dados : []);
 
-      if (Array.isArray(dados) && dados.length > 0 && !chatSelecionado) {
+      if (Array.isArray(dados) && dados.length > 0 && !chatSelecionadoRef.current) {
         setChatSelecionado(dados[0]);
-        carregarMensagens(dados[0].idConversa);
+        carregarMensagensRef.current(dados[0].idConversa);
       }
 
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [idUsuarioLogado, isAdmin, tipoParticipanteLogado]);
 
 
 
@@ -766,11 +768,15 @@ export default function Conversa() {
   // API - MENSAGENS
   // ==========================================================
 
-  const carregarMensagens = async (idConversa: number) => {
+  const carregarMensagens = useCallback(async (idConversa: number) => {
     console.log("CARREGANDO CONVERSA", idConversa);
+    carregarMensagensControllerRef.current?.abort();
+    const controller = new AbortController();
+    carregarMensagensControllerRef.current = controller;
     try {
       const response = await fetch(
-        `/api/mensagens?idConversa=${idConversa}&limit=30`
+        `/api/mensagens?idConversa=${idConversa}&limit=30`,
+        { signal: controller.signal }
       );
 
       const mensagens: Mensagem[] = await response.json();
@@ -798,14 +804,6 @@ export default function Conversa() {
 
       setTemMaisMensagens(mensagens.length >= 30);
 
-      const chatBase = listaChats.find(
-          (c) => c.idConversa === idConversa
-      );
-
-      if (chatBase) {
-          setChatSelecionado(chatBase);
-      }
-
       const ultimo =
         mensagens.length > 0
           ? mensagens[mensagens.length - 1].idMensagem
@@ -824,12 +822,6 @@ export default function Conversa() {
         )
       );
       */
-      console.log(
-        "Atualizando lista",
-        idConversa,
-        listaChats.map(c => c.idConversa)
-      );
-
       setListaChats((anterior) =>
         anterior.map((chat) =>
           chat.idConversa === idConversa ? { ...chat, mensagens } : chat
@@ -853,9 +845,14 @@ export default function Conversa() {
 
 
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error(error);
+    } finally {
+      if (carregarMensagensControllerRef.current === controller) {
+        carregarMensagensControllerRef.current = null;
+      }
     }
-  };
+  }, []);
 
   const carregarHistorico = async () => {
 
@@ -933,7 +930,7 @@ export default function Conversa() {
     }
   };
 
-  const carregarNovasMensagens = async (idConversa: number, afterId: number) => {
+  const carregarNovasMensagens = useCallback(async (idConversa: number, afterId: number, signal?: AbortSignal) => {
     try {
       if (buscandoNovasMensagensRef.current) {
         return;
@@ -942,7 +939,8 @@ export default function Conversa() {
       buscandoNovasMensagensRef.current = true;
 
       const response = await fetch(
-        `/api/mensagens?idConversa=${idConversa}&afterId=${afterId}`
+        `/api/mensagens?idConversa=${idConversa}&afterId=${afterId}`,
+        { signal }
       );
 
       const novas: Mensagem[] = await response.json();
@@ -999,7 +997,7 @@ export default function Conversa() {
       const mensagensNaoLidas = novas.filter(
         (msg) =>
           msg.idRemetente !== idUsuarioLogado &&
-          chatSelecionado?.idConversa !== idConversa
+          chatSelecionadoRef.current?.idConversa !== idConversa
       );
 
       if (mensagensNaoLidas.length > 0) {
@@ -1010,11 +1008,12 @@ export default function Conversa() {
         }));
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       console.error(error);
     } finally {
       buscandoNovasMensagensRef.current = false;
     }
-  };
+  }, [estaNoFimDaConversa, idUsuarioLogado, mesclarMensagens, rolarParaFim]);
 
   const enviarMensagem = async () => {
     if (!novaMensagem.trim()) return;
@@ -1804,6 +1803,10 @@ export default function Conversa() {
     ultimoIdRecebidoRef.current = ultimoIdRecebido;
   }, [ultimoIdRecebido]);
 
+  useEffect(() => {
+    carregarMensagensRef.current = carregarMensagens;
+  }, [carregarMensagens]);
+
 
 
   // ==========================================================
@@ -1812,6 +1815,7 @@ export default function Conversa() {
 
   useEffect(() => {
     return () => {
+      carregarMensagensControllerRef.current?.abort();
       if (notificacaoTimerRef.current) {
         window.clearTimeout(notificacaoTimerRef.current);
       }
@@ -1826,7 +1830,7 @@ export default function Conversa() {
 
   useEffect(() => {
     carregarConversas();
-  }, [idUsuarioLogado, tipoParticipanteLogado]);
+  }, [carregarConversas]);
 
 
 
@@ -1914,7 +1918,9 @@ export default function Conversa() {
       chatDiretoProcessado,
       idPrestadorDireto,
       idUsuarioLogado,
+      isAdmin,
       tipoParticipanteLogado,
+      carregarMensagens,
   ]);
 
 
@@ -1966,7 +1972,8 @@ export default function Conversa() {
   // ==========================================================
 
   useEffect(() => {
-    if (!chatSelecionado || suporteAtivo || !abaVisivel) return;
+    if (!chatSelecionadoRef.current || suporteAtivo || !abaVisivel) return;
+    const controller = new AbortController();
 
     const intervalo = window.setInterval(() => {
 
@@ -1975,25 +1982,35 @@ export default function Conversa() {
       if (!chat) return;
       carregarNovasMensagens(
         chat.idConversa,
-        ultimoIdRecebidoRef.current
+        ultimoIdRecebidoRef.current,
+        controller.signal
       );
 
       // sincronizarMensagens(chat.idConversa);
     }, 7000);
 
     return () => {
+      controller.abort();
+      buscandoNovasMensagensRef.current = false;
       window.clearInterval(intervalo);
     };
   }, [
     chatSelecionado?.idConversa,
     suporteAtivo,
     abaVisivel,
+    carregarNovasMensagens,
   ]);
 
   useEffect(() => {
-    if (!abaVisivel || suporteAtivo || !chatSelecionado) return;
-    carregarNovasMensagens(chatSelecionado.idConversa, ultimoIdRecebidoRef.current);
-  }, [abaVisivel, chatSelecionado?.idConversa, suporteAtivo]);
+    const idConversa = chatSelecionado?.idConversa;
+    if (!abaVisivel || suporteAtivo || !idConversa) return;
+    const controller = new AbortController();
+    carregarNovasMensagens(idConversa, ultimoIdRecebidoRef.current, controller.signal);
+    return () => {
+      controller.abort();
+      buscandoNovasMensagensRef.current = false;
+    };
+  }, [abaVisivel, chatSelecionado?.idConversa, suporteAtivo, carregarNovasMensagens]);
 
 
 
@@ -2066,6 +2083,7 @@ export default function Conversa() {
     modalSolicitacaoAberto,
     chatSelecionado?.idPrestador,
     suporteAtivo,
+    montarCategoriasDoPrestador,
   ]);
 
 

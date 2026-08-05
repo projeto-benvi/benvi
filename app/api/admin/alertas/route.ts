@@ -6,16 +6,14 @@ import {
   validarAlertaMassaInput,
 } from '@/service/adminAlertService';
 import { NextRequest, NextResponse } from 'next/server';
+import { logSafeApiError } from '@/app/lib/api-error';
 
 function mapAdminAlertError(error: unknown) {
   if (error instanceof AdminAlertError) {
-    return NextResponse.json({ erro: error.message }, { status: error.status });
+    return NextResponse.json({ erro: 'Dados do alerta inválidos.' }, { status: error.status });
   }
 
-  console.error('Erro seguro na rota administrativa de alertas.', {
-    tipo: error instanceof Error ? error.name : typeof error,
-    mensagem: error instanceof Error ? error.message : String(error),
-  });
+  logSafeApiError('admin.alertas', error);
 
   return NextResponse.json({ erro: 'Erro ao processar alerta.' }, { status: 500 });
 }

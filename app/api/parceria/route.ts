@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ParceriaController } from '@/controller/parceriaController';
 import { authErrorResponse, requireAdmin } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 /**
  * GET /api/parceria
@@ -31,10 +32,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(data, { status: 200 });
 
     } catch (error) {
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao buscar parcerias' },
-            { status: 500 }
-        );
+        return genericApiError(error, { context: 'parceria.listar', publicMessage: 'Erro ao buscar parcerias.' });
     }
 }
 
@@ -75,9 +73,6 @@ export async function POST(request: NextRequest) {
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro interno' },
-            { status: 400 }
-        );
+        return genericApiError(error, { context: 'parceria.criar', publicMessage: 'Não foi possível criar a parceria.', status: 400 });
     }
 }

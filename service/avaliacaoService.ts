@@ -5,6 +5,14 @@ import { AvaliacaoModel } from '@/model/avaliacaoModel';
 
 export const AvaliacaoService = {
 
+    async buscarAutorId(id: number): Promise<number | null> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT id_usuario FROM avaliacao WHERE id_avaliacao = ? LIMIT 1',
+            [id]
+        );
+        return rows[0] ? Number(rows[0].id_usuario) : null;
+    },
+
     async listar(): Promise<AvaliacaoModel[]> {
         const [rows] = await pool.query<(RowDataPacket & any)[]>(
             `
@@ -42,57 +50,25 @@ export const AvaliacaoService = {
     },
 
     async buscarPorId(id: number) {
-
-
-        const avaliacoes =
-            await this.listar();
-
-        const avaliacao =
-            avaliacoes.find(
-                item => item.id_avaliacao === id
-            );
-
-        if (!avaliacao) {
-            throw new Error(
-                'Avaliação não encontrada'
-            );
-        }
-
-        //buscar tambem as informações do usuário para retornar junto com a avaliação
-
         const [rows] = await pool.query<RowDataPacket[]>(
             `
         SELECT
             a.id_avaliacao,
             a.id_usuario,
+            a.id_prestador,
+            a.id_servico,
             a.nota,
             a.comentario,
+            a.comunicacao,
+            a.respeito,
+            a.pontualidade,
+            a.acordo,
             a.data_avaliacao,
-
-            u.id_usuario,
             u.nome,
-            u.email,
-            u.telefone,
-            u.cidade,
-            u.nivel_acesso,
-            u.status_conta,
-            u.data_criacao,
-            u.is_admin,
-
-            p.descricao_profissional,
-            p.status_verificado,
-            p.status_social,
-            p.impulsiona_perfil,
-            p.categoria_principal
-
+            u.foto_perfil
         FROM avaliacao a
-
         INNER JOIN usuario u
             ON a.id_usuario = u.id_usuario
-
-        INNER JOIN prestador p
-            ON a.id_prestador = p.id_usuario
-
         WHERE a.id_avaliacao = ?
         `,
             [id]
@@ -104,39 +80,25 @@ export const AvaliacaoService = {
             );
         }
 
-        //return rows[0];
         const row = rows[0];
 
         return {
             id_avaliacao: row.id_avaliacao,
+            id_prestador: row.id_prestador,
+            id_servico: row.id_servico,
             nota: row.nota,
             comentario: row.comentario,
+            comunicacao: row.comunicacao,
+            respeito: row.respeito,
+            pontualidade: row.pontualidade,
+            acordo: row.acordo,
             data_avaliacao: row.data_avaliacao,
-
             usuario: {
                 id_usuario: row.id_usuario,
                 nome: row.nome,
-                email: row.email,
-                telefone: row.telefone,
-                cidade: row.cidade,
-                nivel_acesso: row.nivel_acesso,
-                status_conta: row.status_conta,
-                data_criacao: row.data_criacao,
-                is_admin: row.is_admin
-
+                foto_perfil: row.foto_perfil,
             },
-
-            prestador: {
-                id_usuario: row.id_usuario,
-                descricao_profissional: row.descricao_profissional,
-                status_verificado: row.status_verificado,
-                status_social: row.status_social,
-                impulsiona_perfil: row.impulsiona_perfil,
-                categoria_principal: row.categoria_principal,
-
-            }
         };
-
     },
 
     async listarPorPrestador(id_prestador: number) {

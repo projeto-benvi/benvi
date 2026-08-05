@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AssinaturaPlanoController } from '@/controller/assinaturaPlanoController';
 import { authErrorResponse, requireAdmin, requireResourceOwner, requireUser } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 export async function GET(request: NextRequest) {
     try {
@@ -28,10 +29,7 @@ export async function GET(request: NextRequest) {
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao buscar assinaturas' },
-            { status: 500 }
-        );
+        return genericApiError(error, { context: 'assinatura.listar', publicMessage: 'Erro ao buscar assinaturas.' });
     }
 }
 
@@ -65,9 +63,6 @@ export async function POST(request: NextRequest) {
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro interno' },
-            { status: 400 }
-        );
+        return genericApiError(error, { context: 'assinatura.criar', publicMessage: 'Não foi possível criar a assinatura.', status: 400 });
     }
 }

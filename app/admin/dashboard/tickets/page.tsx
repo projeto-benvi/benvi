@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Ticket, Eye, MoreVertical } from 'lucide-react';
+import Link from 'next/link';
+import { Ticket, Eye } from 'lucide-react';
 
 interface TicketSuporte {
   id_ticket: number;
@@ -87,12 +88,14 @@ export default function TicketsRecentes() {
                   </td>
                   <td className="p-3 text-center">
                     <div className="flex justify-center gap-1 text-slate-400">
-                      <button className="hover:text-indigo-600 p-1" title="Visualizar ticket">
+                      <Link
+                        href={`/admin/verificarTicket?id=${ticket.id_ticket}`}
+                        className="hover:text-indigo-600 p-1"
+                        title="Visualizar ticket"
+                        aria-label={`Visualizar ticket ${ticket.id_ticket}`}
+                      >
                         <Eye size={16} />
-                      </button>
-                      <button className="hover:text-slate-600 p-1">
-                        <MoreVertical size={16} />
-                      </button>
+                      </Link>
                     </div>
                   </td>
                 </tr>

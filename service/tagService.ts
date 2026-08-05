@@ -75,3 +75,11 @@ export async function deletarTag(id: number) {
   await pool.query("DELETE FROM tag WHERE id_tag = ?", [id]);
   return { mensagem: "Tag removida com sucesso." };
 }
+
+export async function buscarProprietarioDaTag(id: number): Promise<number | null> {
+  const [rows]: any = await pool.query(
+    "SELECT id_prestador FROM tag WHERE id_tag = ? LIMIT 1",
+    [id]
+  );
+  return rows[0] ? Number(rows[0].id_prestador) : null;
+}

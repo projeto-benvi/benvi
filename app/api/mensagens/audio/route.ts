@@ -8,6 +8,7 @@ import {
   uploadPrivateChatAudio,
 } from '@/app/lib/storage';
 import { MensagemService } from '@/service/mensagemService';
+import { logSafeApiError } from '@/app/lib/api-error';
 
 const mensagemService = new MensagemService();
 
@@ -57,13 +58,12 @@ export async function POST(request: Request) {
 
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;
+    logSafeApiError('mensagem.audio.enviar', error);
 
     const status = storageErrorStatus(error);
     const mensagem =
       status === 400
-        ? error instanceof Error
-          ? error.message
-          : 'Arquivo de áudio inválido.'
+        ? 'Arquivo de áudio inválido.'
         : error instanceof StorageUploadError
           ? 'Não foi possível armazenar o áudio agora.'
           : status === 503

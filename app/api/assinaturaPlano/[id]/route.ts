@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AssinaturaPlanoController } from '@/controller/assinaturaPlanoController';
 import { authErrorResponse, requireAdmin, requireUser } from '@/app/lib/authz';
+import { genericApiError } from '@/app/lib/api-error';
 
 export async function GET(
     _request: NextRequest,
@@ -16,10 +17,7 @@ export async function GET(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Assinatura não encontrada' },
-            { status: 404 }
-        );
+        return genericApiError(error, { context: 'assinatura.buscar', publicMessage: 'Assinatura não encontrada.', status: 404 });
     }
 }
 
@@ -43,10 +41,7 @@ export async function PATCH(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao atualizar' },
-            { status: 400 }
-        );
+        return genericApiError(error, { context: 'assinatura.atualizar', publicMessage: 'Não foi possível atualizar a assinatura.', status: 400 });
     }
 }
 
@@ -75,9 +70,6 @@ export async function DELETE(
         const authResponse = authErrorResponse(error);
         if (authResponse) return authResponse;
 
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Erro ao remover' },
-            { status: 500 }
-        );
+        return genericApiError(error, { context: 'assinatura.remover', publicMessage: 'Não foi possível remover a assinatura.' });
     }
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     ArrowUpRight, Users, AlertTriangle, XCircle, 
-    ArrowLeft, Bell, MoreVertical, CreditCard 
+    ArrowLeft, Bell, CreditCard
 } from 'lucide-react';
 
 // Interface mapeando o retorno exato do seu AssinaturaPlanoService.listar()
@@ -162,7 +162,7 @@ export default function GestaoPagamentos() {
                 <div className="xl:col-span-2 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-lg font-bold text-slate-900">Visão Geral das Assinaturas</h2>
-                        <button className="text-sm font-semibold text-blue-600 hover:underline">Ver todas</button>
+                        <span className="text-sm font-semibold text-slate-400">Todas as assinaturas</span>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -199,7 +199,7 @@ export default function GestaoPagamentos() {
                                             <td className="p-4"><span className={getStatusStyle(item.status_pagamento)}>{item.status_pagamento}</span></td>
                                             <td className="p-4 text-xs text-slate-500">{new Date(item.data_inicio).toLocaleDateString('pt-BR')}</td>
                                             <td className="p-4 text-xs text-slate-500">{new Date(item.data_fim).toLocaleDateString('pt-BR')}</td>
-                                            <td className="p-4 text-center"><button className="text-slate-400 hover:text-slate-600"><MoreVertical size={16} /></button></td>
+                                            <td className="p-4 text-center text-xs text-slate-400">—</td>
                                         </tr>
                                     ))}
                                 </>
